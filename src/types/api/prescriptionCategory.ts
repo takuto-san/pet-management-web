@@ -9,7 +9,7 @@
 export type PrescriptionCategory =
   (typeof PrescriptionCategory)[keyof typeof PrescriptionCategory];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const PrescriptionCategory = {
   vaccine: "vaccine",
   heartworm: "heartworm",
