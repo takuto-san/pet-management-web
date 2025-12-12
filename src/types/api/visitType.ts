@@ -8,7 +8,7 @@
 
 export type VisitType = (typeof VisitType)[keyof typeof VisitType];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const VisitType = {
   vaccine: "vaccine",
   heartworm: "heartworm",
