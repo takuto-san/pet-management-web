@@ -8,7 +8,7 @@
 
 export type ItemCategory = (typeof ItemCategory)[keyof typeof ItemCategory];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const ItemCategory = {
   food: "food",
   treat: "treat",
