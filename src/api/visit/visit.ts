@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -29,15 +29,16 @@ import type {
   ProblemDetail,
   Visit,
   VisitFields,
+  VisitPage,
 } from "../../types/api";
 
 /**
- * @summary List visits (can filter by petId)
+ * @summary List visits with pagination (can filter by petId)
  */
 export const listVisits = (
   params?: ListVisitsParams,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Visit[]>> => {
+): Promise<AxiosResponse<VisitPage>> => {
   return axios.get(`/visits`, {
     ...options,
     params: { ...params, ...options?.params },
@@ -142,7 +143,7 @@ export function useListVisits<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary List visits (can filter by petId)
+ * @summary List visits with pagination (can filter by petId)
  */
 
 export function useListVisits<

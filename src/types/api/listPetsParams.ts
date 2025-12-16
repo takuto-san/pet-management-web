@@ -8,7 +8,7 @@
 import type { PageParamParameter } from "./pageParamParameter";
 import type { SizeParamParameter } from "./sizeParamParameter";
 
-export type ListUsersParams = {
+export type ListPetsParams = {
   /**
    * Zero-based page index (0..N)
    * @minimum 0
@@ -19,6 +19,4 @@ export type ListUsersParams = {
    * @minimum 1
    */
   size?: SizeParamParameter;
-  lastNameKana?: string;
-  firstNameKana?: string;
 };

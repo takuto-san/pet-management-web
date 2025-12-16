@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -24,37 +24,49 @@ import type {
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-import type { Item, ItemFields } from "../../types/api";
+import type {
+  Item,
+  ItemFields,
+  ItemPage,
+  ListItemsParams,
+} from "../../types/api";
 
 /**
- * @summary List item master data
+ * @summary List item master data with pagination
  */
 export const listItems = (
+  params?: ListItemsParams,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Item[]>> => {
-  return axios.get(`/items`, options);
+): Promise<AxiosResponse<ItemPage>> => {
+  return axios.get(`/items`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
 };
 
-export const getListItemsQueryKey = () => {
-  return [`/items`] as const;
+export const getListItemsQueryKey = (params?: ListItemsParams) => {
+  return [`/items`, ...(params ? [params] : [])] as const;
 };
 
 export const getListItemsQueryOptions = <
   TData = Awaited<ReturnType<typeof listItems>>,
   TError = AxiosError<unknown>,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
-  >;
-  axios?: AxiosRequestConfig;
-}) => {
+>(
+  params?: ListItemsParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
+    >;
+    axios?: AxiosRequestConfig;
+  },
+) => {
   const { query: queryOptions, axios: axiosOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListItemsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListItemsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listItems>>> = ({
     signal,
-  }) => listItems({ signal, ...axiosOptions });
+  }) => listItems(params, { signal, ...axiosOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listItems>>,
@@ -72,6 +84,7 @@ export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
   TError = AxiosError<unknown>,
 >(
+  params: undefined | ListItemsParams,
   options: {
     query: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
@@ -94,6 +107,7 @@ export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListItemsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
@@ -116,6 +130,7 @@ export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListItemsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
@@ -127,13 +142,14 @@ export function useListItems<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary List item master data
+ * @summary List item master data with pagination
  */
 
 export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListItemsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
@@ -144,7 +160,7 @@ export function useListItems<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getListItemsQueryOptions(options);
+  const queryOptions = getListItemsQueryOptions(params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

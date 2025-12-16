@@ -3,18 +3,15 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 
-export interface UserFields {
+export interface UserBase {
   /**
    * @minLength 1
    * @maxLength 20
    */
   username: string;
-  /** @maxLength 255 */
-  password: string;
-  enabled?: boolean;
   firstName: string;
   lastName: string;
   firstNameKana: string;
@@ -32,6 +29,4 @@ export interface UserFields {
    * @pattern ^[0-9-]*$
    */
   telephone?: string;
-  /** @maxLength 20 */
-  role?: string;
 }

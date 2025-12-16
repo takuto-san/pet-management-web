@@ -5,7 +5,11 @@
  * Pet Management API with health logs, prescriptions, and item master.
  * OpenAPI spec version: 1.4
  */
-import type { VisitFields } from "./visitFields";
-import type { VisitAllOf } from "./visitAllOf";
 
-export type Visit = VisitFields & VisitAllOf;
+export type Currency = (typeof Currency)[keyof typeof Currency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const Currency = {
+  JPY: "JPY",
+  USD: "USD",
+} as const;

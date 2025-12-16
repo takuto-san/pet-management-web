@@ -6,15 +6,14 @@
  * OpenAPI spec version: 1.4
  */
 
-export type PetType = (typeof PetType)[keyof typeof PetType];
+export type RoleName = (typeof RoleName)[keyof typeof RoleName];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const PetType = {
-  dog: "dog",
-  cat: "cat",
-  rabbit: "rabbit",
-  hamster: "hamster",
-  bird: "bird",
-  turtle: "turtle",
-  fish: "fish",
+export const RoleName = {
+  owner: "owner",
+  vet: "vet",
+  nurse: "nurse",
+  receptionist: "receptionist",
+  clinic_admin: "clinic_admin",
+  admin: "admin",
 } as const;

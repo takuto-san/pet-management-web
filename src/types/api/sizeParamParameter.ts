@@ -5,7 +5,8 @@
  * Pet Management API with health logs, prescriptions, and item master.
  * OpenAPI spec version: 1.4
  */
-import type { VisitFields } from "./visitFields";
-import type { VisitAllOf } from "./visitAllOf";
 
-export type Visit = VisitFields & VisitAllOf;
+/**
+ * The size of the page to be returned
+ */
+export type SizeParamParameter = number;

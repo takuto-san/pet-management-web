@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -30,6 +30,7 @@ import type {
 } from "../../types/api";
 
 /**
+ * Returns list directly as pagination within a single visit is rare.
  * @summary List prescriptions for a specific visit
  */
 export const listVisitPrescriptions = (

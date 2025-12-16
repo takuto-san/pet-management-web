@@ -3,11 +3,11 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
-import type { PetType } from "./petType";
 
 export type PetAllOf = {
   readonly id: string;
-  type: PetType;
+  readonly createdAt: string;
+  readonly updatedAt: string;
 };

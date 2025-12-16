@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -27,18 +27,21 @@ import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import type {
   ListUsersParams,
   ProblemDetail,
-  User,
-  UserFields,
+  UserBase,
+  UserPage,
+  UserRegistration,
+  UserResponse,
 } from "../../types/api";
 
 /**
- * @summary Create a user
+ * Creates a new user. Default role 'owner' is assigned.
+ * @summary Create a user (Registration)
  */
 export const addUser = (
-  userFields: UserFields,
+  userRegistration: UserRegistration,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<User>> => {
-  return axios.post(`/users`, userFields, options);
+): Promise<AxiosResponse<UserResponse>> => {
+  return axios.post(`/users`, userRegistration, options);
 };
 
 export const getAddUserMutationOptions = <
@@ -48,14 +51,14 @@ export const getAddUserMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof addUser>>,
     TError,
-    { data: UserFields },
+    { data: UserRegistration },
     TContext
   >;
   axios?: AxiosRequestConfig;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addUser>>,
   TError,
-  { data: UserFields },
+  { data: UserRegistration },
   TContext
 > => {
   const mutationKey = ["addUser"];
@@ -69,7 +72,7 @@ export const getAddUserMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addUser>>,
-    { data: UserFields }
+    { data: UserRegistration }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -82,11 +85,11 @@ export const getAddUserMutationOptions = <
 export type AddUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof addUser>>
 >;
-export type AddUserMutationBody = UserFields;
+export type AddUserMutationBody = UserRegistration;
 export type AddUserMutationError = AxiosError<ProblemDetail>;
 
 /**
- * @summary Create a user
+ * @summary Create a user (Registration)
  */
 export const useAddUser = <
   TError = AxiosError<ProblemDetail>,
@@ -96,7 +99,7 @@ export const useAddUser = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addUser>>,
       TError,
-      { data: UserFields },
+      { data: UserRegistration },
       TContext
     >;
     axios?: AxiosRequestConfig;
@@ -105,7 +108,7 @@ export const useAddUser = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof addUser>>,
   TError,
-  { data: UserFields },
+  { data: UserRegistration },
   TContext
 > => {
   const mutationOptions = getAddUserMutationOptions(options);
@@ -113,12 +116,12 @@ export const useAddUser = <
   return useMutation(mutationOptions, queryClient);
 };
 /**
- * @summary Lists users
+ * @summary Lists users with pagination
  */
 export const listUsers = (
   params?: ListUsersParams,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<User[]>> => {
+): Promise<AxiosResponse<UserPage>> => {
   return axios.get(`/users`, {
     ...options,
     params: { ...params, ...options?.params },
@@ -223,7 +226,7 @@ export function useListUsers<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary Lists users
+ * @summary Lists users with pagination
  */
 
 export function useListUsers<
@@ -256,7 +259,7 @@ export function useListUsers<
 export const getUser = (
   userId: string,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<User>> => {
+): Promise<AxiosResponse<UserResponse>> => {
   return axios.get(`/users/${userId}`, options);
 };
 
@@ -388,12 +391,15 @@ export function useGetUser<
   return query;
 }
 
+/**
+ * @summary Update user profile
+ */
 export const updateUser = (
   userId: string,
-  userFields: UserFields,
+  userBase: UserBase,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<User>> => {
-  return axios.put(`/users/${userId}`, userFields, options);
+): Promise<AxiosResponse<UserResponse>> => {
+  return axios.put(`/users/${userId}`, userBase, options);
 };
 
 export const getUpdateUserMutationOptions = <
@@ -403,14 +409,14 @@ export const getUpdateUserMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateUser>>,
     TError,
-    { userId: string; data: UserFields },
+    { userId: string; data: UserBase },
     TContext
   >;
   axios?: AxiosRequestConfig;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof updateUser>>,
   TError,
-  { userId: string; data: UserFields },
+  { userId: string; data: UserBase },
   TContext
 > => {
   const mutationKey = ["updateUser"];
@@ -424,7 +430,7 @@ export const getUpdateUserMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof updateUser>>,
-    { userId: string; data: UserFields }
+    { userId: string; data: UserBase }
   > = (props) => {
     const { userId, data } = props ?? {};
 
@@ -437,9 +443,12 @@ export const getUpdateUserMutationOptions = <
 export type UpdateUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof updateUser>>
 >;
-export type UpdateUserMutationBody = UserFields;
+export type UpdateUserMutationBody = UserBase;
 export type UpdateUserMutationError = AxiosError<ProblemDetail>;
 
+/**
+ * @summary Update user profile
+ */
 export const useUpdateUser = <
   TError = AxiosError<ProblemDetail>,
   TContext = unknown,
@@ -448,7 +457,7 @@ export const useUpdateUser = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updateUser>>,
       TError,
-      { userId: string; data: UserFields },
+      { userId: string; data: UserBase },
       TContext
     >;
     axios?: AxiosRequestConfig;
@@ -457,7 +466,7 @@ export const useUpdateUser = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof updateUser>>,
   TError,
-  { userId: string; data: UserFields },
+  { userId: string; data: UserBase },
   TContext
 > => {
   const mutationOptions = getUpdateUserMutationOptions(options);
@@ -472,7 +481,7 @@ export const deleteUser = (
 };
 
 export const getDeleteUserMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = AxiosError<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -513,9 +522,9 @@ export type DeleteUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof deleteUser>>
 >;
 
-export type DeleteUserMutationError = AxiosError<unknown>;
+export type DeleteUserMutationError = AxiosError<void>;
 
-export const useDeleteUser = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useDeleteUser = <TError = AxiosError<void>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof deleteUser>>,

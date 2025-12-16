@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -24,41 +24,56 @@ import type {
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-import type { Prescription, PrescriptionFields } from "../../types/api";
+import type {
+  ListPrescriptionsParams,
+  Prescription,
+  PrescriptionFields,
+  PrescriptionPage,
+} from "../../types/api";
 
 /**
- * @summary List prescription master data
+ * @summary List prescription master data with pagination
  */
 export const listPrescriptions = (
+  params?: ListPrescriptionsParams,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Prescription[]>> => {
-  return axios.get(`/prescriptions`, options);
+): Promise<AxiosResponse<PrescriptionPage>> => {
+  return axios.get(`/prescriptions`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
 };
 
-export const getListPrescriptionsQueryKey = () => {
-  return [`/prescriptions`] as const;
+export const getListPrescriptionsQueryKey = (
+  params?: ListPrescriptionsParams,
+) => {
+  return [`/prescriptions`, ...(params ? [params] : [])] as const;
 };
 
 export const getListPrescriptionsQueryOptions = <
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
   TError = AxiosError<unknown>,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<typeof listPrescriptions>>,
-      TError,
-      TData
-    >
-  >;
-  axios?: AxiosRequestConfig;
-}) => {
+>(
+  params?: ListPrescriptionsParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listPrescriptions>>,
+        TError,
+        TData
+      >
+    >;
+    axios?: AxiosRequestConfig;
+  },
+) => {
   const { query: queryOptions, axios: axiosOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListPrescriptionsQueryKey();
+  const queryKey =
+    queryOptions?.queryKey ?? getListPrescriptionsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listPrescriptions>>
-  > = ({ signal }) => listPrescriptions({ signal, ...axiosOptions });
+  > = ({ signal }) => listPrescriptions(params, { signal, ...axiosOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listPrescriptions>>,
@@ -76,6 +91,7 @@ export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
   TError = AxiosError<unknown>,
 >(
+  params: undefined | ListPrescriptionsParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -102,6 +118,7 @@ export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListPrescriptionsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -128,6 +145,7 @@ export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListPrescriptionsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -143,13 +161,14 @@ export function useListPrescriptions<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary List prescription master data
+ * @summary List prescription master data with pagination
  */
 
 export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListPrescriptionsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -164,7 +183,7 @@ export function useListPrescriptions<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getListPrescriptionsQueryOptions(options);
+  const queryOptions = getListPrescriptionsQueryOptions(params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

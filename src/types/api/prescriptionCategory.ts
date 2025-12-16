@@ -3,13 +3,13 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 
 export type PrescriptionCategory =
   (typeof PrescriptionCategory)[keyof typeof PrescriptionCategory];
 
- 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const PrescriptionCategory = {
   vaccine: "vaccine",
   heartworm: "heartworm",

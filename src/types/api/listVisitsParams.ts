@@ -3,10 +3,22 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
+import type { PageParamParameter } from "./pageParamParameter";
+import type { SizeParamParameter } from "./sizeParamParameter";
 
 export type ListVisitsParams = {
+  /**
+   * Zero-based page index (0..N)
+   * @minimum 0
+   */
+  page?: PageParamParameter;
+  /**
+   * The size of the page to be returned
+   * @minimum 1
+   */
+  size?: SizeParamParameter;
   /**
    * Filter visits by Pet ID
    */

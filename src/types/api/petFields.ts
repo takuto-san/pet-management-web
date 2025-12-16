@@ -3,16 +3,17 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
+import type { PetSex } from "./petSex";
+import type { PetType } from "./petType";
 
 export interface PetFields {
   /** @maxLength 30 */
   name: string;
   birthDate?: string;
-  /** @maxLength 10 */
-  sex?: string;
-  typeId: string;
+  sex?: PetSex;
+  type: PetType;
   /** The owner ID */
   userId: string;
 }

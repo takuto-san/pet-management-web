@@ -3,20 +3,17 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
-  UseMutationOptions,
-  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
@@ -24,8 +21,12 @@ import type {
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-import type { PetType, PetTypeFields } from "../../types/api";
+import type { PetType } from "../../types/api";
 
+/**
+ * Returns the list of enum values. (No pagination required for static enums)
+ * @summary Get allowed pet types
+ */
 export const listPetTypes = (
   options?: AxiosRequestConfig,
 ): Promise<AxiosResponse<PetType[]>> => {
@@ -123,6 +124,9 @@ export function useListPetTypes<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
+/**
+ * @summary Get allowed pet types
+ */
 
 export function useListPetTypes<
   TData = Awaited<ReturnType<typeof listPetTypes>>,
@@ -149,76 +153,3 @@ export function useListPetTypes<
 
   return query;
 }
-
-export const addPetType = (
-  petTypeFields: PetTypeFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<PetType>> => {
-  return axios.post(`/pettypes`, petTypeFields, options);
-};
-
-export const getAddPetTypeMutationOptions = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof addPetType>>,
-    TError,
-    { data: PetTypeFields },
-    TContext
-  >;
-  axios?: AxiosRequestConfig;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof addPetType>>,
-  TError,
-  { data: PetTypeFields },
-  TContext
-> => {
-  const mutationKey = ["addPetType"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof addPetType>>,
-    { data: PetTypeFields }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return addPetType(data, axiosOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AddPetTypeMutationResult = NonNullable<
-  Awaited<ReturnType<typeof addPetType>>
->;
-export type AddPetTypeMutationBody = PetTypeFields;
-export type AddPetTypeMutationError = AxiosError<unknown>;
-
-export const useAddPetType = <TError = AxiosError<unknown>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof addPetType>>,
-      TError,
-      { data: PetTypeFields },
-      TContext
-    >;
-    axios?: AxiosRequestConfig;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof addPetType>>,
-  TError,
-  { data: PetTypeFields },
-  TContext
-> => {
-  const mutationOptions = getAddPetTypeMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};

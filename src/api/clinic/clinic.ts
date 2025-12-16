@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -24,37 +24,50 @@ import type {
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-import type { Clinic, ClinicFields, ProblemDetail } from "../../types/api";
+import type {
+  Clinic,
+  ClinicFields,
+  ClinicPage,
+  ListClinicsParams,
+  ProblemDetail,
+} from "../../types/api";
 
 /**
- * @summary List all clinics
+ * @summary List all clinics with pagination
  */
 export const listClinics = (
+  params?: ListClinicsParams,
   options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Clinic[]>> => {
-  return axios.get(`/clinics`, options);
+): Promise<AxiosResponse<ClinicPage>> => {
+  return axios.get(`/clinics`, {
+    ...options,
+    params: { ...params, ...options?.params },
+  });
 };
 
-export const getListClinicsQueryKey = () => {
-  return [`/clinics`] as const;
+export const getListClinicsQueryKey = (params?: ListClinicsParams) => {
+  return [`/clinics`, ...(params ? [params] : [])] as const;
 };
 
 export const getListClinicsQueryOptions = <
   TData = Awaited<ReturnType<typeof listClinics>>,
   TError = AxiosError<unknown>,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
-  >;
-  axios?: AxiosRequestConfig;
-}) => {
+>(
+  params?: ListClinicsParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
+    >;
+    axios?: AxiosRequestConfig;
+  },
+) => {
   const { query: queryOptions, axios: axiosOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListClinicsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListClinicsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listClinics>>> = ({
     signal,
-  }) => listClinics({ signal, ...axiosOptions });
+  }) => listClinics(params, { signal, ...axiosOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listClinics>>,
@@ -72,6 +85,7 @@ export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
   TError = AxiosError<unknown>,
 >(
+  params: undefined | ListClinicsParams,
   options: {
     query: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
@@ -94,6 +108,7 @@ export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListClinicsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
@@ -116,6 +131,7 @@ export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListClinicsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
@@ -127,13 +143,14 @@ export function useListClinics<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary List all clinics
+ * @summary List all clinics with pagination
  */
 
 export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
   TError = AxiosError<unknown>,
 >(
+  params?: ListClinicsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
@@ -144,7 +161,7 @@ export function useListClinics<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getListClinicsQueryOptions(options);
+  const queryOptions = getListClinicsQueryOptions(params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

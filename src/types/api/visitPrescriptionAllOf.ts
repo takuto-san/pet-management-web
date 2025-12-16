@@ -3,10 +3,12 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, and item master.
- * OpenAPI spec version: 1.2
+ * OpenAPI spec version: 1.4
  */
 
 export type VisitPrescriptionAllOf = {
-  id: string;
-  visitId: string;
+  readonly id: string;
+  readonly visitId: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
 };
