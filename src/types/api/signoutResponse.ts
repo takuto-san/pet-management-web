@@ -5,9 +5,9 @@
  * Pet Management API with health logs, prescriptions, item master, and JWT authentication.
  * OpenAPI spec version: 1.5
  */
-import type { RoleName } from "./roleName";
 
-export type AdminUserUpdateAllOf = {
-  roles?: RoleName[];
-  enabled?: boolean;
-};
+export interface SignoutResponse {
+  id: string;
+  username: string;
+  email: string;
+}

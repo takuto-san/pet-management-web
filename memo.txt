@@ -1,10 +1,5 @@
 docker compose up -d
-docker compose down
+docker compose stop
 
 再ビルドが必要な場合（package.json, Dockerfile, docker-compose.yml）
 docker compose up --build -d
-
-username:test
-password:testuser
-email:test@example.com
-id:6949d2b1-27cb-40c4-bbf4-a2dfca534b2e
