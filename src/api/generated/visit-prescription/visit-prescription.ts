@@ -21,22 +21,27 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   VisitPrescription,
   VisitPrescriptionFields,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary List prescriptions for a specific visit
  */
 export const listVisitPrescriptions = (
   visitId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<VisitPrescription[]>> => {
-  return axios.get(`/visits/${visitId}/prescriptions`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<VisitPrescription[]>(
+    { url: `/visits/${visitId}/prescriptions`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getListVisitPrescriptionsQueryKey = (visitId?: string) => {
@@ -45,7 +50,7 @@ export const getListVisitPrescriptionsQueryKey = (visitId?: string) => {
 
 export const getListVisitPrescriptionsQueryOptions = <
   TData = Awaited<ReturnType<typeof listVisitPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   visitId: string,
   options?: {
@@ -56,18 +61,17 @@ export const getListVisitPrescriptionsQueryOptions = <
         TData
       >
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
     queryOptions?.queryKey ?? getListVisitPrescriptionsQueryKey(visitId);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listVisitPrescriptions>>
-  > = ({ signal }) =>
-    listVisitPrescriptions(visitId, { signal, ...axiosOptions });
+  > = ({ signal }) => listVisitPrescriptions(visitId, requestOptions, signal);
 
   return {
     queryKey,
@@ -84,11 +88,11 @@ export const getListVisitPrescriptionsQueryOptions = <
 export type ListVisitPrescriptionsQueryResult = NonNullable<
   Awaited<ReturnType<typeof listVisitPrescriptions>>
 >;
-export type ListVisitPrescriptionsQueryError = AxiosError<unknown>;
+export type ListVisitPrescriptionsQueryError = unknown;
 
 export function useListVisitPrescriptions<
   TData = Awaited<ReturnType<typeof listVisitPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   visitId: string,
   options: {
@@ -107,7 +111,7 @@ export function useListVisitPrescriptions<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -115,7 +119,7 @@ export function useListVisitPrescriptions<
 };
 export function useListVisitPrescriptions<
   TData = Awaited<ReturnType<typeof listVisitPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   visitId: string,
   options?: {
@@ -134,7 +138,7 @@ export function useListVisitPrescriptions<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -142,7 +146,7 @@ export function useListVisitPrescriptions<
 };
 export function useListVisitPrescriptions<
   TData = Awaited<ReturnType<typeof listVisitPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   visitId: string,
   options?: {
@@ -153,7 +157,7 @@ export function useListVisitPrescriptions<
         TData
       >
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -165,7 +169,7 @@ export function useListVisitPrescriptions<
 
 export function useListVisitPrescriptions<
   TData = Awaited<ReturnType<typeof listVisitPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   visitId: string,
   options?: {
@@ -176,7 +180,7 @@ export function useListVisitPrescriptions<
         TData
       >
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -200,17 +204,23 @@ export function useListVisitPrescriptions<
 export const addVisitPrescription = (
   visitId: string,
   visitPrescriptionFields: VisitPrescriptionFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<VisitPrescription>> => {
-  return axios.post(
-    `/visits/${visitId}/prescriptions`,
-    visitPrescriptionFields,
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<VisitPrescription>(
+    {
+      url: `/visits/${visitId}/prescriptions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: visitPrescriptionFields,
+      signal,
+    },
     options,
   );
 };
 
 export const getAddVisitPrescriptionMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -219,7 +229,7 @@ export const getAddVisitPrescriptionMutationOptions = <
     { visitId: string; data: VisitPrescriptionFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addVisitPrescription>>,
   TError,
@@ -227,13 +237,13 @@ export const getAddVisitPrescriptionMutationOptions = <
   TContext
 > => {
   const mutationKey = ["addVisitPrescription"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addVisitPrescription>>,
@@ -241,7 +251,7 @@ export const getAddVisitPrescriptionMutationOptions = <
   > = (props) => {
     const { visitId, data } = props ?? {};
 
-    return addVisitPrescription(visitId, data, axiosOptions);
+    return addVisitPrescription(visitId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -251,15 +261,12 @@ export type AddVisitPrescriptionMutationResult = NonNullable<
   Awaited<ReturnType<typeof addVisitPrescription>>
 >;
 export type AddVisitPrescriptionMutationBody = VisitPrescriptionFields;
-export type AddVisitPrescriptionMutationError = AxiosError<unknown>;
+export type AddVisitPrescriptionMutationError = unknown;
 
 /**
  * @summary Add a prescription to a visit
  */
-export const useAddVisitPrescription = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(
+export const useAddVisitPrescription = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addVisitPrescription>>,
@@ -267,7 +274,7 @@ export const useAddVisitPrescription = <
       { visitId: string; data: VisitPrescriptionFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -286,16 +293,19 @@ export const useAddVisitPrescription = <
 export const deleteVisitPrescription = (
   visitId: string,
   visitPrescriptionId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<void>> => {
-  return axios.delete(
-    `/visits/${visitId}/prescriptions/${visitPrescriptionId}`,
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<void>(
+    {
+      url: `/visits/${visitId}/prescriptions/${visitPrescriptionId}`,
+      method: "DELETE",
+    },
     options,
   );
 };
 
 export const getDeleteVisitPrescriptionMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -304,7 +314,7 @@ export const getDeleteVisitPrescriptionMutationOptions = <
     { visitId: string; visitPrescriptionId: string },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof deleteVisitPrescription>>,
   TError,
@@ -312,13 +322,13 @@ export const getDeleteVisitPrescriptionMutationOptions = <
   TContext
 > => {
   const mutationKey = ["deleteVisitPrescription"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof deleteVisitPrescription>>,
@@ -326,7 +336,11 @@ export const getDeleteVisitPrescriptionMutationOptions = <
   > = (props) => {
     const { visitId, visitPrescriptionId } = props ?? {};
 
-    return deleteVisitPrescription(visitId, visitPrescriptionId, axiosOptions);
+    return deleteVisitPrescription(
+      visitId,
+      visitPrescriptionId,
+      requestOptions,
+    );
   };
 
   return { mutationFn, ...mutationOptions };
@@ -336,13 +350,13 @@ export type DeleteVisitPrescriptionMutationResult = NonNullable<
   Awaited<ReturnType<typeof deleteVisitPrescription>>
 >;
 
-export type DeleteVisitPrescriptionMutationError = AxiosError<unknown>;
+export type DeleteVisitPrescriptionMutationError = unknown;
 
 /**
  * @summary Remove a prescription from a visit
  */
 export const useDeleteVisitPrescription = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(
   options?: {
@@ -352,7 +366,7 @@ export const useDeleteVisitPrescription = <
       { visitId: string; visitPrescriptionId: string },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<

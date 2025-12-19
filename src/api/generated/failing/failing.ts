@@ -18,18 +18,23 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import type { ProblemDetail } from "../../../types/api";
 
-import type { ProblemDetail } from "../../types/api";
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary Always fails
  */
 export const failingRequest = (
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<unknown>> => {
-  return axios.get(`/oops`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<unknown>(
+    { url: `/oops`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getFailingRequestQueryKey = () => {
@@ -38,20 +43,20 @@ export const getFailingRequestQueryKey = () => {
 
 export const getFailingRequestQueryOptions = <
   TData = Awaited<ReturnType<typeof failingRequest>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(options?: {
   query?: Partial<
     UseQueryOptions<Awaited<ReturnType<typeof failingRequest>>, TError, TData>
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getFailingRequestQueryKey();
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof failingRequest>>> = ({
     signal,
-  }) => failingRequest({ signal, ...axiosOptions });
+  }) => failingRequest(requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof failingRequest>>,
@@ -63,11 +68,11 @@ export const getFailingRequestQueryOptions = <
 export type FailingRequestQueryResult = NonNullable<
   Awaited<ReturnType<typeof failingRequest>>
 >;
-export type FailingRequestQueryError = AxiosError<ProblemDetail>;
+export type FailingRequestQueryError = ProblemDetail;
 
 export function useFailingRequest<
   TData = Awaited<ReturnType<typeof failingRequest>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options: {
     query: Partial<
@@ -81,7 +86,7 @@ export function useFailingRequest<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -89,7 +94,7 @@ export function useFailingRequest<
 };
 export function useFailingRequest<
   TData = Awaited<ReturnType<typeof failingRequest>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options?: {
     query?: Partial<
@@ -103,7 +108,7 @@ export function useFailingRequest<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -111,13 +116,13 @@ export function useFailingRequest<
 };
 export function useFailingRequest<
   TData = Awaited<ReturnType<typeof failingRequest>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof failingRequest>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -129,13 +134,13 @@ export function useFailingRequest<
 
 export function useFailingRequest<
   TData = Awaited<ReturnType<typeof failingRequest>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof failingRequest>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {

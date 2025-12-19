@@ -12,15 +12,14 @@ import {
   Alert,
   Avatar,
   Container,
-  AppBar,
-  Toolbar,
   IconButton,
   InputAdornment,
 } from "@mui/material";
 import PetsIcon from "@mui/icons-material/Pets";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { useRegisterUser } from "@/api/auth/auth";
+import { useRegisterUser } from "@/api/generated/auth/auth";
+import AuthHeader from "@/components/organisms/AuthHeader";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -37,7 +36,8 @@ export default function SignupPage() {
         router.push("/auth/signin"); // 成功したらログインページへ
       },
       onError: (err: any) => {
-        setError("登録に失敗しました。入力内容を確認してください。");
+        const errorMessage = err?.response?.data?.detail || "登録に失敗しました。入力内容を確認してください。";
+        setError(errorMessage);
       },
     },
   });
@@ -56,6 +56,12 @@ export default function SignupPage() {
       return;
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(password)) {
+      setError("パスワードは大文字・小文字・数字をそれぞれ1文字以上含む必要があります。");
+      return;
+    }
+
     signup({ data: { email, password } });
   };
 
@@ -68,18 +74,7 @@ export default function SignupPage() {
 
   return (
     <>
-      <AppBar position="static" sx={{ mb: 2 }}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="home">
-            <Link href="/">
-              <PetsIcon />
-            </Link>
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            ペット管理システム
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <AuthHeader />
       <Box
         sx={{
           minHeight: "calc(100vh - 64px)",

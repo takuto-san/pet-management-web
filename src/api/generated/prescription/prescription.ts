@@ -21,27 +21,29 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   ListPrescriptionsParams,
   Prescription,
   PrescriptionFields,
   PrescriptionPage,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary List prescription master data with pagination
  */
 export const listPrescriptions = (
   params?: ListPrescriptionsParams,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<PrescriptionPage>> => {
-  return axios.get(`/prescriptions`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<PrescriptionPage>(
+    { url: `/prescriptions`, method: "GET", params, signal },
+    options,
+  );
 };
 
 export const getListPrescriptionsQueryKey = (
@@ -52,7 +54,7 @@ export const getListPrescriptionsQueryKey = (
 
 export const getListPrescriptionsQueryOptions = <
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPrescriptionsParams,
   options?: {
@@ -63,17 +65,17 @@ export const getListPrescriptionsQueryOptions = <
         TData
       >
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
     queryOptions?.queryKey ?? getListPrescriptionsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listPrescriptions>>
-  > = ({ signal }) => listPrescriptions(params, { signal, ...axiosOptions });
+  > = ({ signal }) => listPrescriptions(params, requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listPrescriptions>>,
@@ -85,11 +87,11 @@ export const getListPrescriptionsQueryOptions = <
 export type ListPrescriptionsQueryResult = NonNullable<
   Awaited<ReturnType<typeof listPrescriptions>>
 >;
-export type ListPrescriptionsQueryError = AxiosError<unknown>;
+export type ListPrescriptionsQueryError = unknown;
 
 export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params: undefined | ListPrescriptionsParams,
   options: {
@@ -108,7 +110,7 @@ export function useListPrescriptions<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -116,7 +118,7 @@ export function useListPrescriptions<
 };
 export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPrescriptionsParams,
   options?: {
@@ -135,7 +137,7 @@ export function useListPrescriptions<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -143,7 +145,7 @@ export function useListPrescriptions<
 };
 export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPrescriptionsParams,
   options?: {
@@ -154,7 +156,7 @@ export function useListPrescriptions<
         TData
       >
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -166,7 +168,7 @@ export function useListPrescriptions<
 
 export function useListPrescriptions<
   TData = Awaited<ReturnType<typeof listPrescriptions>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPrescriptionsParams,
   options?: {
@@ -177,7 +179,7 @@ export function useListPrescriptions<
         TData
       >
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -200,13 +202,23 @@ export function useListPrescriptions<
  */
 export const addPrescription = (
   prescriptionFields: PrescriptionFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Prescription>> => {
-  return axios.post(`/prescriptions`, prescriptionFields, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Prescription>(
+    {
+      url: `/prescriptions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: prescriptionFields,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getAddPrescriptionMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -215,7 +227,7 @@ export const getAddPrescriptionMutationOptions = <
     { data: PrescriptionFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addPrescription>>,
   TError,
@@ -223,13 +235,13 @@ export const getAddPrescriptionMutationOptions = <
   TContext
 > => {
   const mutationKey = ["addPrescription"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addPrescription>>,
@@ -237,7 +249,7 @@ export const getAddPrescriptionMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return addPrescription(data, axiosOptions);
+    return addPrescription(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -247,15 +259,12 @@ export type AddPrescriptionMutationResult = NonNullable<
   Awaited<ReturnType<typeof addPrescription>>
 >;
 export type AddPrescriptionMutationBody = PrescriptionFields;
-export type AddPrescriptionMutationError = AxiosError<unknown>;
+export type AddPrescriptionMutationError = unknown;
 
 /**
  * @summary Add new prescription master data
  */
-export const useAddPrescription = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(
+export const useAddPrescription = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addPrescription>>,
@@ -263,7 +272,7 @@ export const useAddPrescription = <
       { data: PrescriptionFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<

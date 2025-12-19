@@ -6,7 +6,7 @@ export default defineConfig({
       target: "../pet-management-api/src/main/resources/openapi.yml",
     },
     output: {
-      target: "./src/api",         
+      target: "./src/api/generated",         
       schemas: "./src/types/api",  
       client: "react-query",        
       httpClient: "axios",          

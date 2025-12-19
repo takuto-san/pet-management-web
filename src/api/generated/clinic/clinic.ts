@@ -21,28 +21,30 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   Clinic,
   ClinicFields,
   ClinicPage,
   ListClinicsParams,
   ProblemDetail,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary List all clinics with pagination
  */
 export const listClinics = (
   params?: ListClinicsParams,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<ClinicPage>> => {
-  return axios.get(`/clinics`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<ClinicPage>(
+    { url: `/clinics`, method: "GET", params, signal },
+    options,
+  );
 };
 
 export const getListClinicsQueryKey = (params?: ListClinicsParams) => {
@@ -51,23 +53,23 @@ export const getListClinicsQueryKey = (params?: ListClinicsParams) => {
 
 export const getListClinicsQueryOptions = <
   TData = Awaited<ReturnType<typeof listClinics>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListClinicsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListClinicsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listClinics>>> = ({
     signal,
-  }) => listClinics(params, { signal, ...axiosOptions });
+  }) => listClinics(params, requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listClinics>>,
@@ -79,11 +81,11 @@ export const getListClinicsQueryOptions = <
 export type ListClinicsQueryResult = NonNullable<
   Awaited<ReturnType<typeof listClinics>>
 >;
-export type ListClinicsQueryError = AxiosError<unknown>;
+export type ListClinicsQueryError = unknown;
 
 export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params: undefined | ListClinicsParams,
   options: {
@@ -98,7 +100,7 @@ export function useListClinics<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -106,7 +108,7 @@ export function useListClinics<
 };
 export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListClinicsParams,
   options?: {
@@ -121,7 +123,7 @@ export function useListClinics<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -129,14 +131,14 @@ export function useListClinics<
 };
 export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListClinicsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -148,14 +150,14 @@ export function useListClinics<
 
 export function useListClinics<
   TData = Awaited<ReturnType<typeof listClinics>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListClinicsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listClinics>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -178,13 +180,23 @@ export function useListClinics<
  */
 export const addClinic = (
   clinicFields: ClinicFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Clinic>> => {
-  return axios.post(`/clinics`, clinicFields, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Clinic>(
+    {
+      url: `/clinics`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: clinicFields,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getAddClinicMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -193,7 +205,7 @@ export const getAddClinicMutationOptions = <
     { data: ClinicFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addClinic>>,
   TError,
@@ -201,13 +213,13 @@ export const getAddClinicMutationOptions = <
   TContext
 > => {
   const mutationKey = ["addClinic"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addClinic>>,
@@ -215,7 +227,7 @@ export const getAddClinicMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return addClinic(data, axiosOptions);
+    return addClinic(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -225,12 +237,12 @@ export type AddClinicMutationResult = NonNullable<
   Awaited<ReturnType<typeof addClinic>>
 >;
 export type AddClinicMutationBody = ClinicFields;
-export type AddClinicMutationError = AxiosError<unknown>;
+export type AddClinicMutationError = unknown;
 
 /**
  * @summary Add a new clinic
  */
-export const useAddClinic = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useAddClinic = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addClinic>>,
@@ -238,7 +250,7 @@ export const useAddClinic = <TError = AxiosError<unknown>, TContext = unknown>(
       { data: ClinicFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -253,9 +265,13 @@ export const useAddClinic = <TError = AxiosError<unknown>, TContext = unknown>(
 };
 export const getClinic = (
   clinicId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Clinic>> => {
-  return axios.get(`/clinics/${clinicId}`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Clinic>(
+    { url: `/clinics/${clinicId}`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getGetClinicQueryKey = (clinicId?: string) => {
@@ -264,23 +280,23 @@ export const getGetClinicQueryKey = (clinicId?: string) => {
 
 export const getGetClinicQueryOptions = <
   TData = Awaited<ReturnType<typeof getClinic>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   clinicId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getClinic>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getGetClinicQueryKey(clinicId);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getClinic>>> = ({
     signal,
-  }) => getClinic(clinicId, { signal, ...axiosOptions });
+  }) => getClinic(clinicId, requestOptions, signal);
 
   return {
     queryKey,
@@ -295,11 +311,11 @@ export const getGetClinicQueryOptions = <
 export type GetClinicQueryResult = NonNullable<
   Awaited<ReturnType<typeof getClinic>>
 >;
-export type GetClinicQueryError = AxiosError<ProblemDetail>;
+export type GetClinicQueryError = ProblemDetail;
 
 export function useGetClinic<
   TData = Awaited<ReturnType<typeof getClinic>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   clinicId: string,
   options: {
@@ -314,7 +330,7 @@ export function useGetClinic<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -322,7 +338,7 @@ export function useGetClinic<
 };
 export function useGetClinic<
   TData = Awaited<ReturnType<typeof getClinic>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   clinicId: string,
   options?: {
@@ -337,7 +353,7 @@ export function useGetClinic<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -345,14 +361,14 @@ export function useGetClinic<
 };
 export function useGetClinic<
   TData = Awaited<ReturnType<typeof getClinic>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   clinicId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getClinic>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -361,14 +377,14 @@ export function useGetClinic<
 
 export function useGetClinic<
   TData = Awaited<ReturnType<typeof getClinic>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   clinicId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getClinic>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -389,13 +405,21 @@ export function useGetClinic<
 export const updateClinic = (
   clinicId: string,
   clinicFields: ClinicFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Clinic>> => {
-  return axios.put(`/clinics/${clinicId}`, clinicFields, options);
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<Clinic>(
+    {
+      url: `/clinics/${clinicId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: clinicFields,
+    },
+    options,
+  );
 };
 
 export const getUpdateClinicMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -404,7 +428,7 @@ export const getUpdateClinicMutationOptions = <
     { clinicId: string; data: ClinicFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof updateClinic>>,
   TError,
@@ -412,13 +436,13 @@ export const getUpdateClinicMutationOptions = <
   TContext
 > => {
   const mutationKey = ["updateClinic"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof updateClinic>>,
@@ -426,7 +450,7 @@ export const getUpdateClinicMutationOptions = <
   > = (props) => {
     const { clinicId, data } = props ?? {};
 
-    return updateClinic(clinicId, data, axiosOptions);
+    return updateClinic(clinicId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -436,12 +460,9 @@ export type UpdateClinicMutationResult = NonNullable<
   Awaited<ReturnType<typeof updateClinic>>
 >;
 export type UpdateClinicMutationBody = ClinicFields;
-export type UpdateClinicMutationError = AxiosError<unknown>;
+export type UpdateClinicMutationError = unknown;
 
-export const useUpdateClinic = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(
+export const useUpdateClinic = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updateClinic>>,
@@ -449,7 +470,7 @@ export const useUpdateClinic = <
       { clinicId: string; data: ClinicFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -464,13 +485,16 @@ export const useUpdateClinic = <
 };
 export const deleteClinic = (
   clinicId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<void>> => {
-  return axios.delete(`/clinics/${clinicId}`, options);
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<void>(
+    { url: `/clinics/${clinicId}`, method: "DELETE" },
+    options,
+  );
 };
 
 export const getDeleteClinicMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -479,7 +503,7 @@ export const getDeleteClinicMutationOptions = <
     { clinicId: string },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof deleteClinic>>,
   TError,
@@ -487,13 +511,13 @@ export const getDeleteClinicMutationOptions = <
   TContext
 > => {
   const mutationKey = ["deleteClinic"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof deleteClinic>>,
@@ -501,7 +525,7 @@ export const getDeleteClinicMutationOptions = <
   > = (props) => {
     const { clinicId } = props ?? {};
 
-    return deleteClinic(clinicId, axiosOptions);
+    return deleteClinic(clinicId, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -511,12 +535,9 @@ export type DeleteClinicMutationResult = NonNullable<
   Awaited<ReturnType<typeof deleteClinic>>
 >;
 
-export type DeleteClinicMutationError = AxiosError<unknown>;
+export type DeleteClinicMutationError = unknown;
 
-export const useDeleteClinic = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(
+export const useDeleteClinic = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof deleteClinic>>,
@@ -524,7 +545,7 @@ export const useDeleteClinic = <
       { clinicId: string },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<

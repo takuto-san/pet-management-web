@@ -21,28 +21,30 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   ListPetsParams,
   Pet,
   PetFields,
   PetPage,
   ProblemDetail,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary Lists all pets with pagination
  */
 export const listPets = (
   params?: ListPetsParams,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<PetPage>> => {
-  return axios.get(`/pets`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<PetPage>(
+    { url: `/pets`, method: "GET", params, signal },
+    options,
+  );
 };
 
 export const getListPetsQueryKey = (params?: ListPetsParams) => {
@@ -51,23 +53,23 @@ export const getListPetsQueryKey = (params?: ListPetsParams) => {
 
 export const getListPetsQueryOptions = <
   TData = Awaited<ReturnType<typeof listPets>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPetsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listPets>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListPetsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listPets>>> = ({
     signal,
-  }) => listPets(params, { signal, ...axiosOptions });
+  }) => listPets(params, requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listPets>>,
@@ -79,11 +81,11 @@ export const getListPetsQueryOptions = <
 export type ListPetsQueryResult = NonNullable<
   Awaited<ReturnType<typeof listPets>>
 >;
-export type ListPetsQueryError = AxiosError<unknown>;
+export type ListPetsQueryError = unknown;
 
 export function useListPets<
   TData = Awaited<ReturnType<typeof listPets>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params: undefined | ListPetsParams,
   options: {
@@ -98,7 +100,7 @@ export function useListPets<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -106,7 +108,7 @@ export function useListPets<
 };
 export function useListPets<
   TData = Awaited<ReturnType<typeof listPets>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPetsParams,
   options?: {
@@ -121,7 +123,7 @@ export function useListPets<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -129,14 +131,14 @@ export function useListPets<
 };
 export function useListPets<
   TData = Awaited<ReturnType<typeof listPets>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPetsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listPets>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -148,14 +150,14 @@ export function useListPets<
 
 export function useListPets<
   TData = Awaited<ReturnType<typeof listPets>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListPetsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listPets>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -178,13 +180,23 @@ export function useListPets<
  */
 export const addPet = (
   petFields: PetFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Pet>> => {
-  return axios.post(`/pets`, petFields, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Pet>(
+    {
+      url: `/pets`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: petFields,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getAddPetMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -193,7 +205,7 @@ export const getAddPetMutationOptions = <
     { data: PetFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addPet>>,
   TError,
@@ -201,13 +213,13 @@ export const getAddPetMutationOptions = <
   TContext
 > => {
   const mutationKey = ["addPet"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addPet>>,
@@ -215,7 +227,7 @@ export const getAddPetMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return addPet(data, axiosOptions);
+    return addPet(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -225,12 +237,12 @@ export type AddPetMutationResult = NonNullable<
   Awaited<ReturnType<typeof addPet>>
 >;
 export type AddPetMutationBody = PetFields;
-export type AddPetMutationError = AxiosError<unknown>;
+export type AddPetMutationError = unknown;
 
 /**
  * @summary Add a new pet
  */
-export const useAddPet = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useAddPet = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addPet>>,
@@ -238,7 +250,7 @@ export const useAddPet = <TError = AxiosError<unknown>, TContext = unknown>(
       { data: PetFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -253,9 +265,13 @@ export const useAddPet = <TError = AxiosError<unknown>, TContext = unknown>(
 };
 export const getPet = (
   petId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Pet>> => {
-  return axios.get(`/pets/${petId}`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Pet>(
+    { url: `/pets/${petId}`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getGetPetQueryKey = (petId?: string) => {
@@ -264,23 +280,23 @@ export const getGetPetQueryKey = (petId?: string) => {
 
 export const getGetPetQueryOptions = <
   TData = Awaited<ReturnType<typeof getPet>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   petId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getPet>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getGetPetQueryKey(petId);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getPet>>> = ({
     signal,
-  }) => getPet(petId, { signal, ...axiosOptions });
+  }) => getPet(petId, requestOptions, signal);
 
   return {
     queryKey,
@@ -293,11 +309,11 @@ export const getGetPetQueryOptions = <
 };
 
 export type GetPetQueryResult = NonNullable<Awaited<ReturnType<typeof getPet>>>;
-export type GetPetQueryError = AxiosError<ProblemDetail>;
+export type GetPetQueryError = ProblemDetail;
 
 export function useGetPet<
   TData = Awaited<ReturnType<typeof getPet>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   petId: string,
   options: {
@@ -312,7 +328,7 @@ export function useGetPet<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -320,7 +336,7 @@ export function useGetPet<
 };
 export function useGetPet<
   TData = Awaited<ReturnType<typeof getPet>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   petId: string,
   options?: {
@@ -335,7 +351,7 @@ export function useGetPet<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -343,14 +359,14 @@ export function useGetPet<
 };
 export function useGetPet<
   TData = Awaited<ReturnType<typeof getPet>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   petId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getPet>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -359,14 +375,14 @@ export function useGetPet<
 
 export function useGetPet<
   TData = Awaited<ReturnType<typeof getPet>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   petId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getPet>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -387,13 +403,21 @@ export function useGetPet<
 export const updatePet = (
   petId: string,
   petFields: PetFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Pet>> => {
-  return axios.put(`/pets/${petId}`, petFields, options);
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<Pet>(
+    {
+      url: `/pets/${petId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: petFields,
+    },
+    options,
+  );
 };
 
 export const getUpdatePetMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -402,7 +426,7 @@ export const getUpdatePetMutationOptions = <
     { petId: string; data: PetFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof updatePet>>,
   TError,
@@ -410,13 +434,13 @@ export const getUpdatePetMutationOptions = <
   TContext
 > => {
   const mutationKey = ["updatePet"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof updatePet>>,
@@ -424,7 +448,7 @@ export const getUpdatePetMutationOptions = <
   > = (props) => {
     const { petId, data } = props ?? {};
 
-    return updatePet(petId, data, axiosOptions);
+    return updatePet(petId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -434,9 +458,9 @@ export type UpdatePetMutationResult = NonNullable<
   Awaited<ReturnType<typeof updatePet>>
 >;
 export type UpdatePetMutationBody = PetFields;
-export type UpdatePetMutationError = AxiosError<unknown>;
+export type UpdatePetMutationError = unknown;
 
-export const useUpdatePet = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useUpdatePet = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updatePet>>,
@@ -444,7 +468,7 @@ export const useUpdatePet = <TError = AxiosError<unknown>, TContext = unknown>(
       { petId: string; data: PetFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -459,13 +483,16 @@ export const useUpdatePet = <TError = AxiosError<unknown>, TContext = unknown>(
 };
 export const deletePet = (
   petId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<void>> => {
-  return axios.delete(`/pets/${petId}`, options);
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<void>(
+    { url: `/pets/${petId}`, method: "DELETE" },
+    options,
+  );
 };
 
 export const getDeletePetMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -474,7 +501,7 @@ export const getDeletePetMutationOptions = <
     { petId: string },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof deletePet>>,
   TError,
@@ -482,13 +509,13 @@ export const getDeletePetMutationOptions = <
   TContext
 > => {
   const mutationKey = ["deletePet"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof deletePet>>,
@@ -496,7 +523,7 @@ export const getDeletePetMutationOptions = <
   > = (props) => {
     const { petId } = props ?? {};
 
-    return deletePet(petId, axiosOptions);
+    return deletePet(petId, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -506,9 +533,9 @@ export type DeletePetMutationResult = NonNullable<
   Awaited<ReturnType<typeof deletePet>>
 >;
 
-export type DeletePetMutationError = AxiosError<unknown>;
+export type DeletePetMutationError = unknown;
 
-export const useDeletePet = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useDeletePet = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof deletePet>>,
@@ -516,7 +543,7 @@ export const useDeletePet = <TError = AxiosError<unknown>, TContext = unknown>(
       { petId: string },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<

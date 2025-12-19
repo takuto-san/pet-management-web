@@ -21,28 +21,30 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   ListVisitsParams,
   ProblemDetail,
   Visit,
   VisitFields,
   VisitPage,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary List visits with pagination (can filter by petId)
  */
 export const listVisits = (
   params?: ListVisitsParams,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<VisitPage>> => {
-  return axios.get(`/visits`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<VisitPage>(
+    { url: `/visits`, method: "GET", params, signal },
+    options,
+  );
 };
 
 export const getListVisitsQueryKey = (params?: ListVisitsParams) => {
@@ -51,23 +53,23 @@ export const getListVisitsQueryKey = (params?: ListVisitsParams) => {
 
 export const getListVisitsQueryOptions = <
   TData = Awaited<ReturnType<typeof listVisits>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListVisitsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listVisits>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListVisitsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listVisits>>> = ({
     signal,
-  }) => listVisits(params, { signal, ...axiosOptions });
+  }) => listVisits(params, requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listVisits>>,
@@ -79,11 +81,11 @@ export const getListVisitsQueryOptions = <
 export type ListVisitsQueryResult = NonNullable<
   Awaited<ReturnType<typeof listVisits>>
 >;
-export type ListVisitsQueryError = AxiosError<unknown>;
+export type ListVisitsQueryError = unknown;
 
 export function useListVisits<
   TData = Awaited<ReturnType<typeof listVisits>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params: undefined | ListVisitsParams,
   options: {
@@ -98,7 +100,7 @@ export function useListVisits<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -106,7 +108,7 @@ export function useListVisits<
 };
 export function useListVisits<
   TData = Awaited<ReturnType<typeof listVisits>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListVisitsParams,
   options?: {
@@ -121,7 +123,7 @@ export function useListVisits<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -129,14 +131,14 @@ export function useListVisits<
 };
 export function useListVisits<
   TData = Awaited<ReturnType<typeof listVisits>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListVisitsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listVisits>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -148,14 +150,14 @@ export function useListVisits<
 
 export function useListVisits<
   TData = Awaited<ReturnType<typeof listVisits>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListVisitsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listVisits>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -178,13 +180,23 @@ export function useListVisits<
  */
 export const addVisit = (
   visitFields: VisitFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Visit>> => {
-  return axios.post(`/visits`, visitFields, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Visit>(
+    {
+      url: `/visits`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: visitFields,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getAddVisitMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -193,7 +205,7 @@ export const getAddVisitMutationOptions = <
     { data: VisitFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addVisit>>,
   TError,
@@ -201,13 +213,13 @@ export const getAddVisitMutationOptions = <
   TContext
 > => {
   const mutationKey = ["addVisit"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addVisit>>,
@@ -215,7 +227,7 @@ export const getAddVisitMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return addVisit(data, axiosOptions);
+    return addVisit(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -225,12 +237,12 @@ export type AddVisitMutationResult = NonNullable<
   Awaited<ReturnType<typeof addVisit>>
 >;
 export type AddVisitMutationBody = VisitFields;
-export type AddVisitMutationError = AxiosError<unknown>;
+export type AddVisitMutationError = unknown;
 
 /**
  * @summary Record a new visit
  */
-export const useAddVisit = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useAddVisit = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addVisit>>,
@@ -238,7 +250,7 @@ export const useAddVisit = <TError = AxiosError<unknown>, TContext = unknown>(
       { data: VisitFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -253,9 +265,13 @@ export const useAddVisit = <TError = AxiosError<unknown>, TContext = unknown>(
 };
 export const getVisit = (
   visitId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Visit>> => {
-  return axios.get(`/visits/${visitId}`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Visit>(
+    { url: `/visits/${visitId}`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getGetVisitQueryKey = (visitId?: string) => {
@@ -264,23 +280,23 @@ export const getGetVisitQueryKey = (visitId?: string) => {
 
 export const getGetVisitQueryOptions = <
   TData = Awaited<ReturnType<typeof getVisit>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   visitId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getVisit>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getGetVisitQueryKey(visitId);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getVisit>>> = ({
     signal,
-  }) => getVisit(visitId, { signal, ...axiosOptions });
+  }) => getVisit(visitId, requestOptions, signal);
 
   return {
     queryKey,
@@ -295,11 +311,11 @@ export const getGetVisitQueryOptions = <
 export type GetVisitQueryResult = NonNullable<
   Awaited<ReturnType<typeof getVisit>>
 >;
-export type GetVisitQueryError = AxiosError<ProblemDetail>;
+export type GetVisitQueryError = ProblemDetail;
 
 export function useGetVisit<
   TData = Awaited<ReturnType<typeof getVisit>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   visitId: string,
   options: {
@@ -314,7 +330,7 @@ export function useGetVisit<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -322,7 +338,7 @@ export function useGetVisit<
 };
 export function useGetVisit<
   TData = Awaited<ReturnType<typeof getVisit>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   visitId: string,
   options?: {
@@ -337,7 +353,7 @@ export function useGetVisit<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -345,14 +361,14 @@ export function useGetVisit<
 };
 export function useGetVisit<
   TData = Awaited<ReturnType<typeof getVisit>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   visitId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getVisit>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -361,14 +377,14 @@ export function useGetVisit<
 
 export function useGetVisit<
   TData = Awaited<ReturnType<typeof getVisit>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   visitId: string,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getVisit>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -389,13 +405,21 @@ export function useGetVisit<
 export const updateVisit = (
   visitId: string,
   visitFields: VisitFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Visit>> => {
-  return axios.put(`/visits/${visitId}`, visitFields, options);
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<Visit>(
+    {
+      url: `/visits/${visitId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: visitFields,
+    },
+    options,
+  );
 };
 
 export const getUpdateVisitMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -404,7 +428,7 @@ export const getUpdateVisitMutationOptions = <
     { visitId: string; data: VisitFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof updateVisit>>,
   TError,
@@ -412,13 +436,13 @@ export const getUpdateVisitMutationOptions = <
   TContext
 > => {
   const mutationKey = ["updateVisit"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof updateVisit>>,
@@ -426,7 +450,7 @@ export const getUpdateVisitMutationOptions = <
   > = (props) => {
     const { visitId, data } = props ?? {};
 
-    return updateVisit(visitId, data, axiosOptions);
+    return updateVisit(visitId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -436,12 +460,9 @@ export type UpdateVisitMutationResult = NonNullable<
   Awaited<ReturnType<typeof updateVisit>>
 >;
 export type UpdateVisitMutationBody = VisitFields;
-export type UpdateVisitMutationError = AxiosError<unknown>;
+export type UpdateVisitMutationError = unknown;
 
-export const useUpdateVisit = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(
+export const useUpdateVisit = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updateVisit>>,
@@ -449,7 +470,7 @@ export const useUpdateVisit = <
       { visitId: string; data: VisitFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -464,13 +485,16 @@ export const useUpdateVisit = <
 };
 export const deleteVisit = (
   visitId: string,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<void>> => {
-  return axios.delete(`/visits/${visitId}`, options);
+  options?: SecondParameter<typeof customInstance>,
+) => {
+  return customInstance<void>(
+    { url: `/visits/${visitId}`, method: "DELETE" },
+    options,
+  );
 };
 
 export const getDeleteVisitMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -479,7 +503,7 @@ export const getDeleteVisitMutationOptions = <
     { visitId: string },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof deleteVisit>>,
   TError,
@@ -487,13 +511,13 @@ export const getDeleteVisitMutationOptions = <
   TContext
 > => {
   const mutationKey = ["deleteVisit"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof deleteVisit>>,
@@ -501,7 +525,7 @@ export const getDeleteVisitMutationOptions = <
   > = (props) => {
     const { visitId } = props ?? {};
 
-    return deleteVisit(visitId, axiosOptions);
+    return deleteVisit(visitId, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -511,12 +535,9 @@ export type DeleteVisitMutationResult = NonNullable<
   Awaited<ReturnType<typeof deleteVisit>>
 >;
 
-export type DeleteVisitMutationError = AxiosError<unknown>;
+export type DeleteVisitMutationError = unknown;
 
-export const useDeleteVisit = <
-  TError = AxiosError<unknown>,
-  TContext = unknown,
->(
+export const useDeleteVisit = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof deleteVisit>>,
@@ -524,7 +545,7 @@ export const useDeleteVisit = <
       { visitId: string },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<

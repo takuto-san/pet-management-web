@@ -18,18 +18,23 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import type { PetType } from "../../../types/api";
 
-import type { PetType } from "../../types/api";
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary Get allowed pet types
  */
 export const listPetTypes = (
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<PetType[]>> => {
-  return axios.get(`/pettypes`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<PetType[]>(
+    { url: `/pettypes`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getListPetTypesQueryKey = () => {
@@ -38,20 +43,20 @@ export const getListPetTypesQueryKey = () => {
 
 export const getListPetTypesQueryOptions = <
   TData = Awaited<ReturnType<typeof listPetTypes>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(options?: {
   query?: Partial<
     UseQueryOptions<Awaited<ReturnType<typeof listPetTypes>>, TError, TData>
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListPetTypesQueryKey();
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listPetTypes>>> = ({
     signal,
-  }) => listPetTypes({ signal, ...axiosOptions });
+  }) => listPetTypes(requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listPetTypes>>,
@@ -63,11 +68,11 @@ export const getListPetTypesQueryOptions = <
 export type ListPetTypesQueryResult = NonNullable<
   Awaited<ReturnType<typeof listPetTypes>>
 >;
-export type ListPetTypesQueryError = AxiosError<unknown>;
+export type ListPetTypesQueryError = unknown;
 
 export function useListPetTypes<
   TData = Awaited<ReturnType<typeof listPetTypes>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   options: {
     query: Partial<
@@ -81,7 +86,7 @@ export function useListPetTypes<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -89,7 +94,7 @@ export function useListPetTypes<
 };
 export function useListPetTypes<
   TData = Awaited<ReturnType<typeof listPetTypes>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   options?: {
     query?: Partial<
@@ -103,7 +108,7 @@ export function useListPetTypes<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -111,13 +116,13 @@ export function useListPetTypes<
 };
 export function useListPetTypes<
   TData = Awaited<ReturnType<typeof listPetTypes>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listPetTypes>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -129,13 +134,13 @@ export function useListPetTypes<
 
 export function useListPetTypes<
   TData = Awaited<ReturnType<typeof listPetTypes>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listPetTypes>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {

@@ -13,17 +13,16 @@ import {
   Alert,
   Avatar,
   Container,
-  AppBar,
-  Toolbar,
   IconButton,
   InputAdornment,
 } from "@mui/material";
 import PetsIcon from "@mui/icons-material/Pets";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { useAuthenticateUser, useGetCurrentUser } from "@/api/auth/auth";
+import { useAuthenticateUser, useGetCurrentUser } from "@/api/generated/auth/auth";
 import { setsigninPending, setUser } from "@/stores/slices/userSlice";
 import type { RootState } from "@/lib/stores/store";
+import AuthHeader from "@/components/organisms/AuthHeader";
 
 export default function SigninPage() {
   const [email, setEmail] = useState("");
@@ -36,11 +35,16 @@ export default function SigninPage() {
 
   const { mutate: signin, isPending } = useAuthenticateUser({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        localStorage.setItem("token", data.accessToken);
+        if (data.refreshToken) {
+          localStorage.setItem("refreshToken", data.refreshToken);
+        }
         dispatch(setsigninPending());
       },
       onError: (err: any) => {
-        setError("ログインに失敗しました。メールアドレスとパスワードを確認してください。");
+        const errorMessage = err?.response?.data?.detail || "ログインに失敗しました。メールアドレスとパスワードを確認してください。";
+        setError(errorMessage);
       },
     },
   });
@@ -52,14 +56,14 @@ export default function SigninPage() {
   });
 
   useEffect(() => {
-    if (userData?.data) {
+    if (userData) {
       dispatch(setUser({
-        id: userData.data.id,
-        email: userData.data.email,
-        username: userData.data.username,
+        id: userData.id,
+        email: userData.email,
+        username: userData.username,
       }));
-      if (userData.data.username) {
-        router.push(`/${userData.data.username}`);
+      if (userData.username) {
+        router.push(`/${userData.username}`);
       }
     }
   }, [userData, dispatch, router]);
@@ -67,6 +71,12 @@ export default function SigninPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!password) {
+      setError("パスワードを入力してください。");
+      return;
+    }
+
     signin({ data: { email, password } });
   };
 
@@ -78,18 +88,7 @@ export default function SigninPage() {
 
   return (
     <>
-      <AppBar position="static" sx={{ mb: 2 }}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="home">
-            <Link href="/">
-              <PetsIcon />
-            </Link>
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            ペット管理システム
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <AuthHeader />
       <Box
         sx={{
           minHeight: "calc(100vh - 64px)", // AppBarの高さを引く

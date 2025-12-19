@@ -21,9 +21,6 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   JwtResponse,
   ProblemDetail,
@@ -34,7 +31,11 @@ import type {
   TokenRefreshRequest,
   TokenRefreshResponse,
   UserResponse,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * Returns JWT access token and refresh token.
@@ -42,13 +43,23 @@ import type {
  */
 export const authenticateUser = (
   signinRequest: SigninRequest,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<JwtResponse>> => {
-  return axios.post(`/auth/signin`, signinRequest, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<JwtResponse>(
+    {
+      url: `/auth/signin`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: signinRequest,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getAuthenticateUserMutationOptions = <
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -57,7 +68,7 @@ export const getAuthenticateUserMutationOptions = <
     { data: SigninRequest },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof authenticateUser>>,
   TError,
@@ -65,13 +76,13 @@ export const getAuthenticateUserMutationOptions = <
   TContext
 > => {
   const mutationKey = ["authenticateUser"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof authenticateUser>>,
@@ -79,7 +90,7 @@ export const getAuthenticateUserMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return authenticateUser(data, axiosOptions);
+    return authenticateUser(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -89,15 +100,12 @@ export type AuthenticateUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof authenticateUser>>
 >;
 export type AuthenticateUserMutationBody = SigninRequest;
-export type AuthenticateUserMutationError = AxiosError<ProblemDetail>;
+export type AuthenticateUserMutationError = ProblemDetail;
 
 /**
  * @summary Sign in with Email and Password
  */
-export const useAuthenticateUser = <
-  TError = AxiosError<ProblemDetail>,
-  TContext = unknown,
->(
+export const useAuthenticateUser = <TError = ProblemDetail, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof authenticateUser>>,
@@ -105,7 +113,7 @@ export const useAuthenticateUser = <
       { data: SigninRequest },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -123,13 +131,23 @@ export const useAuthenticateUser = <
  */
 export const registerUser = (
   signupRequest: SignupRequest,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<SignupResponse>> => {
-  return axios.post(`/auth/signup`, signupRequest, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<SignupResponse>(
+    {
+      url: `/auth/signup`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: signupRequest,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getRegisterUserMutationOptions = <
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -138,7 +156,7 @@ export const getRegisterUserMutationOptions = <
     { data: SignupRequest },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof registerUser>>,
   TError,
@@ -146,13 +164,13 @@ export const getRegisterUserMutationOptions = <
   TContext
 > => {
   const mutationKey = ["registerUser"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof registerUser>>,
@@ -160,7 +178,7 @@ export const getRegisterUserMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return registerUser(data, axiosOptions);
+    return registerUser(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -170,15 +188,12 @@ export type RegisterUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof registerUser>>
 >;
 export type RegisterUserMutationBody = SignupRequest;
-export type RegisterUserMutationError = AxiosError<ProblemDetail>;
+export type RegisterUserMutationError = ProblemDetail;
 
 /**
  * @summary Register a new user (Public)
  */
-export const useRegisterUser = <
-  TError = AxiosError<ProblemDetail>,
-  TContext = unknown,
->(
+export const useRegisterUser = <TError = ProblemDetail, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof registerUser>>,
@@ -186,7 +201,7 @@ export const useRegisterUser = <
       { data: SignupRequest },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -204,9 +219,13 @@ export const useRegisterUser = <
  * @summary Get current authenticated user details
  */
 export const getCurrentUser = (
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<UserResponse>> => {
-  return axios.get(`/auth/me`, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<UserResponse>(
+    { url: `/auth/me`, method: "GET", signal },
+    options,
+  );
 };
 
 export const getGetCurrentUserQueryKey = () => {
@@ -215,20 +234,20 @@ export const getGetCurrentUserQueryKey = () => {
 
 export const getGetCurrentUserQueryOptions = <
   TData = Awaited<ReturnType<typeof getCurrentUser>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(options?: {
   query?: Partial<
     UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({
     signal,
-  }) => getCurrentUser({ signal, ...axiosOptions });
+  }) => getCurrentUser(requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getCurrentUser>>,
@@ -240,11 +259,11 @@ export const getGetCurrentUserQueryOptions = <
 export type GetCurrentUserQueryResult = NonNullable<
   Awaited<ReturnType<typeof getCurrentUser>>
 >;
-export type GetCurrentUserQueryError = AxiosError<ProblemDetail>;
+export type GetCurrentUserQueryError = ProblemDetail;
 
 export function useGetCurrentUser<
   TData = Awaited<ReturnType<typeof getCurrentUser>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options: {
     query: Partial<
@@ -258,7 +277,7 @@ export function useGetCurrentUser<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -266,7 +285,7 @@ export function useGetCurrentUser<
 };
 export function useGetCurrentUser<
   TData = Awaited<ReturnType<typeof getCurrentUser>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options?: {
     query?: Partial<
@@ -280,7 +299,7 @@ export function useGetCurrentUser<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -288,13 +307,13 @@ export function useGetCurrentUser<
 };
 export function useGetCurrentUser<
   TData = Awaited<ReturnType<typeof getCurrentUser>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -306,13 +325,13 @@ export function useGetCurrentUser<
 
 export function useGetCurrentUser<
   TData = Awaited<ReturnType<typeof getCurrentUser>>,
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
 >(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -336,13 +355,23 @@ export function useGetCurrentUser<
  */
 export const refreshToken = (
   tokenRefreshRequest: TokenRefreshRequest,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<TokenRefreshResponse>> => {
-  return axios.post(`/auth/refreshtoken`, tokenRefreshRequest, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<TokenRefreshResponse>(
+    {
+      url: `/auth/refreshtoken`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: tokenRefreshRequest,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getRefreshTokenMutationOptions = <
-  TError = AxiosError<ProblemDetail>,
+  TError = ProblemDetail,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -351,7 +380,7 @@ export const getRefreshTokenMutationOptions = <
     { data: TokenRefreshRequest },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof refreshToken>>,
   TError,
@@ -359,13 +388,13 @@ export const getRefreshTokenMutationOptions = <
   TContext
 > => {
   const mutationKey = ["refreshToken"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof refreshToken>>,
@@ -373,7 +402,7 @@ export const getRefreshTokenMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return refreshToken(data, axiosOptions);
+    return refreshToken(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -383,15 +412,12 @@ export type RefreshTokenMutationResult = NonNullable<
   Awaited<ReturnType<typeof refreshToken>>
 >;
 export type RefreshTokenMutationBody = TokenRefreshRequest;
-export type RefreshTokenMutationError = AxiosError<ProblemDetail>;
+export type RefreshTokenMutationError = ProblemDetail;
 
 /**
  * @summary Refresh Access Token
  */
-export const useRefreshToken = <
-  TError = AxiosError<ProblemDetail>,
-  TContext = unknown,
->(
+export const useRefreshToken = <TError = ProblemDetail, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof refreshToken>>,
@@ -399,7 +425,7 @@ export const useRefreshToken = <
       { data: TokenRefreshRequest },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
@@ -416,13 +442,17 @@ export const useRefreshToken = <
  * @summary Log out user
  */
 export const logoutUser = (
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<SignoutResponse>> => {
-  return axios.post(`/auth/signout`, undefined, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<SignoutResponse>(
+    { url: `/auth/signout`, method: "POST", signal },
+    options,
+  );
 };
 
 export const getLogoutUserMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -431,7 +461,7 @@ export const getLogoutUserMutationOptions = <
     void,
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof logoutUser>>,
   TError,
@@ -439,19 +469,19 @@ export const getLogoutUserMutationOptions = <
   TContext
 > => {
   const mutationKey = ["logoutUser"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof logoutUser>>,
     void
   > = () => {
-    return logoutUser(axiosOptions);
+    return logoutUser(requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -461,12 +491,12 @@ export type LogoutUserMutationResult = NonNullable<
   Awaited<ReturnType<typeof logoutUser>>
 >;
 
-export type LogoutUserMutationError = AxiosError<unknown>;
+export type LogoutUserMutationError = unknown;
 
 /**
  * @summary Log out user
  */
-export const useLogoutUser = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useLogoutUser = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof logoutUser>>,
@@ -474,7 +504,7 @@ export const useLogoutUser = <TError = AxiosError<unknown>, TContext = unknown>(
       void,
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<

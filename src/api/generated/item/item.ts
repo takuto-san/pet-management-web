@@ -21,27 +21,29 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-
 import type {
   Item,
   ItemFields,
   ItemPage,
   ListItemsParams,
-} from "../../types/api";
+} from "../../../types/api";
+
+import { customInstance } from "../../mutator/custom-instance";
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary List item master data with pagination
  */
 export const listItems = (
   params?: ListItemsParams,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<ItemPage>> => {
-  return axios.get(`/items`, {
-    ...options,
-    params: { ...params, ...options?.params },
-  });
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<ItemPage>(
+    { url: `/items`, method: "GET", params, signal },
+    options,
+  );
 };
 
 export const getListItemsQueryKey = (params?: ListItemsParams) => {
@@ -50,23 +52,23 @@ export const getListItemsQueryKey = (params?: ListItemsParams) => {
 
 export const getListItemsQueryOptions = <
   TData = Awaited<ReturnType<typeof listItems>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListItemsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
 ) => {
-  const { query: queryOptions, axios: axiosOptions } = options ?? {};
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListItemsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listItems>>> = ({
     signal,
-  }) => listItems(params, { signal, ...axiosOptions });
+  }) => listItems(params, requestOptions, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listItems>>,
@@ -78,11 +80,11 @@ export const getListItemsQueryOptions = <
 export type ListItemsQueryResult = NonNullable<
   Awaited<ReturnType<typeof listItems>>
 >;
-export type ListItemsQueryError = AxiosError<unknown>;
+export type ListItemsQueryError = unknown;
 
 export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params: undefined | ListItemsParams,
   options: {
@@ -97,7 +99,7 @@ export function useListItems<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & {
@@ -105,7 +107,7 @@ export function useListItems<
 };
 export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListItemsParams,
   options?: {
@@ -120,7 +122,7 @@ export function useListItems<
         >,
         "initialData"
       >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -128,14 +130,14 @@ export function useListItems<
 };
 export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListItemsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -147,14 +149,14 @@ export function useListItems<
 
 export function useListItems<
   TData = Awaited<ReturnType<typeof listItems>>,
-  TError = AxiosError<unknown>,
+  TError = unknown,
 >(
   params?: ListItemsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof listItems>>, TError, TData>
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
@@ -177,13 +179,23 @@ export function useListItems<
  */
 export const addItem = (
   itemFields: ItemFields,
-  options?: AxiosRequestConfig,
-): Promise<AxiosResponse<Item>> => {
-  return axios.post(`/items`, itemFields, options);
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Item>(
+    {
+      url: `/items`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: itemFields,
+      signal,
+    },
+    options,
+  );
 };
 
 export const getAddItemMutationOptions = <
-  TError = AxiosError<unknown>,
+  TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -192,7 +204,7 @@ export const getAddItemMutationOptions = <
     { data: ItemFields },
     TContext
   >;
-  axios?: AxiosRequestConfig;
+  request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof addItem>>,
   TError,
@@ -200,13 +212,13 @@ export const getAddItemMutationOptions = <
   TContext
 > => {
   const mutationKey = ["addItem"];
-  const { mutation: mutationOptions, axios: axiosOptions } = options
+  const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
       options.mutation.mutationKey
       ? options
       : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, axios: undefined };
+    : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof addItem>>,
@@ -214,7 +226,7 @@ export const getAddItemMutationOptions = <
   > = (props) => {
     const { data } = props ?? {};
 
-    return addItem(data, axiosOptions);
+    return addItem(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -224,12 +236,12 @@ export type AddItemMutationResult = NonNullable<
   Awaited<ReturnType<typeof addItem>>
 >;
 export type AddItemMutationBody = ItemFields;
-export type AddItemMutationError = AxiosError<unknown>;
+export type AddItemMutationError = unknown;
 
 /**
  * @summary Add new item master data
  */
-export const useAddItem = <TError = AxiosError<unknown>, TContext = unknown>(
+export const useAddItem = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof addItem>>,
@@ -237,7 +249,7 @@ export const useAddItem = <TError = AxiosError<unknown>, TContext = unknown>(
       { data: ItemFields },
       TContext
     >;
-    axios?: AxiosRequestConfig;
+    request?: SecondParameter<typeof customInstance>;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
