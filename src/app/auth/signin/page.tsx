@@ -29,6 +29,7 @@ export default function SigninPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const router = useRouter();
   const dispatch = useDispatch();
   const signinPending = useSelector((state: RootState) => state.user.signinPending);
@@ -36,6 +37,7 @@ export default function SigninPage() {
   const { mutate: signin, isPending } = useAuthenticateUser({
     mutation: {
       onSuccess: (data) => {
+        setSuccess("ログインに成功しました！");
         localStorage.setItem("token", data.accessToken);
         if (data.refreshToken) {
           localStorage.setItem("refreshToken", data.refreshToken);
@@ -43,7 +45,15 @@ export default function SigninPage() {
         dispatch(setsigninPending());
       },
       onError: (err: any) => {
-        const errorMessage = err?.response?.data?.detail || "ログインに失敗しました。メールアドレスとパスワードを確認してください。";
+        const status = err?.response?.status;
+        let errorMessage = "ログインに失敗しました。メールアドレスとパスワードを確認してください。";
+        if (status === 401) {
+          errorMessage = "メールアドレスまたはパスワードが間違っています。";
+        } else if (status === 400) {
+          errorMessage = "入力内容を確認してください。";
+        } else if (err?.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        }
         setError(errorMessage);
       },
     },
@@ -71,6 +81,7 @@ export default function SigninPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!password) {
       setError("パスワードを入力してください。");
@@ -130,6 +141,13 @@ export default function SigninPage() {
               アカウントにログインして、ペットの管理を始めましょう
             </Typography>
           </Box>
+
+          {/* Success Message */}
+          {success && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              {success}
+            </Alert>
+          )}
 
           {/* Error Message */}
           {error && (

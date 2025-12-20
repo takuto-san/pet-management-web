@@ -28,16 +28,22 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const router = useRouter();
 
   const { mutate: signup, isPending } = useRegisterUser({
     mutation: {
-      onSuccess: () => {
-        router.push("/auth/signin"); // 成功したらログインページへ
+      onSuccess: (data) => {
+        setSuccessMessage(`アカウントが作成されました。${data.email} で登録されました。ログインしてください。`);
+        setError("");
+        setTimeout(() => {
+          router.push("/auth/signin");
+        }, 3000); // 3秒後にリダイレクト
       },
       onError: (err: any) => {
         const errorMessage = err?.response?.data?.detail || "登録に失敗しました。入力内容を確認してください。";
         setError(errorMessage);
+        setSuccessMessage("");
       },
     },
   });
@@ -121,6 +127,13 @@ export default function SignupPage() {
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
+            </Alert>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              {successMessage}
             </Alert>
           )}
 
