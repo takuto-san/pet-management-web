@@ -1,6 +1,7 @@
 import { geistSans, geistMono } from "@/utils/font";
 import { StoreProvider } from "@/lib/stores/StoreProvider";
 import { QueryProvider } from "@/lib/stores/QueryProvider";
+import { AuthProvider } from "@/components/organisms/AuthProvider";
 
 export function TopLayoutWrapper({
   children,
@@ -13,7 +14,9 @@ export function TopLayoutWrapper({
     >
       <body suppressHydrationWarning>
           <QueryProvider>
-            <StoreProvider>{children}</StoreProvider>
+            <StoreProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </StoreProvider>
           </QueryProvider>
       </body>
     </html>

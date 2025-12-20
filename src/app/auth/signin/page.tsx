@@ -28,6 +28,8 @@ export default function SigninPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
@@ -78,11 +80,24 @@ export default function SigninPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailError("");
+    setPasswordError("");
     setError("");
     setSuccess("");
 
+    if (!email) {
+      setEmailError("メールアドレスを入力してください。");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("正しいメールアドレスを入力してください。");
+      return;
+    }
+
     if (!password) {
-      setError("パスワードを入力してください。");
+      setPasswordError("パスワードを入力してください。");
       return;
     }
 
@@ -165,6 +180,8 @@ export default function SigninPage() {
               required
               sx={{ mb: 3 }}
               variant="outlined"
+              error={!!emailError}
+              helperText={emailError}
             />
             <TextField
               fullWidth
@@ -175,6 +192,8 @@ export default function SigninPage() {
               required
               sx={{ mb: 4 }}
               variant="outlined"
+              error={!!passwordError}
+              helperText={passwordError}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
