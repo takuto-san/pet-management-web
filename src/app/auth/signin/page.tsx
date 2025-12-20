@@ -67,13 +67,11 @@ export default function SigninPage() {
 
   useEffect(() => {
     if (userData) {
-      dispatch(setUser({
-        id: userData.id,
-        email: userData.email,
-        username: userData.username,
-      }));
-      if (userData.username) {
+      dispatch(setUser(userData));
+      if (userData.username && userData.firstName && userData.lastName) {
         router.push(`/${userData.username}`);
+      } else {
+        router.push("/onboarding");
       }
     }
   }, [userData, dispatch, router]);

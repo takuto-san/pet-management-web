@@ -1,10 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { UserResponse } from "@/types/api";
 
-interface User {
-  id: string;
-  email: string;
-  username?: string;
-}
+interface User extends UserResponse {}
 
 interface UserState {
   currentUser: User | null;
