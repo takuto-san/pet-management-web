@@ -41,7 +41,15 @@ export default function SignupPage() {
         }, 3000); // 3秒後にリダイレクト
       },
       onError: (err: any) => {
-        const errorMessage = err?.response?.data?.detail || "登録に失敗しました。入力内容を確認してください。";
+        const status = err?.response?.status;
+        let errorMessage = "登録に失敗しました。入力内容を確認してください。";
+        if (status === 409) {
+          errorMessage = "このメールアドレスは既に登録されています。";
+        } else if (status === 400) {
+          errorMessage = "入力内容を確認してください。";
+        } else if (err?.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        }
         setError(errorMessage);
         setSuccessMessage("");
       },
