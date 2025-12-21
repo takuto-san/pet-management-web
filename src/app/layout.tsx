@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { TopLayoutWrapper } from "@/components/layouts/top/TopLayout";
+import { TopLayoutWrapper } from "@/components/templates/TopTemplate";
+import { QueryProvider } from "@/lib/stores/QueryProvider";
+import { StoreProvider } from "@/lib/stores/StoreProvider";
+import { AuthProvider } from "@/components/organisms/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,5 +13,13 @@ export const metadata: Metadata = {
 export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <TopLayoutWrapper>{children}</TopLayoutWrapper>;
+  return (
+    <TopLayoutWrapper>
+      <QueryProvider>
+        <StoreProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </StoreProvider>
+      </QueryProvider>
+    </TopLayoutWrapper>
+  );
 }

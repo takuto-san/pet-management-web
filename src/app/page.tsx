@@ -1,3 +1,5 @@
-import TopPage from "@/components/layouts/top/TopPage";
+import { TopPage } from "@/components/pages/TopPage";
 
-export default TopPage;
+export default function Page() {
+  return <TopPage />;
+}

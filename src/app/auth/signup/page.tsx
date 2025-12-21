@@ -1,3 +1,5 @@
-import SignupPage from "@/components/layouts/signup/SignupPage";
+import { SignupPage } from "@/components/pages/SignupPage";
 
-export default SignupPage;
+export default function Page() {
+  return <SignupPage />;
+}
