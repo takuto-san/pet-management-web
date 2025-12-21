@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { Header } from "@/components/organisms/Header";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 
-export function UserDetailPage() {
+export function DashboardPage() {
   const params = useParams();
   const username = params.username as string;
 

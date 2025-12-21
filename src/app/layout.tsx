@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { geistSans, geistMono } from "@/utils/font";
 import { QueryProvider } from "@/lib/stores/QueryProvider";
 import { StoreProvider } from "@/lib/stores/StoreProvider";
-import { AuthProvider } from "@/components/organisms/AuthProvider";
+import { AuthProvider } from "@/lib/stores/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {

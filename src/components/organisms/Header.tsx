@@ -1,6 +1,42 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
+import { Avatar, Button, Menu, MenuItem } from "@mui/material";
+import { useLogoutUser } from "@/api/generated/auth/auth";
+import type { RootState } from "@/lib/stores/store";
+import { clearUser } from "@/lib/stores/store";
 
 export const Header = () => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+  const { mutate: logout } = useLogoutUser({
+    mutation: {
+      onSuccess: () => {
+        dispatch(clearUser());
+        router.push("/");
+      },
+    },
+  });
+
+  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+  };
+
   return (
     <header style={{
       backgroundColor: "var(--background, #f0f0f0)",
@@ -9,28 +45,37 @@ export const Header = () => {
       borderBottom: "1px solid var(--border, #ccc)"
     }}>
       <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2>ペット管理システム</h2>
-        <div>
-          <Link href="/auth/signin">
-            <button style={{
-              marginRight: "0.5rem",
-              backgroundColor: "var(--primary, #007bff)",
-              color: "#fff",
-              border: "none",
-              padding: "0.5rem 1rem",
-              cursor: "pointer"
-            }}>ログイン</button>
-          </Link>
-          <Link href="/auth/signup">
-            <button style={{
-              backgroundColor: "var(--secondary, #6c757d)",
-              color: "#fff",
-              border: "none",
-              padding: "0.5rem 1rem",
-              cursor: "pointer"
-            }}>新規登録</button>
-          </Link>
-        </div>
+        <Link href="/">
+          <h2 style={{ cursor: "pointer", margin: 0 }}>ペット管理システム</h2>
+        </Link>
+        {currentUser ? (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span>{currentUser.username}</span>
+            <Avatar onClick={handleAvatarClick} style={{ cursor: "pointer" }}>
+              {currentUser.firstName?.[0]}
+            </Avatar>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem onClick={handleLogout}>ログアウト</MenuItem>
+            </Menu>
+          </div>
+        ) : (
+          <div>
+            <Link href="/auth/signin">
+              <Button variant="contained" style={{ marginRight: "0.5rem" }}>
+                ログイン
+              </Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button variant="outlined">
+                新規登録
+              </Button>
+            </Link>
+          </div>
+        )}
       </nav>
     </header>
   );

@@ -16,9 +16,9 @@ import {
 import PetsIcon from "@mui/icons-material/Pets";
 import { useUpdateUser } from "@/api/generated/user/user";
 import type { RootState } from "@/lib/stores/store";
-import AuthHeader from "@/components/organisms/AuthHeader";
+import { Header } from "@/components/organisms/Header";
 import type { UserBase } from "@/types/api";
-import { AuthTemplate } from "@/components/templates/AuthTemplate";
+import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 
 export function OnboardingPage() {
   const [formData, setFormData] = useState<UserBase>({
@@ -286,8 +286,8 @@ export function OnboardingPage() {
   );
 
   return (
-    <AuthTemplate
-      header={<AuthHeader />}
+    <LayoutTemplate
+      header={<Header />}
       main={mainContent}
       isCentered={true}
     />
