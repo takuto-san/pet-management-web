@@ -22,3 +22,15 @@ export function TopLayoutWrapper({
     </html>
   );
 }
+
+import { Header } from "@/components/organisms/Header";
+import { TopContent } from "@/components/organisms/TopContent";
+
+export function TopLayout() {
+  return (
+    <>
+      <Header />
+      <TopContent />
+    </>
+  );
+}

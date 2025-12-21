@@ -1,5 +1,3 @@
-import { TopPageLayout } from "@/components/layouts/top/TopPage";
+import TopPage from "@/components/layouts/top/TopPage";
 
-export default function TopPage() {
-  return <TopPageLayout />;
-}
+export default TopPage;
