@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { TopLayoutWrapper } from "@/components/layouts/top/TopLayout";
+import { geistSans, geistMono } from "@/utils/font";
+import { QueryProvider } from "@/lib/stores/QueryProvider";
+import { StoreProvider } from "@/lib/stores/StoreProvider";
+import { AuthProvider } from "@/lib/stores/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,5 +13,19 @@ export const metadata: Metadata = {
 export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <TopLayoutWrapper>{children}</TopLayoutWrapper>;
+  return (
+    <html
+      lang="ja"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body suppressHydrationWarning>
+        <QueryProvider>
+          <StoreProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </StoreProvider>
+        </QueryProvider>
+      </body>
+    </html>
+  );
 }

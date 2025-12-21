@@ -11,7 +11,7 @@ export interface UserBase {
    * @minLength 1
    * @maxLength 20
    */
-  username?: string;
+  username: string;
   /** @maxLength 50 */
   firstName?: string;
   /** @maxLength 50 */
@@ -30,7 +30,7 @@ export interface UserBase {
   email: string;
   /**
    * @maxLength 8
-   * @pattern ^\d{3}-?\d{4}$
+   * @pattern ^$|^\d{3}-?\d{4}$
    */
   postalCode?: string;
   /** @maxLength 10 */
@@ -41,7 +41,7 @@ export interface UserBase {
   address?: string;
   /**
    * @maxLength 20
-   * @pattern ^[0-9-]*$
+   * @pattern ^$|^[0-9-]*$
    */
   telephone?: string;
 }
