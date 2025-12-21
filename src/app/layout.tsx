@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopLayoutWrapper } from "@/components/templates/TopTemplate";
+import { geistSans, geistMono } from "@/utils/font";
 import { QueryProvider } from "@/lib/stores/QueryProvider";
 import { StoreProvider } from "@/lib/stores/StoreProvider";
 import { AuthProvider } from "@/components/organisms/AuthProvider";
@@ -14,12 +14,18 @@ export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <TopLayoutWrapper>
-      <QueryProvider>
-        <StoreProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </StoreProvider>
-      </QueryProvider>
-    </TopLayoutWrapper>
+    <html
+      lang="ja"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body suppressHydrationWarning>
+        <QueryProvider>
+          <StoreProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </StoreProvider>
+        </QueryProvider>
+      </body>
+    </html>
   );
 }

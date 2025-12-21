@@ -2,14 +2,14 @@
 
 import { useParams } from "next/navigation";
 import { Header } from "@/components/organisms/Header";
-import { TopTemplate } from "@/components/templates/TopTemplate";
+import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 
 export function UserDetailPage() {
   const params = useParams();
   const username = params.username as string;
 
   return (
-    <TopTemplate
+    <LayoutTemplate
       header={<Header />}
       main={
         <div className="p-4">

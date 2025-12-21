@@ -18,7 +18,7 @@ import { useUpdateUser } from "@/api/generated/user/user";
 import type { RootState } from "@/lib/stores/store";
 import AuthHeader from "@/components/organisms/AuthHeader";
 import type { UserBase } from "@/types/api";
-import { OnboardingTemplate } from "@/components/templates/OnboardingTemplate";
+import { AuthTemplate } from "@/components/templates/AuthTemplate";
 
 export function OnboardingPage() {
   const [formData, setFormData] = useState<UserBase>({
@@ -286,9 +286,10 @@ export function OnboardingPage() {
   );
 
   return (
-    <OnboardingTemplate
+    <AuthTemplate
       header={<AuthHeader />}
       main={mainContent}
+      isCentered={true}
     />
   );
 }

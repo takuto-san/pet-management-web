@@ -1,10 +1,10 @@
-import { SignupTemplate } from "@/components/templates/SignupTemplate";
+import { AuthTemplate } from "@/components/templates/AuthTemplate";
 import AuthHeader from "@/components/organisms/AuthHeader";
 import { SignupForm } from "@/components/organisms/SignupForm";
 
 export function SignupPage() {
   return (
-    <SignupTemplate
+    <AuthTemplate
       header={<AuthHeader />}
       main={<SignupForm />}
     />
