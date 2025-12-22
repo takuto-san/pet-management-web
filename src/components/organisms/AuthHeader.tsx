@@ -1,27 +1,21 @@
 'use client';
 
 import Link from "next/link";
-import {
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
-} from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
+import { LogoIcon } from "@/components/molecules/LogoIcon";
 
 export default function AuthHeader() {
   return (
-    <AppBar position="static" sx={{ mb: 2 }}>
-      <Toolbar>
-        <IconButton edge="start" color="inherit" aria-label="home">
-          <Link href="/">
-            <PetsIcon />
-          </Link>
-        </IconButton>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          ペット管理システム
-        </Typography>
-      </Toolbar>
-    </AppBar>
+    <header style={{
+      backgroundColor: "var(--background, #f0f0f0)",
+      color: "var(--foreground, #000)",
+      padding: "1rem",
+      borderBottom: "1px solid var(--border, #ccc)"
+    }}>
+      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Link href="/">
+          <LogoIcon />
+        </Link>
+      </nav>
+    </header>
   );
 }

@@ -1,32 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Button,
-  TextField,
-  Typography,
-  Box,
-  Paper,
-  Alert,
-  Avatar,
-  Container,
-  IconButton,
-  InputAdornment,
-} from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
 import { useAuthenticateUser, useGetCurrentUser } from "@/api/generated/auth/auth";
 import { setsigninPending, setUser } from "@/stores/slices/userSlice";
+import { Input } from "@/components/atoms/Input";
+import { Button } from "@/components/atoms/Button";
+import { PasswordInput } from "@/components/molecules/PasswordInput";
+import { FormHeader } from "@/components/molecules/FormHeader";
+import { FormFooter } from "@/components/molecules/FormFooter";
 import type { RootState } from "@/lib/stores/store";
 
 export function SigninForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
@@ -60,9 +49,11 @@ export function SigninForm() {
     },
   });
 
+  const isLoading = isPending || signinPending;
+
   const { data: userData } = useGetCurrentUser({
     query: {
-      enabled: signinPending,
+      enabled: false,
     },
   });
 
@@ -70,6 +61,7 @@ export function SigninForm() {
     if (userData) {
       dispatch(setUser(userData));
       if (userData.username && userData.firstName && userData.lastName) {
+        // ログイン成功後はダッシュボードにリダイレクト
         router.push(`/${userData.username}`);
       } else {
         router.push("/onboarding");
@@ -103,11 +95,7 @@ export function SigninForm() {
     signin({ data: { email, password } });
   };
 
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-  };
 
   return (
     <Box
@@ -130,27 +118,10 @@ export function SigninForm() {
           backdropFilter: "blur(10px)",
         }}
       >
-        {/* Header */}
-        <Box sx={{ textAlign: "center", mb: 4 }}>
-          <Avatar
-            sx={{
-              width: 80,
-              height: 80,
-              bgcolor: "primary.main",
-              mx: "auto",
-              mb: 3,
-              boxShadow: 3,
-            }}
-          >
-            <PetsIcon sx={{ fontSize: 40 }} />
-          </Avatar>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold" }}>
-            ログイン
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            アカウントにログインして、ペットの管理を始めましょう
-          </Typography>
-        </Box>
+        <FormHeader
+          title="ログイン"
+          subtitle="アカウントにログインして、ペットの管理を始めましょう"
+        />
 
         {/* Success Message */}
         {success && (
@@ -168,81 +139,50 @@ export function SigninForm() {
 
         {/* Form */}
         <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
-          <TextField
+          <Input
+            id="email"
             fullWidth
             label="メールアドレス"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={emailError}
             required
-            sx={{ mb: 3 }}
-            variant="outlined"
-            error={!!emailError}
-            helperText={emailError}
+            disabled={isLoading}
           />
-          <TextField
-            fullWidth
+          <PasswordInput
+            id="password"
             label="パスワード"
-            type={showPassword ? "text" : "password"}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
+            error={passwordError}
             required
-            sx={{ mb: 4 }}
-            variant="outlined"
-            error={!!passwordError}
-            helperText={passwordError}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleClickShowPassword}
-                    onMouseDown={handleMouseDownPassword}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
+            disabled={isLoading}
           />
 
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            disabled={isPending}
+            disabled={isLoading}
             size="large"
-            sx={{
-              py: 2,
-              borderRadius: 2,
-              fontSize: "1.1rem",
-              boxShadow: 3,
-              "&:hover": { boxShadow: 6 },
-              mb: 3,
-            }}
           >
-            {isPending ? "ログイン中..." : "ログイン"}
+            {isLoading ? "ログイン中..." : "ログイン"}
           </Button>
         </Box>
 
-        {/* Footer */}
-        <Box sx={{ textAlign: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            アカウントをお持ちでないですか？{" "}
-            <Link
-              href="/auth/signup"
-              style={{
-                color: "#1976d2",
-                textDecoration: "none",
-                fontWeight: "medium",
-              }}
-            >
-              新規登録
-            </Link>
-          </Typography>
-        </Box>
+        <FormFooter
+          text="アカウントをお持ちでないですか？"
+          linkText="新規登録"
+          href="/auth/signup"
+        />
       </Paper>
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Container>
     </Box>
   );

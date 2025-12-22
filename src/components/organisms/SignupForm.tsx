@@ -1,31 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Button,
-  TextField,
-  Typography,
-  Box,
-  Paper,
-  Alert,
-  Avatar,
-  Container,
-  IconButton,
-  InputAdornment,
-} from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
 import { useRegisterUser } from "@/api/generated/auth/auth";
+import { Input } from "@/components/atoms/Input";
+import { Button } from "@/components/atoms/Button";
+import { PasswordInput } from "@/components/molecules/PasswordInput";
+import { FormHeader } from "@/components/molecules/FormHeader";
+import { FormFooter } from "@/components/molecules/FormFooter";
 
 export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const router = useRouter();
@@ -55,6 +43,8 @@ export function SignupForm() {
     },
   });
 
+  const isLoading = isPending || !!successMessage;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -78,12 +68,7 @@ export function SignupForm() {
     signup({ data: { email, password } });
   };
 
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const handleClickShowConfirmPassword = () => setShowConfirmPassword((show) => !show);
 
-  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-  };
 
   return (
     <Box
@@ -106,27 +91,10 @@ export function SignupForm() {
           backdropFilter: "blur(10px)",
         }}
       >
-        {/* Header */}
-        <Box sx={{ textAlign: "center", mb: 4 }}>
-          <Avatar
-            sx={{
-              width: 80,
-              height: 80,
-              bgcolor: "primary.main",
-              mx: "auto",
-              mb: 3,
-              boxShadow: 3,
-            }}
-          >
-            <PetsIcon sx={{ fontSize: 40 }} />
-          </Avatar>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold" }}>
-            新規登録
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            無料でアカウントを作成して、ペットの管理を始めましょう
-          </Typography>
-        </Box>
+        <FormHeader
+          title="新規登録"
+          subtitle="無料でアカウントを作成して、ペットの管理を始めましょう"
+        />
 
         {/* Error Message */}
         {error && (
@@ -144,102 +112,56 @@ export function SignupForm() {
 
         {/* Form */}
         <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
-          <TextField
+          <Input
             fullWidth
             label="メールアドレス"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            sx={{ mb: 3 }}
-            variant="outlined"
+            disabled={isLoading}
           />
-          <TextField
-            fullWidth
+          <PasswordInput
             label="パスワード"
-            type={showPassword ? "text" : "password"}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
+            error=""
             required
             helperText="8文字以上、大文字・小文字・数字を含む"
-            sx={{ mb: 3 }}
-            variant="outlined"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleClickShowPassword}
-                    onMouseDown={handleMouseDownPassword}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
+            disabled={isLoading}
           />
-          <TextField
-            fullWidth
+          <PasswordInput
             label="パスワード（確認）"
-            type={showConfirmPassword ? "text" : "password"}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={setConfirmPassword}
+            error=""
             required
-            sx={{ mb: 4 }}
-            variant="outlined"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle confirm password visibility"
-                    onClick={handleClickShowConfirmPassword}
-                    onMouseDown={handleMouseDownPassword}
-                    edge="end"
-                  >
-                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
+            disabled={isLoading}
           />
 
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            disabled={isPending}
+            disabled={isLoading}
             size="large"
-            sx={{
-              py: 2,
-              borderRadius: 2,
-              fontSize: "1.1rem",
-              boxShadow: 3,
-              "&:hover": { boxShadow: 6 },
-              mb: 3,
-            }}
           >
-            {isPending ? "登録中..." : "新規登録"}
+            {isLoading ? "登録中..." : "新規登録"}
           </Button>
         </Box>
 
-        {/* Footer */}
-        <Box sx={{ textAlign: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            既にアカウントをお持ちですか？{" "}
-            <Link
-              href="/auth/signin"
-              style={{
-                color: "#1976d2",
-                textDecoration: "none",
-                fontWeight: "medium",
-              }}
-            >
-              ログイン
-            </Link>
-          </Typography>
-        </Box>
+        <FormFooter
+          text="既にアカウントをお持ちですか？"
+          linkText="ログイン"
+          href="/auth/signin"
+        />
       </Paper>
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Container>
     </Box>
   );

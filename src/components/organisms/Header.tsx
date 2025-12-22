@@ -2,40 +2,61 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
-import { Avatar, Button, Menu, MenuItem } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLogoutUser } from "@/api/generated/auth/auth";
+import { CircularProgress } from "@mui/material";
 import type { RootState } from "@/lib/stores/store";
 import { clearUser } from "@/lib/stores/store";
+import { UserMenu } from "@/components/molecules/UserMenu";
+import { AuthButtons } from "@/components/molecules/AuthButtons";
+import { LogoIcon } from "@/components/molecules/LogoIcon";
 
-export const Header = () => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+interface HeaderProps {
+  onNavigate?: () => void;
+}
+
+export const Header = ({ onNavigate }: HeaderProps) => {
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
+  const [isNavigating, setIsNavigating] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
+  const pathname = usePathname();
+  const queryClient = useQueryClient();
 
   const { mutate: logout } = useLogoutUser({
     mutation: {
-      onSuccess: () => {
+      onSettled: () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         dispatch(clearUser());
+        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
         router.push("/");
       },
     },
   });
 
-  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   const handleLogout = () => {
     logout();
-    handleMenuClose();
   };
+
+  const handleNavigate = () => {
+    setIsNavigating(true);
+    if (onNavigate) onNavigate();
+  };
+
+  let rightContent;
+  if (isLoadingUser || isNavigating) {
+    rightContent = <CircularProgress size={24} />;
+  } else if (currentUser) {
+    rightContent = <UserMenu user={currentUser} onLogout={handleLogout} />;
+  } else {
+    rightContent = <AuthButtons onNavigate={handleNavigate} />;
+  }
 
   return (
     <header style={{
@@ -46,36 +67,9 @@ export const Header = () => {
     }}>
       <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Link href="/">
-          <h2 style={{ cursor: "pointer", margin: 0 }}>ペット管理システム</h2>
+          <LogoIcon />
         </Link>
-        {currentUser ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span>{currentUser.username}</span>
-            <Avatar onClick={handleAvatarClick} style={{ cursor: "pointer" }}>
-              {currentUser.firstName?.[0]}
-            </Avatar>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              <MenuItem onClick={handleLogout}>ログアウト</MenuItem>
-            </Menu>
-          </div>
-        ) : (
-          <div>
-            <Link href="/auth/signin">
-              <Button variant="contained" style={{ marginRight: "0.5rem" }}>
-                ログイン
-              </Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button variant="outlined">
-                新規登録
-              </Button>
-            </Link>
-          </div>
-        )}
+        {rightContent}
       </nav>
     </header>
   );
