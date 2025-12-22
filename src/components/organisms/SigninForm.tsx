@@ -140,6 +140,7 @@ export function SigninForm() {
         {/* Form */}
         <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
           <Input
+            id="email"
             fullWidth
             label="メールアドレス"
             type="email"
@@ -150,6 +151,7 @@ export function SigninForm() {
             disabled={isLoading}
           />
           <PasswordInput
+            id="password"
             label="パスワード"
             value={password}
             onChange={setPassword}

@@ -12,6 +12,7 @@ interface PasswordInputProps {
   required?: boolean;
   helperText?: string;
   disabled?: boolean;
+  id?: string;
 }
 
 export const PasswordInput = ({
@@ -22,6 +23,7 @@ export const PasswordInput = ({
   required,
   helperText,
   disabled,
+  id,
 }: PasswordInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,6 +35,7 @@ export const PasswordInput = ({
 
   return (
     <Input
+      id={id}
       fullWidth
       label={label}
       type={showPassword ? "text" : "password"}

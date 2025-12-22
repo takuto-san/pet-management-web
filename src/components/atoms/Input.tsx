@@ -2,6 +2,7 @@ import { TextField, TextFieldProps } from "@mui/material";
 
 interface CustomInputProps extends Omit<TextFieldProps, 'error'> {
   error?: string;
+  id?: string;
 }
 
 export const Input = ({ error, ...props }: CustomInputProps) => {
