@@ -41,21 +41,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [userData, error, dispatch]);
 
-  // Show loading screen until user data is loaded if token exists
-  if (token && isLoadingUser) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return <>{children}</>;
 }

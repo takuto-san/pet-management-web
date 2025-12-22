@@ -12,7 +12,7 @@ export function LayoutTemplate({ header, sidebar, main, footer, isCentered }: La
       {header && <header>{header}</header>}
       <div className="flex flex-grow">
         {sidebar && <aside className="w-64">{sidebar}</aside>}
-        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""}`}>
+        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} pb-16`}>
           {main}
         </main>
       </div>
