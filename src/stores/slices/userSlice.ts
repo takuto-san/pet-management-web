@@ -14,7 +14,7 @@ const initialState: UserState = {
   currentUser: null,
   isAuthenticated: false,
   signinPending: false,
-  isLoadingUser: false,
+  isLoadingUser: true,
 };
 
 const userSlice = createSlice({

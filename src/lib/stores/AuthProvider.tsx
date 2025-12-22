@@ -16,10 +16,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // Set initial loading state if token exists
+  // Set initial loading state based on token
   useEffect(() => {
-    if (token) {
-      dispatch(setLoadingUser(true));
+    if (!token) {
+      dispatch(setLoadingUser(false));
     }
   }, [token, dispatch]);
 
@@ -41,21 +41,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [userData, error, dispatch]);
 
-  // Show loading screen until user data is loaded if token exists
-  if (token && isLoadingUser) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  return <>{children}</>;
+  return (
+    <div suppressHydrationWarning>
+      {isLoadingUser ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%' }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>{children}</>
+      )}
+    </div>
+  );
 }
