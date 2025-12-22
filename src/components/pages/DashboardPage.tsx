@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
@@ -18,10 +20,20 @@ import {
 import PetsIcon from "@mui/icons-material/Pets";
 
 export function DashboardPage() {
+  const router = useRouter();
+
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
     isLoadingUser: state.user.isLoadingUser,
   }));
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  useEffect(() => {
+    if (!token) {
+      router.push("/");
+    }
+  }, [token, router]);
 
   const { data: petsData, isLoading, error } = useListPets(undefined, {
     query: {
@@ -32,19 +44,15 @@ export function DashboardPage() {
   const allPets = petsData?.content || [];
   const pets = currentUser ? allPets.filter(pet => pet.userId === currentUser.id) : [];
 
-  const isPageLoading = 
-    !currentUser || 
-    isLoadingUser || 
-    isLoading || 
-    (!petsData && !error);
+  const isPageLoading = isLoadingUser || (currentUser && (isLoading || (!petsData && !error)));
 
   if (isPageLoading) {
     return (
-      <Box 
-        sx={{ 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center", 
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           height: "100vh",
           width: "100%"
         }}
@@ -52,6 +60,11 @@ export function DashboardPage() {
         <CircularProgress />
       </Box>
     );
+  }
+
+  // 未ログイン時は何も表示せず、リダイレクト処理に任せる
+  if (!currentUser) {
+    return null;
   }
 
   return (

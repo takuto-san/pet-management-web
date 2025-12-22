@@ -61,6 +61,7 @@ export function SigninForm() {
     if (userData) {
       dispatch(setUser(userData));
       if (userData.username && userData.firstName && userData.lastName) {
+        // ログイン成功後はダッシュボードにリダイレクト
         router.push(`/${userData.username}`);
       } else {
         router.push("/onboarding");

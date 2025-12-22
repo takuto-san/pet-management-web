@@ -77,6 +77,7 @@ export function OnboardingPage() {
       onSuccess: () => {
         setSuccess("ペットが登録されました！");
         setTimeout(() => {
+          // オンボーディング完了後はダッシュボードにリダイレクト
           if (currentUser?.username) {
             router.push(`/${currentUser.username}`);
           }
