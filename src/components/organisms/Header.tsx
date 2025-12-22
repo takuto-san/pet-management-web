@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
-import { Avatar, Button, Menu, MenuItem } from "@mui/material";
 import { useLogoutUser } from "@/api/generated/auth/auth";
 import type { RootState } from "@/lib/stores/store";
 import { clearUser } from "@/lib/stores/store";
+import { UserMenu } from "@/components/molecules/UserMenu";
+import { AuthButtons } from "@/components/molecules/AuthButtons";
 
 export const Header = () => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -24,17 +23,8 @@ export const Header = () => {
     },
   });
 
-  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   const handleLogout = () => {
     logout();
-    handleMenuClose();
   };
 
   return (
@@ -45,36 +35,16 @@ export const Header = () => {
       borderBottom: "1px solid var(--border, #ccc)"
     }}>
       <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Link href="/">
+        <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
           <h2 style={{ cursor: "pointer", margin: 0 }}>ペット管理システム</h2>
         </Link>
         {currentUser ? (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span>{currentUser.username}</span>
-            <Avatar onClick={handleAvatarClick} style={{ cursor: "pointer" }}>
-              {currentUser.firstName?.[0]}
-            </Avatar>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              <MenuItem onClick={handleLogout}>ログアウト</MenuItem>
-            </Menu>
+            <UserMenu user={currentUser} onLogout={handleLogout} />
           </div>
         ) : (
-          <div>
-            <Link href="/auth/signin">
-              <Button variant="contained" style={{ marginRight: "0.5rem" }}>
-                ログイン
-              </Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button variant="outlined">
-                新規登録
-              </Button>
-            </Link>
-          </div>
+          <AuthButtons />
         )}
       </nav>
     </header>
