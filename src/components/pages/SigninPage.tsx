@@ -1,3 +1,5 @@
+"use client";
+
 import { AuthTemplate } from "@/components/templates/AuthTemplate";
 import AuthHeader from "@/components/organisms/AuthHeader";
 import { SigninForm } from "@/components/organisms/SigninForm";

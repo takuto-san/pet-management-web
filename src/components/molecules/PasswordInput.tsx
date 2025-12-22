@@ -11,6 +11,7 @@ interface PasswordInputProps {
   error?: string;
   required?: boolean;
   helperText?: string;
+  disabled?: boolean;
 }
 
 export const PasswordInput = ({
@@ -20,6 +21,7 @@ export const PasswordInput = ({
   error,
   required,
   helperText,
+  disabled,
 }: PasswordInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -39,6 +41,7 @@ export const PasswordInput = ({
       error={error}
       required={required}
       helperText={helperText}
+      disabled={disabled}
       InputProps={{
         endAdornment: (
           <InputAdornment position="end">

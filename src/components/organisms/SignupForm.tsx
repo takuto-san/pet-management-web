@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Paper, Alert, Container } from "@mui/material";
+import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
 import { useRegisterUser } from "@/api/generated/auth/auth";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
@@ -42,6 +42,8 @@ export function SignupForm() {
       },
     },
   });
+
+  const isLoading = isPending || !!successMessage;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +119,7 @@ export function SignupForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={isLoading}
           />
           <PasswordInput
             label="パスワード"
@@ -125,6 +128,7 @@ export function SignupForm() {
             error=""
             required
             helperText="8文字以上、大文字・小文字・数字を含む"
+            disabled={isLoading}
           />
           <PasswordInput
             label="パスワード（確認）"
@@ -132,16 +136,17 @@ export function SignupForm() {
             onChange={setConfirmPassword}
             error=""
             required
+            disabled={isLoading}
           />
 
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            disabled={isPending}
+            disabled={isLoading}
             size="large"
           >
-            {isPending ? "登録中..." : "新規登録"}
+            {isLoading ? "登録中..." : "新規登録"}
           </Button>
         </Box>
 
@@ -151,6 +156,12 @@ export function SignupForm() {
           href="/auth/signin"
         />
       </Paper>
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Container>
     </Box>
   );

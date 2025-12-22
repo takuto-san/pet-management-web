@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { Avatar, Menu, MenuItem } from "@mui/material";
 import type { UserResponse } from "@/types/api/userResponse";
 
@@ -33,6 +34,7 @@ export const UserMenu = ({ user, onLogout }: UserMenuProps) => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
+        <MenuItem component={Link} href="/profile" onClick={handleMenuClose}>プロフィール</MenuItem>
         <MenuItem onClick={handleLogout}>ログアウト</MenuItem>
       </Menu>
     </>

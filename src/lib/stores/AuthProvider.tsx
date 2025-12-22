@@ -1,26 +1,59 @@
 "use client";
 
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useGetCurrentUser } from "@/api/generated/auth/auth";
-import { setUser } from "@/stores/slices/userSlice";
+import type { RootState } from "@/lib/stores/store";
+import { setUser, setLoadingUser } from "@/stores/slices/userSlice";
+import { Box, CircularProgress } from "@mui/material";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const { data: userData } = useGetCurrentUser({
+  // Set initial loading state if token exists
+  useEffect(() => {
+    if (token) {
+      dispatch(setLoadingUser(true));
+    }
+  }, [token, dispatch]);
+
+  const { data: userData, isLoading } = useGetCurrentUser({
     query: {
       enabled: !!token,
     },
   });
 
   useEffect(() => {
+    dispatch(setLoadingUser(isLoading));
+  }, [isLoading, dispatch]);
+
+  useEffect(() => {
     if (userData) {
       dispatch(setUser(userData));
     }
   }, [userData, dispatch]);
+
+  // Show loading screen until user data is loaded if token exists
+  if (token && isLoadingUser) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return <>{children}</>;
 }

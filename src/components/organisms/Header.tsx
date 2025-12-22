@@ -10,13 +10,18 @@ import { UserMenu } from "@/components/molecules/UserMenu";
 import { AuthButtons } from "@/components/molecules/AuthButtons";
 
 export const Header = () => {
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
   const dispatch = useDispatch();
   const router = useRouter();
 
   const { mutate: logout } = useLogoutUser({
     mutation: {
       onSuccess: () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         dispatch(clearUser());
         router.push("/");
       },
@@ -43,6 +48,8 @@ export const Header = () => {
             <span>{currentUser.username}</span>
             <UserMenu user={currentUser} onLogout={handleLogout} />
           </div>
+        ) : isLoadingUser ? (
+          <div style={{ width: "100px" }} /> // Placeholder to prevent layout shift
         ) : (
           <AuthButtons />
         )}

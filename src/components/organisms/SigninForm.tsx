@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { Box, Paper, Alert, Container } from "@mui/material";
+import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
 import { useAuthenticateUser, useGetCurrentUser } from "@/api/generated/auth/auth";
 import { setsigninPending, setUser } from "@/stores/slices/userSlice";
 import { Input } from "@/components/atoms/Input";
@@ -48,6 +48,8 @@ export function SigninForm() {
       },
     },
   });
+
+  const isLoading = isPending || signinPending;
 
   const { data: userData } = useGetCurrentUser({
     query: {
@@ -144,6 +146,7 @@ export function SigninForm() {
             onChange={(e) => setEmail(e.target.value)}
             error={emailError}
             required
+            disabled={isLoading}
           />
           <PasswordInput
             label="パスワード"
@@ -151,16 +154,17 @@ export function SigninForm() {
             onChange={setPassword}
             error={passwordError}
             required
+            disabled={isLoading}
           />
 
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            disabled={isPending}
+            disabled={isLoading}
             size="large"
           >
-            {isPending ? "ログイン中..." : "ログイン"}
+            {isLoading ? "ログイン中..." : "ログイン"}
           </Button>
         </Box>
 
@@ -170,6 +174,12 @@ export function SigninForm() {
           href="/auth/signup"
         />
       </Paper>
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Container>
     </Box>
   );
