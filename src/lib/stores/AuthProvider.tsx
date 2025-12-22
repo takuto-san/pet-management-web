@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetCurrentUser } from "@/api/generated/auth/auth";
 import type { RootState } from "@/lib/stores/store";
-import { setUser, setLoadingUser } from "@/stores/slices/userSlice";
+import { setUser, setLoadingUser, clearUser } from "@/stores/slices/userSlice";
 import { Box, CircularProgress } from "@mui/material";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, dispatch]);
 
-  const { data: userData, isLoading } = useGetCurrentUser({
+  const { data: userData, isLoading, error } = useGetCurrentUser({
     query: {
       enabled: !!token,
     },
@@ -36,8 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (userData) {
       dispatch(setUser(userData));
+    } else if (error) {
+      dispatch(clearUser());
     }
-  }, [userData, dispatch]);
+  }, [userData, error, dispatch]);
 
   // Show loading screen until user data is loaded if token exists
   if (token && isLoadingUser) {

@@ -32,6 +32,28 @@ export function DashboardPage() {
   const allPets = petsData?.content || [];
   const pets = currentUser ? allPets.filter(pet => pet.userId === currentUser.id) : [];
 
+  const isPageLoading = 
+    !currentUser || 
+    isLoadingUser || 
+    isLoading || 
+    (!petsData && !error);
+
+  if (isPageLoading) {
+    return (
+      <Box 
+        sx={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          alignItems: "center", 
+          height: "100vh",
+          width: "100%"
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <LayoutTemplate
       header={<Header />}
@@ -45,11 +67,7 @@ export function DashboardPage() {
             あなたのペット
           </Typography>
 
-          {isLoadingUser || isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
+          {error ? (
             <Alert severity="error" sx={{ mt: 2 }}>
               ペットの取得に失敗しました。
             </Alert>
