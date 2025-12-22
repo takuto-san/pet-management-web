@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
+import { Box } from "@mui/material";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
-import { Tabs, Tab, Box } from "@mui/material";
+import { Tabs, Tab } from "@mui/material";
+import type { RootState } from "@/lib/stores/store";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -34,6 +37,17 @@ export function SettingsPage() {
   const pathname = usePathname();
   const [value, setValue] = useState(pathname.endsWith('/profile') ? 1 : 0);
 
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
+
+  useEffect(() => {
+    if (!isLoadingUser && !currentUser) {
+      router.push('/auth/signin');
+    }
+  }, [currentUser, isLoadingUser, router]);
+
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
     if (newValue === 0) {
@@ -42,6 +56,10 @@ export function SettingsPage() {
       router.push(`${pathname}/profile`);
     }
   };
+
+  if (isLoadingUser || !currentUser) {
+    return null;
+  }
 
   return (
     <LayoutTemplate

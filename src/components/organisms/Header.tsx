@@ -50,7 +50,9 @@ export const Header = ({ onNavigate }: HeaderProps) => {
   };
 
   let rightContent;
-  if (isLoadingUser || isNavigating) {
+  if (isLoadingUser) {
+    rightContent = null;
+  } else if (isNavigating) {
     rightContent = <CircularProgress size={24} />;
   } else if (currentUser) {
     rightContent = <UserMenu onLogout={handleLogout} />;
