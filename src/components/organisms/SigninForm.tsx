@@ -53,7 +53,7 @@ export function SigninForm() {
 
   const { data: userData } = useGetCurrentUser({
     query: {
-      enabled: signinPending,
+      enabled: false,
     },
   });
 

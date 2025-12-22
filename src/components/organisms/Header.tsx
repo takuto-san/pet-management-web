@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLogoutUser } from "@/api/generated/auth/auth";
 import { CircularProgress } from "@mui/material";
 import type { RootState } from "@/lib/stores/store";
@@ -24,6 +25,8 @@ export const Header = ({ onNavigate }: HeaderProps) => {
   const [isNavigating, setIsNavigating] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
+  const pathname = usePathname();
+  const queryClient = useQueryClient();
 
   const { mutate: logout } = useLogoutUser({
     mutation: {
@@ -31,6 +34,7 @@ export const Header = ({ onNavigate }: HeaderProps) => {
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         dispatch(clearUser());
+        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
         router.push("/");
       },
     },

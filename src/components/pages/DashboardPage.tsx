@@ -29,11 +29,7 @@ export function DashboardPage() {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  useEffect(() => {
-    if (!token) {
-      router.push("/");
-    }
-  }, [token, router]);
+
 
   const { data: petsData, isLoading, error } = useListPets(undefined, {
     query: {
