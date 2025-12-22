@@ -11,22 +11,23 @@ import {
   CardContent,
   Avatar,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 
 export function ProfilePage() {
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
 
-  if (!currentUser) {
+  const isPageLoading = !currentUser || isLoadingUser;
+
+  if (isPageLoading) {
     return (
-      <LayoutTemplate
-        header={<Header />}
-        main={
-          <Box sx={{ p: 4, textAlign: "center" }}>
-            <Typography variant="h6">ログインが必要です</Typography>
-          </Box>
-        }
-      />
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
