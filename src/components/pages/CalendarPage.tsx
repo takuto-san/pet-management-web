@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useListPets } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
-import { Info, Pets, Check, Today } from '@mui/icons-material';
+import { Info, Pets, Check, CalendarToday } from '@mui/icons-material';
 
 export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -131,7 +131,7 @@ export function CalendarPage() {
       header={<Header />}
       footer={<Footer />}
       main={
-        <div className="p-4 max-w-6xl mx-auto">
+        <div className="p-4">
           <h1 className="text-xl font-bold mb-4">カレンダー</h1>
 
           {/* カレンダー部分 */}
@@ -201,9 +201,8 @@ export function CalendarPage() {
                 <button
                   onClick={goToToday}
                   className="w-6 h-6 flex items-center justify-center p-2 text-blue-400 hover:bg-gray-800 rounded"
-                  title="今日"
                 >
-                  <Today className="w-4 h-4" />
+                  <CalendarToday className="w-4 h-4" />
                 </button>
               </div>
             </div>
