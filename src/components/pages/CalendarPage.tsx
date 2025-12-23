@@ -3,11 +3,26 @@
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useListPets } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
-import { Info, Pets, Check, CalendarToday } from '@mui/icons-material';
+import { Info, Pets, Check, CalendarToday, Add, Close } from '@mui/icons-material';
+import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import { ArrowBack } from '@mui/icons-material';
+import { useAddVisit } from "@/api/generated/visit/visit";
+import { useAddVisitPrescription } from "@/api/generated/visit-prescription/visit-prescription";
+import { useAddItem } from "@/api/generated/item/item";
+import { useQueryClient } from "@tanstack/react-query";
+import { VisitFields, VisitType, ItemCategory } from "@/types/api";
+
+interface RecordForm {
+  petId?: string;
+  category?: 'hospital' | 'supplies';
+  subcategoryType?: string;
+  date?: string;
+  [key: string]: any;
+}
 
 export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -20,6 +35,12 @@ export function CalendarPage() {
   });
   const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
   const [taskCompletions, setTaskCompletions] = useState<Record<string, boolean>>({});
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'category' | 'subcategory' | 'form'>('category');
+  const [selectedCategory, setSelectedCategory] = useState<'hospital' | 'supplies' | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<VisitType | ItemCategory | null>(null);
+  const [selectedSubcategoryType, setSelectedSubcategoryType] = useState<string | null>(null);
+  const [recordForm, setRecordForm] = useState<RecordForm>({});
 
   // API: ユーザーのペットを取得
   const { data: petsData } = useListPets();
@@ -27,11 +48,16 @@ export function CalendarPage() {
   // API: 全visitsを取得（実際にはユーザーのものにフィルタ）
   const { data: visitsData } = useListVisits();
 
+  const queryClient = useQueryClient();
+  const addVisitMutation = useAddVisit();
+  const addVisitPrescriptionMutation = useAddVisitPrescription();
+  const addItemMutation = useAddItem();
+
   // モックタスクデータ
-  const mockTasks = [
+  const [mockTasks, setMockTasks] = useState([
     { id: '1', time: '8:00', medicine: '肝臓用サプリ', dosage: '1錠', petName: 'クレオパトラ' },
     { id: '2', time: '12:00', medicine: '抗生物質', dosage: '2滴', petName: 'マックス' },
-  ];
+  ]);
 
   // タスクデータを日付ごとにグループ化
   const getTasksForDate = (date: Date) => {
@@ -126,12 +152,171 @@ export function CalendarPage() {
 
   const status = getStatusForDate(selectedDate);
 
+  // selectedDateが変わったらrecordForm.dateを更新
+  useEffect(() => {
+    if (isDrawerOpen && recordForm.date) {
+      const dateStr = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      setRecordForm(prev => ({ ...prev, date: dateStr }));
+    }
+  }, [selectedDate, isDrawerOpen]);
+
+  // FABクリックでドロワーを開く
+  const handleFabClick = () => {
+    setIsDrawerOpen(true);
+    const dateStr = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const nextDateStr = new Date(selectedDate.getTime() + 30 * 24 * 60 * 60 * 1000 - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    setRecordForm({ petId: '', category: 'hospital', subcategoryType: 'medication', date: dateStr, nextDate: nextDateStr, nextVaccinationDate: nextDateStr });
+  };
+
+  // ドロワーを閉じる
+  const handleDrawerClose = () => {
+    setIsDrawerOpen(false);
+    setCurrentStep('category');
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    setSelectedSubcategoryType(null);
+    setRecordForm({});
+  };
+
+  // 大カテゴリー選択
+  const handleCategorySelect = (category: 'hospital' | 'supplies') => {
+    setSelectedCategory(category);
+    setCurrentStep('subcategory');
+  };
+
+  // 小カテゴリー選択
+  const handleSubcategorySelect = (subcategory: VisitType | ItemCategory, type: string) => {
+    setSelectedSubcategory(subcategory);
+    setSelectedSubcategoryType(type);
+    setCurrentStep('form');
+    setRecordForm({ petId: '', date: selectedDate.toISOString().split('T')[0] });
+  };
+
+  // ステップ戻る
+  const handleBack = () => {
+    if (currentStep === 'subcategory') {
+      setCurrentStep('category');
+      setSelectedCategory(null);
+    } else if (currentStep === 'form') {
+      setCurrentStep('subcategory');
+      setSelectedSubcategory(null);
+      setSelectedSubcategoryType(null);
+      setRecordForm({});
+    }
+  };
+
+  // フォーム送信
+  const handleSubmitRecord = async () => {
+    if (!recordForm.petId) {
+      alert('ペットを選択してください');
+      return;
+    }
+
+    const selectedCategory = recordForm.category;
+    const selectedSubcategoryType = recordForm.subcategoryType;
+
+    if (selectedCategory === 'hospital') {
+      if (selectedSubcategoryType === 'medication' && (!recordForm.categoryField || !recordForm.medicineName)) {
+        alert('必須項目を入力してください');
+        return;
+      }
+      if (selectedSubcategoryType === 'vaccine' && (!recordForm.vaccineType)) {
+        alert('必須項目を入力してください');
+        return;
+      }
+      if (selectedSubcategoryType === 'visit' && (!recordForm.clinicName || !recordForm.diagnosis || !recordForm.weight || !recordForm.condition)) {
+        alert('必須項目を入力してください');
+        return;
+      }
+    } else if (selectedCategory === 'supplies') {
+      if (!recordForm.itemName || !recordForm.quantity) {
+        alert('必須項目を入力してください');
+        return;
+      }
+    }
+
+    try {
+      if (selectedCategory === 'hospital') {
+        // VisitFieldsを作成
+        let visitType: VisitType = VisitType.general;
+        let reason = '';
+        let note = '';
+
+        if (selectedSubcategoryType === 'medication') {
+          reason = `${recordForm.category} - ${recordForm.medicineName}`;
+          note = recordForm.nextDate ? `次回: ${recordForm.nextDate}` : '';
+        } else if (selectedSubcategoryType === 'vaccine') {
+          visitType = VisitType.checkup;
+          reason = `ワクチン接種 - ${recordForm.vaccineType}`;
+          note = `Lot No: ${recordForm.lotNo || ''}, 次回: ${recordForm.nextVaccinationDate || ''}`;
+        } else if (selectedSubcategoryType === 'visit') {
+          visitType = VisitType.checkup;
+          reason = recordForm.diagnosis;
+          note = `病院: ${recordForm.clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
+        }
+
+        const visitFields: VisitFields = {
+          petId: recordForm.petId,
+          clinicId: 'default-clinic-id', // 仮のクリニックID
+          visitedOn: `${selectedDate.toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
+          visitType,
+          reason,
+          note,
+        };
+
+        const visit = await addVisitMutation.mutateAsync({ data: visitFields });
+
+        // リマインダー作成
+        if ((selectedSubcategoryType === 'medication' && recordForm.nextDate) ||
+            (selectedSubcategoryType === 'vaccine' && recordForm.nextVaccinationDate)) {
+          const nextDate = selectedSubcategoryType === 'medication' ? recordForm.nextDate : recordForm.nextVaccinationDate;
+          const reminderTask = {
+            id: `reminder-${visit.id}`,
+            time: '08:00',
+            medicine: selectedSubcategoryType === 'medication' ? (recordForm.medicineName || '') : (recordForm.vaccineType || ''),
+            dosage: selectedSubcategoryType === 'medication' ? (recordForm.category || '') : '接種',
+            petName: petsData?.content?.find(p => p.id === recordForm.petId)?.name || '',
+          };
+          setMockTasks(prev => [...prev, reminderTask]);
+        }
+
+        // クエリを無効化
+        queryClient.invalidateQueries({ queryKey: ['/visits'] });
+
+      } else if (selectedCategory === 'supplies') {
+        // Item作成
+        let itemCategory: ItemCategory = ItemCategory.other;
+        if (selectedSubcategoryType === 'food') itemCategory = ItemCategory.food;
+        else if (selectedSubcategoryType === 'toilet') itemCategory = ItemCategory.pad;
+        else if (selectedSubcategoryType === 'care') itemCategory = ItemCategory.hygiene;
+        else if (selectedSubcategoryType === 'others') itemCategory = ItemCategory.other;
+
+        const itemData = {
+          petId: recordForm.petId,
+          category: itemCategory,
+          name: recordForm.itemName,
+          quantity: parseInt(recordForm.quantity),
+          purchaseDate: recordForm.purchaseDate,
+          note: recordForm.memo || '',
+        };
+        await addItemMutation.mutateAsync({ data: itemData });
+
+        queryClient.invalidateQueries({ queryKey: ['/items'] });
+      }
+
+      handleDrawerClose();
+    } catch (error) {
+      console.error('記録の保存に失敗しました:', error);
+      alert('記録の保存に失敗しました');
+    }
+  };
+
   return (
     <LayoutTemplate
       header={<Header />}
       footer={<Footer />}
       main={
-        <div className="p-4">
+        <div className="p-4 relative">
           <h1 className="text-xl font-bold mb-4">カレンダー</h1>
 
           {/* カレンダー部分 */}
@@ -293,6 +478,271 @@ export function CalendarPage() {
               ))}
             </div>
           </div>
+
+          {/* FAB */}
+          <Fab
+            color="primary"
+            aria-label="記録を追加"
+            onClick={handleFabClick}
+            sx={{
+              position: 'fixed',
+              bottom: 80,
+              right: 16,
+              zIndex: 1000,
+            }}
+          >
+            <Add />
+          </Fab>
+
+          {/* 記録入力ドロワー */}
+          <Drawer
+            anchor="bottom"
+            open={isDrawerOpen}
+            onClose={handleDrawerClose}
+          >
+            <Box sx={{ p: 3, minHeight: '50vh' }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">記録を追加</Typography>
+                <IconButton onClick={handleDrawerClose}>
+                  <Close />
+                </IconButton>
+              </Box>
+
+              <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* 大カテゴリー選択 */}
+                <FormControl component="fieldset">
+                  <Typography variant="body1" sx={{ mb: 1 }}>カテゴリー</Typography>
+                  <RadioGroup
+                    row
+                    value={recordForm.category || 'hospital'}
+                    onChange={(e) => {
+                      const category = e.target.value as 'hospital' | 'supplies';
+                      setRecordForm({ ...recordForm, category, subcategoryType: category === 'hospital' ? 'medication' : 'food' });
+                    }}
+                  >
+                    <FormControlLabel value="hospital" control={<Radio />} label="🏥 病院" />
+                    <FormControlLabel value="supplies" control={<Radio />} label="🛍️ 備品" />
+                  </RadioGroup>
+                </FormControl>
+
+                {/* 日付選択 */}
+                <TextField
+                  fullWidth
+                  label="日付"
+                  type="date"
+                  value={recordForm.date || ''}
+                  onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+
+                {/* 小カテゴリー選択 */}
+                {recordForm.category === 'hospital' && (
+                  <FormControl component="fieldset">
+                    <Typography variant="body1" sx={{ mb: 1 }}>項目</Typography>
+                    <RadioGroup
+                      row
+                      value={recordForm.subcategoryType || 'medication'}
+                      onChange={(e) => {
+                        const subcategoryType = e.target.value;
+                        setRecordForm({ ...recordForm, subcategoryType });
+                        if (subcategoryType === 'medication') setSelectedSubcategory(VisitType.general);
+                        else if (subcategoryType === 'vaccine') setSelectedSubcategory(VisitType.checkup);
+                        else if (subcategoryType === 'visit') setSelectedSubcategory(VisitType.checkup);
+                        setSelectedSubcategoryType(subcategoryType);
+                      }}
+                    >
+                      <FormControlLabel value="medication" control={<Radio />} label="💊 投薬・予防" />
+                      <FormControlLabel value="vaccine" control={<Radio />} label="💉 ワクチン" />
+                      <FormControlLabel value="visit" control={<Radio />} label="🏥 診察" />
+                    </RadioGroup>
+                  </FormControl>
+                )}
+
+                {recordForm.category === 'supplies' && (
+                  <FormControl component="fieldset">
+                    <Typography variant="body1" sx={{ mb: 1 }}>項目</Typography>
+                    <RadioGroup
+                      row
+                      value={recordForm.subcategoryType || 'food'}
+                      onChange={(e) => {
+                        const subcategoryType = e.target.value;
+                        setRecordForm({ ...recordForm, subcategoryType });
+                        if (subcategoryType === 'food') setSelectedSubcategory(ItemCategory.food);
+                        else if (subcategoryType === 'toilet') setSelectedSubcategory(ItemCategory.pad);
+                        else if (subcategoryType === 'care') setSelectedSubcategory(ItemCategory.hygiene);
+                        else if (subcategoryType === 'others') setSelectedSubcategory(ItemCategory.other);
+                        setSelectedSubcategoryType(subcategoryType);
+                      }}
+                    >
+                      <FormControlLabel value="food" control={<Radio />} label="🍱 フード・おやつ" />
+                      <FormControlLabel value="toilet" control={<Radio />} label="🚽 トイレ用品" />
+                      <FormControlLabel value="care" control={<Radio />} label="🧴 ケア用品" />
+                      <FormControlLabel value="others" control={<Radio />} label="📦 その他" />
+                    </RadioGroup>
+                  </FormControl>
+                )}
+
+                {/* ペット選択 */}
+                <FormControl component="fieldset">
+                  <Typography variant="body1" sx={{ mb: 1 }}>ペット</Typography>
+                  <RadioGroup
+                    row
+                    value={recordForm.petId || ''}
+                    onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
+                  >
+                    {petsData?.content?.map(pet => (
+                      <FormControlLabel key={pet.id} value={pet.id} control={<Radio />} label={pet.name} />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+
+                {/* 専用フィールド */}
+                {recordForm.category === 'hospital' && recordForm.subcategoryType === 'medication' && (
+                  <>
+                    <FormControl fullWidth>
+                      <InputLabel>区分</InputLabel>
+                      <Select
+                        value={recordForm.categoryField || ''}
+                        label="区分"
+                        onChange={(e) => setRecordForm({ ...recordForm, categoryField: e.target.value })}
+                      >
+                        <MenuItem value="フィラリア">フィラリア</MenuItem>
+                        <MenuItem value="ノミダニ">ノミダニ</MenuItem>
+                        <MenuItem value="その他">その他</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="薬名"
+                      value={recordForm.medicineName || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, medicineName: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="次回の予定日"
+                      type="date"
+                      value={recordForm.nextDate || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, nextDate: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </>
+                )}
+
+                {recordForm.category === 'hospital' && recordForm.subcategoryType === 'vaccine' && (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="ワクチン種類"
+                      value={recordForm.vaccineType || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, vaccineType: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Lot No"
+                      value={recordForm.lotNo || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, lotNo: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="次回接種予定日"
+                      type="date"
+                      value={recordForm.nextVaccinationDate || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, nextVaccinationDate: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </>
+                )}
+
+                {recordForm.category === 'hospital' && recordForm.subcategoryType === 'visit' && (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="病院名"
+                      value={recordForm.clinicName || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, clinicName: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="診断内容"
+                      value={recordForm.diagnosis || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="体重 (kg)"
+                      type="number"
+                      inputProps={{ step: "0.1" }}
+                      value={recordForm.weight || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, weight: e.target.value })}
+                    />
+                    <FormControl fullWidth>
+                      <InputLabel>体調ステータス</InputLabel>
+                      <Select
+                        value={recordForm.condition || ''}
+                        label="体調ステータス"
+                        onChange={(e) => setRecordForm({ ...recordForm, condition: e.target.value })}
+                      >
+                        <MenuItem value="元気">元気</MenuItem>
+                        <MenuItem value="普通">普通</MenuItem>
+                        <MenuItem value="不調">不調</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="医師からの指示メモ"
+                      multiline
+                      rows={3}
+                      value={recordForm.doctorNote || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, doctorNote: e.target.value })}
+                    />
+                  </>
+                )}
+
+
+
+                {recordForm.category === 'supplies' && (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="品名"
+                      value={recordForm.itemName || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, itemName: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="数量"
+                      value={recordForm.quantity || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, quantity: e.target.value })}
+                    />
+                    <TextField
+                      fullWidth
+                      label="購入日"
+                      type="date"
+                      value={recordForm.purchaseDate || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, purchaseDate: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="メモ"
+                      multiline
+                      rows={3}
+                      value={recordForm.memo || ''}
+                      onChange={(e) => setRecordForm({ ...recordForm, memo: e.target.value })}
+                    />
+                  </>
+                )}
+
+                <Button
+                  variant="contained"
+                  onClick={handleSubmitRecord}
+                  disabled={addVisitMutation.isPending || addVisitPrescriptionMutation.isPending}
+                >
+                  保存
+                </Button>
+              </Box>
+            </Box>
+          </Drawer>
         </div>
       }
     />
