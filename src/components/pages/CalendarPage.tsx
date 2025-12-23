@@ -135,7 +135,7 @@ export function CalendarPage() {
           <h1 className="text-xl font-bold mb-4">カレンダー</h1>
 
           {/* カレンダー部分 */}
-          <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="bg-[#1e1e1e] rounded-lg shadow p-4 mb-6">
 
             {/* ナビゲーション */}
             <div className="grid grid-cols-3 items-center gap-4 mb-4">
@@ -144,7 +144,7 @@ export function CalendarPage() {
                 <select
                   value={currentMonth.getFullYear()}
                   onChange={(e) => setCurrentMonth(new Date(parseInt(e.target.value), currentMonth.getMonth(), 1))}
-                  className="bg-transparent border border-gray-700 rounded px-2 py-1 text-gray-800"
+                  className="bg-transparent border border-gray-700 rounded px-2 py-1 text-gray-100"
                 >
                   {Array.from({ length: 11 }, (_, i) => 2020 + i).map(year => (
                     <option key={year} value={year}>{year}年</option>
@@ -156,11 +156,11 @@ export function CalendarPage() {
               <div className="justify-self-center flex items-center gap-4">
                 <button
                   onClick={() => viewMode === 'monthly' ? changeMonth(-1) : changeWeek(-1)}
-                  className="text-gray-600 hover:text-gray-800 text-2xl"
+                  className="text-gray-100 hover:text-white text-2xl"
                 >
                   ‹
                 </button>
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-lg font-semibold text-white">
                   {viewMode === 'monthly'
                     ? `${currentMonth.getMonth() + 1}月`
                     : `${startDateWeek.getMonth() + 1}月`
@@ -168,7 +168,7 @@ export function CalendarPage() {
                 </h2>
                 <button
                   onClick={() => viewMode === 'monthly' ? changeMonth(1) : changeWeek(1)}
-                  className="text-gray-600 hover:text-gray-800 text-2xl"
+                  className="text-gray-100 hover:text-white text-2xl"
                 >
                   ›
                 </button>
@@ -212,7 +212,7 @@ export function CalendarPage() {
             {viewMode === 'monthly' && (
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {weekDays.map(day => (
-                  <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
+                  <div key={day} className="text-center text-sm font-medium text-gray-100 py-2">
                     {day}
                   </div>
                 ))}
@@ -231,16 +231,16 @@ export function CalendarPage() {
                   <div
                     key={index}
                     onClick={() => setSelectedDate(date)}
-                    className={`relative text-center py-3 px-2 text-sm cursor-pointer hover:bg-gray-50 rounded ${
-                      isSelectedDate(date) ? 'bg-blue-100 border-2 border-blue-500' : ''
+                    className={`relative text-center py-3 px-2 text-sm cursor-pointer hover:bg-gray-700 rounded ${
+                      isSelectedDate(date) ? 'bg-gray-700' : ''
                     } ${
-                      isCurrentPeriod(date) ? 'text-gray-900' : 'text-gray-400'
+                      isCurrentPeriod(date) ? 'text-white' : 'text-gray-500'
                     }`}
                   >
                     {date.getDate()}
                     {/* タスクドット */}
                     {displayedTasks.length > 0 && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
                         {displayedTasks.map((task, taskIndex) => (
                           <div
                             key={task.id}
@@ -261,23 +261,23 @@ export function CalendarPage() {
           </div>
 
           {/* タスクリスト部分 */}
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-[#1e1e1e] rounded-lg shadow p-4">
             {/* 日付ヘッダー */}
-            <h3 className="text-lg font-semibold mb-4">
+            <h3 className="text-lg font-semibold mb-4 text-white">
               {selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
             </h3>
 
             {/* 投薬カード */}
             <div className="space-y-4">
               {getTasksForDate(selectedDate).map(task => (
-                <div key={task.id} className="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-start">
+                <div key={task.id} className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex justify-between items-start">
                   <div className="flex flex-col gap-2">
-                    <div className="font-bold">{task.time} - {task.medicine}</div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="font-bold text-white">{task.time} - {task.medicine}</div>
+                    <div className="flex items-center gap-2 text-sm text-gray-100">
                       <Info className="w-4 h-4" />
                       {task.dosage}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-100">
                       <Pets className="w-4 h-4" />
                       {task.petName}
                     </div>
