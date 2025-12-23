@@ -36,7 +36,7 @@ export function CalendarPage() {
     return startOfWeek;
   });
   const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
-  const [taskCompletions, setTaskCompletions] = useState<Record<string, boolean>>({});
+  const [cardCompletions, setCardCompletions] = useState<Record<string, boolean>>({});
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<'category' | 'subcategory' | 'form'>('category');
   const [selectedCategory, setSelectedCategory] = useState<'hospital' | 'supplies' | null>(null);
@@ -67,9 +67,25 @@ export function CalendarPage() {
   const addItemMutation = useAddItem();
   const addPrescriptionMutation = useAddPrescription();
 
-  // タスクデータを日付ごとにグループ化（実際のvisitsデータから生成）
-  const getTasksForDate = (date: Date) => {
-    return [];
+  // カードデータを日付ごとにグループ化（実際のvisitsデータから生成）
+  const getCardsForDate = (date: Date) => {
+    if (!visitsData?.content) return [];
+
+    // 選択された日付のvisitsをフィルタ
+    const targetDateStr = date.toISOString().split('T')[0];
+    const dayVisits = visitsData.content.filter(visit =>
+      visit.visitedOn && visit.visitedOn.startsWith(targetDateStr)
+    );
+
+    // visitsをカード形式に変換
+    return dayVisits.map(visit => ({
+      id: visit.id,
+      time: '08:00', // 仮の時間（実際にはvisit.visitedOnから取得可能）
+      medicine: visit.reason || '診察',
+      dosage: visit.note || '',
+      petName: petsData?.content?.find(pet => pet.id === visit.petId)?.name || '不明',
+      completed: cardCompletions[visit.id] ?? false,
+    }));
   };
 
   // 月間表示の日付計算
@@ -137,9 +153,9 @@ export function CalendarPage() {
   // 曜日見出し
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
-  // タスク完了状態をトグル
-  const toggleTaskCompletion = (taskId: string) => {
-    setTaskCompletions(prev => ({ ...prev, [taskId]: !prev[taskId] }));
+  // カード完了状態をトグル
+  const toggleCardCompletion = (cardId: string) => {
+    setCardCompletions(prev => ({ ...prev, [cardId]: !prev[cardId] }));
   };
 
   // モックデータ：予定の状態（実際にはAPIから取得）
@@ -441,10 +457,10 @@ export function CalendarPage() {
             {/* 日付セル */}
             <div className={`grid gap-1 ${viewMode === 'monthly' ? 'grid-cols-7' : 'grid-cols-7'}`}>
               {dates.map((date, index) => {
-                const tasks = getTasksForDate(date);
+                const cards = getCardsForDate(date);
                 const maxDots = 5;
-                const displayedTasks = tasks.slice(0, maxDots);
-                const remainingCount = Math.max(0, tasks.length - maxDots);
+                const displayedCards = cards.slice(0, maxDots);
+                const remainingCount = Math.max(0, cards.length - maxDots);
 
                 return (
                   <div
@@ -457,14 +473,14 @@ export function CalendarPage() {
                     }`}
                   >
                     {date.getDate()}
-                    {/* タスクドット */}
-                    {displayedTasks.length > 0 && (
+                    {/* カードドット */}
+                    {displayedCards.length > 0 && (
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
-                        {displayedTasks.map((task, taskIndex) => (
+                        {displayedCards.map((card, cardIndex) => (
                           <div
-                            key={task.id}
+                            key={card.id}
                             className={`w-1.5 h-1.5 rounded-full ${
-                              task.completed ? 'bg-[#27A67A]' : 'bg-gray-300'
+                              card.completed ? 'bg-[#27A67A]' : 'bg-gray-300'
                             }`}
                           />
                         ))}
@@ -479,7 +495,7 @@ export function CalendarPage() {
             </div>
           </div>
 
-          {/* タスクリスト部分 */}
+          {/* カードリスト部分 */}
           <div className="bg-[#1e1e1e] rounded-lg shadow p-4">
             {/* 日付ヘッダー */}
             <h3 className="text-lg font-semibold mb-4 text-white">
@@ -488,26 +504,26 @@ export function CalendarPage() {
 
             {/* 投薬カード */}
             <div className="space-y-4">
-              {getTasksForDate(selectedDate).map(task => (
-                <div key={task.id} className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex justify-between items-start">
+              {getCardsForDate(selectedDate).map(card => (
+                <div key={card.id} className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex justify-between items-start">
                   <div className="flex flex-col gap-2">
-                    <div className="font-bold text-white">{task.time} - {task.medicine}</div>
+                    <div className="font-bold text-white">{card.time} - {card.medicine}</div>
                     <div className="flex items-center gap-2 text-sm text-gray-100">
                       <Info className="w-4 h-4" />
-                      {task.dosage}
+                      {card.dosage}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-100">
                       <Pets className="w-4 h-4" />
-                      {task.petName}
+                      {card.petName}
                     </div>
                   </div>
                   <button
-                    onClick={() => toggleTaskCompletion(task.id)}
+                    onClick={() => toggleCardCompletion(card.id)}
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      task.completed ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                      card.completed ? 'bg-green-500 border-green-500' : 'border-gray-300'
                     }`}
                   >
-                    {task.completed && <Check className="w-4 h-4 text-white" />}
+                    {card.completed && <Check className="w-4 h-4 text-white" />}
                   </button>
                 </div>
               ))}
