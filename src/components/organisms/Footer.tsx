@@ -19,7 +19,7 @@ export function Footer() {
 
   const navigation = [
     { name: "ホーム", href: `/${currentUser.username}`, icon: HomeIcon },
-    { name: "履歴", href: `/${currentUser.username}/history`, icon: CalendarTodayIcon },
+    { name: "カレンダー", href: `/${currentUser.username}/calendar`, icon: CalendarTodayIcon },
     { name: "ペット一覧", href: `/${currentUser.username}/pets`, icon: PetsIcon },
     { name: "設定", href: `/${currentUser.username}/setting`, icon: SettingsIcon },
   ];
