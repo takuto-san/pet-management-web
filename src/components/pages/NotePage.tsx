@@ -71,7 +71,7 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, isSidebarOpen }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, isSidebarOpen }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
@@ -79,6 +79,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
   onSelectNote: (id: string) => void;
   onSelectSection: (noteId: string, sectionId: string) => void;
   onToggleExpand: (id: string) => void;
+  onAddSection: (noteId: string) => void;
   isSidebarOpen: boolean;
 }) {
   return (
@@ -98,10 +99,10 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                       sx={{
                         display: "flex",
                         alignItems: "center",
+                        px: 1,
                         "&.Mui-selected": {
                           bgcolor: "grey.700",
                           borderRadius: 1,
-                          px: 1,
                           "&:hover": {
                             bgcolor: "grey.600",
                           },
@@ -153,6 +154,19 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                           </ListItem>
                         );
                       })}
+                      <ListItem disablePadding>
+                        <ListItemButton
+                          onClick={() => onAddSection(note.id)}
+                          sx={{
+                            py: 0.5,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <CreateIcon sx={{ mr: 1, fontSize: "0.9rem", color: "text.secondary" }} />
+                          <ListItemText primary="セクションを追加" sx={{ fontSize: "0.9rem", color: "text.secondary" }} />
+                        </ListItemButton>
+                      </ListItem>
                     </List>
                   )}
                 </Box>
@@ -402,6 +416,22 @@ export function NotePage() {
     );
   };
 
+  const handleAddSection = (noteId: string) => {
+    const newSection: Section = {
+      id: `new-${Date.now()}`,
+      title: "新しいセクション",
+      pages: [],
+      isExpanded: false,
+    };
+    setNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note.id === noteId
+          ? { ...note, sections: [...note.sections, newSection] }
+          : note
+      )
+    );
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutTemplate
@@ -418,6 +448,7 @@ export function NotePage() {
             onSelectNote={handleSelectNote}
             onSelectSection={handleSelectSection}
             onToggleExpand={handleToggleExpand}
+            onAddSection={handleAddSection}
             isSidebarOpen={isSidebarOpen}
           />
         }
