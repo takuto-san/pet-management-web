@@ -19,7 +19,7 @@ import {
   ThemeProvider,
   createTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon } from "@mui/icons-material";
+import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon } from "@mui/icons-material";
 
 // ページの型定義
 interface Page {
@@ -203,53 +203,123 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
   );
 }
 
-// エディタ（メイン）
-function NoteEditor({ selectedPage }: { selectedPage: Page | null }) {
-  if (!selectedPage) {
+// メインコンテンツ
+function MainContent({ selectedNote, selectedSection, selectedPage, onSelectSection, onSelectPage }: {
+  selectedNote: Note | null;
+  selectedSection: Section | null;
+  selectedPage: Page | null;
+  onSelectSection: (noteId: string, sectionId: string) => void;
+  onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
+}) {
+  // ノート選択時：セクション一覧
+  if (selectedNote && !selectedSection) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          bgcolor: "background.paper",
-          color: "text.secondary",
-        }}
-      >
-        ページを選択してください
+      <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
+        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
+            {selectedNote.name}
+          </Typography>
+        </Box>
+        <List sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
+          {selectedNote.sections.map((section) => (
+            <ListItem key={section.id} disablePadding>
+              <ListItemButton
+                onClick={() => onSelectSection(selectedNote.id, section.id)}
+                sx={{
+                  py: 1,
+                  "&:hover": {
+                    bgcolor: "grey.700",
+                  },
+                }}
+              >
+                <NoteIcon sx={{ mr: 1, color: "text.secondary" }} />
+                <ListItemText primary={section.title} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
       </Box>
     );
   }
 
+  // セクション選択時：ページ一覧
+  if (selectedSection && !selectedPage) {
+    return (
+      <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
+        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
+            {selectedSection.title}
+          </Typography>
+        </Box>
+        <List sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
+          {selectedSection.pages.map((page) => (
+            <ListItem key={page.id} disablePadding>
+              <ListItemButton
+                onClick={() => onSelectPage(selectedNote!.id, selectedSection.id, page.id)}
+                sx={{
+                  py: 1,
+                  "&:hover": {
+                    bgcolor: "grey.700",
+                  },
+                }}
+              >
+                <DescriptionIcon sx={{ mr: 1, color: "text.secondary" }} />
+                <ListItemText primary={page.title} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    );
+  }
+
+  // ページ選択時：エディタ
+  if (selectedPage) {
+    return (
+      <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
+        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
+            {selectedPage.title}
+          </Typography>
+        </Box>
+        <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
+          <TextField
+            fullWidth
+            multiline
+            variant="standard"
+            placeholder="ここにページの内容を入力してください..."
+            value={selectedPage.content}
+            onChange={(e) => {
+              // TODO: コンテンツ更新ハンドラーを実装
+            }}
+            InputProps={{
+              disableUnderline: true,
+            }}
+            sx={{
+              "& .MuiInputBase-input": {
+                fontSize: "1rem",
+                lineHeight: 1.5,
+              },
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  // 何も選択されていない場合
   return (
-    <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
-        <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
-          {selectedPage.title}
-        </Typography>
-      </Box>
-      <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
-        <TextField
-          fullWidth
-          multiline
-          variant="standard"
-          placeholder="ここにページの内容を入力してください..."
-          value={selectedPage.content}
-          onChange={(e) => {
-            // TODO: コンテンツ更新ハンドラーを実装
-          }}
-          InputProps={{
-            disableUnderline: true,
-          }}
-          sx={{
-            "& .MuiInputBase-input": {
-              fontSize: "1rem",
-              lineHeight: 1.5,
-            },
-          }}
-        />
-      </Box>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        bgcolor: "background.paper",
+        color: "text.secondary",
+      }}
+    >
+      ノートを選択してください
     </Box>
   );
 }
@@ -324,7 +394,7 @@ export function NotePage() {
   ]);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>("1");
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>("1-1");
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>(["1"]);
 
@@ -401,7 +471,13 @@ export function NotePage() {
           />
         }
         main={
-          <NoteEditor selectedPage={selectedPage} />
+          <MainContent
+            selectedNote={selectedNote}
+            selectedSection={selectedSection}
+            selectedPage={selectedPage}
+            onSelectSection={handleSelectSection}
+            onSelectPage={handleSelectPage}
+          />
         }
       />
     </ThemeProvider>
