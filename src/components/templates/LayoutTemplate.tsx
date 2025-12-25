@@ -15,9 +15,9 @@ export function LayoutTemplate({ header, hamburgerBar, sidebar, pageList, main, 
       {header && <header>{header}</header>}
       {hamburgerBar && <div className="bg-white">{hamburgerBar}</div>}
       <div className="flex flex-grow">
-        {sidebar && <aside className="w-64">{sidebar}</aside>}
-        {pageList && <aside className={`w-64 ${isSidebarOpen ? 'border-l border-gray-300' : ''}`}>{pageList}</aside>}
-        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} pb-16 ${isSidebarOpen ? 'border-l border-gray-300' : ''}`}>
+        {sidebar && <aside className="w-64 pb-16">{sidebar}</aside>}
+        {pageList && <aside className="w-64 pb-16">{pageList}</aside>}
+        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} pb-16`}>
           {main}
         </main>
       </div>

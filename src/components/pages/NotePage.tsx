@@ -71,7 +71,7 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, isSidebarOpen }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
@@ -80,12 +80,13 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
   onSelectSection: (noteId: string, sectionId: string) => void;
   onToggleExpand: (id: string) => void;
   onAddSection: (noteId: string) => void;
+  onAddNote: () => void;
   isSidebarOpen: boolean;
 }) {
   return (
     <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
       {isSidebarOpen && (
-        <Box sx={{ width: 256, display: "flex", flexDirection: "column" }}>
+        <Box sx={{ width: 256, display: "flex", flexDirection: "column", height: "100%" }}>
           <List sx={{ flexGrow: 1, overflow: "auto" }}>
             {notes.map((note) => {
               const isExpanded = expandedNoteIds.includes(note.id);
@@ -173,6 +174,25 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
               );
             })}
           </List>
+          <Box sx={{ p: 1, borderTop: 1, borderColor: "divider" }}>
+            <Button
+              startIcon={<CreateIcon />}
+              fullWidth
+              variant="outlined"
+              onClick={onAddNote}
+              sx={{
+                justifyContent: "flex-start",
+                textTransform: "none",
+                color: "text.primary",
+                borderColor: "divider",
+                "&:hover": {
+                  borderColor: "text.secondary",
+                },
+              }}
+            >
+              ノートを追加
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>
@@ -432,6 +452,19 @@ export function NotePage() {
     );
   };
 
+  const handleAddNote = () => {
+    const newNote: Note = {
+      id: `new-${Date.now()}`,
+      name: "新しいノート",
+      sections: [],
+      createdAt: new Date(),
+    };
+    setNotes((prevNotes) => [...prevNotes, newNote]);
+    setSelectedNoteId(newNote.id);
+    setSelectedSectionId(null);
+    setSelectedPageId(null);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutTemplate
@@ -449,6 +482,7 @@ export function NotePage() {
             onSelectSection={handleSelectSection}
             onToggleExpand={handleToggleExpand}
             onAddSection={handleAddSection}
+            onAddNote={handleAddNote}
             isSidebarOpen={isSidebarOpen}
           />
         }
