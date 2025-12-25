@@ -11,7 +11,7 @@ export function LayoutTemplate({ header, hamburgerBar, sidebar, main, footer, is
   return (
     <div className="min-h-screen flex flex-col">
       {header && <header>{header}</header>}
-      {hamburgerBar && <div className="border-b border-gray-200 bg-white">{hamburgerBar}</div>}
+      {hamburgerBar && <div className="bg-white">{hamburgerBar}</div>}
       <div className="flex flex-grow">
         {sidebar && <aside className="w-64">{sidebar}</aside>}
         <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} pb-16`}>
