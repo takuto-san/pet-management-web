@@ -16,10 +16,11 @@ import {
   Typography,
   TextField,
   IconButton,
+  Button,
   ThemeProvider,
   createTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon } from "@mui/icons-material";
+import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon } from "@mui/icons-material";
 
 // ページの型定義
 interface Page {
@@ -70,67 +71,66 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, isSidebarOpen }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, isSidebarOpen }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
-  selectedPageId: string | null;
   expandedNoteIds: string[];
   onSelectNote: (id: string) => void;
   onSelectSection: (noteId: string, sectionId: string) => void;
-  onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
   onToggleExpand: (id: string) => void;
-  onToggleSection: (noteId: string, sectionId: string) => void;
   isSidebarOpen: boolean;
 }) {
   return (
-    <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
       {isSidebarOpen && (
-        <List sx={{ flexGrow: 1, overflow: "auto" }}>
-          {notes.map((note) => {
-            const isExpanded = expandedNoteIds.includes(note.id);
-            const isSelected = selectedNoteId === note.id && selectedSectionId === null;
-            return (
-              <Box key={note.id}>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    selected={isSelected}
-                    onClick={() => onSelectNote(note.id)}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      "&.Mui-selected": {
-                        bgcolor: "grey.700",
-                        "&:hover": {
-                          bgcolor: "grey.600",
-                        },
-                      },
-                    }}
-                  >
-                    <ChevronRightIcon
+        <Box sx={{ width: 256, display: "flex", flexDirection: "column" }}>
+          <List sx={{ flexGrow: 1, overflow: "auto" }}>
+            {notes.map((note) => {
+              const isExpanded = expandedNoteIds.includes(note.id);
+              const isSelected = selectedNoteId === note.id && selectedSectionId === null;
+              return (
+                <Box key={note.id}>
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      selected={isSelected}
+                      onClick={() => onSelectNote(note.id)}
                       sx={{
-                        transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                        transition: "transform 0.2s",
-                        mr: 1,
-                        cursor: "pointer",
-                        fontSize: "1.2rem",
-                        color: "text.secondary",
+                        display: "flex",
+                        alignItems: "center",
+                        "&.Mui-selected": {
+                          bgcolor: "grey.700",
+                          borderRadius: 1,
+                          px: 1,
+                          "&:hover": {
+                            bgcolor: "grey.600",
+                          },
+                        },
                       }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleExpand(note.id);
-                      }}
-                    />
-                    <ListItemText primary={note.name} />
-                  </ListItemButton>
-                </ListItem>
-                {isExpanded && (
-                  <List sx={{ pl: 4 }}>
-                    {note.sections.map((section) => {
-                      const isSectionSelected = selectedSectionId === section.id && selectedPageId === null;
-                      return (
-                        <Box key={section.id}>
-                          <ListItem disablePadding>
+                    >
+                      <ChevronRightIcon
+                        sx={{
+                          transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                          transition: "transform 0.2s",
+                          mr: 1,
+                          cursor: "pointer",
+                          fontSize: "1.2rem",
+                          color: "text.secondary",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleExpand(note.id);
+                        }}
+                      />
+                      <ListItemText primary={note.name} />
+                    </ListItemButton>
+                  </ListItem>
+                  {isExpanded && (
+                    <List sx={{ pl: 4 }}>
+                      {note.sections.map((section) => {
+                        const isSectionSelected = selectedSectionId === section.id;
+                        return (
+                          <ListItem key={section.id} disablePadding>
                             <ListItemButton
                               selected={isSectionSelected}
                               onClick={() => onSelectSection(note.id, section.id)}
@@ -140,144 +140,102 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                 py: 0.5,
                                 "&.Mui-selected": {
                                   bgcolor: "grey.700",
+                                  borderRadius: 1,
+                                  px: 1,
                                   "&:hover": {
                                     bgcolor: "grey.600",
                                   },
                                 },
                               }}
                             >
-                              <ChevronRightIcon
-                                sx={{
-                                  transform: section.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                                  transition: "transform 0.2s",
-                                  mr: 1,
-                                  cursor: "pointer",
-                                  fontSize: "1rem",
-                                  color: "text.secondary",
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onToggleSection(note.id, section.id);
-                                }}
-                              />
                               <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
                             </ListItemButton>
                           </ListItem>
-                          {section.isExpanded && (
-                            <List sx={{ pl: 4 }}>
-                              {section.pages.map((page) => {
-                                const isPageSelected = selectedPageId === page.id;
-                                return (
-                                  <ListItem key={page.id} disablePadding>
-                                    <ListItemButton
-                                      selected={isPageSelected}
-                                      onClick={() => onSelectPage(note.id, section.id, page.id)}
-                                      sx={{
-                                        py: 0.25,
-                                        "&.Mui-selected": {
-                                          bgcolor: "grey.700",
-                                          "&:hover": {
-                                            bgcolor: "grey.600",
-                                          },
-                                        },
-                                      }}
-                                    >
-                                      <ListItemText primary={page.title} sx={{ fontSize: "0.8rem" }} />
-                                    </ListItemButton>
-                                  </ListItem>
-                                );
-                              })}
-                            </List>
-                          )}
-                        </Box>
-                      );
-                    })}
-                  </List>
-                )}
-              </Box>
-            );
-          })}
-        </List>
+                        );
+                      })}
+                    </List>
+                  )}
+                </Box>
+              );
+            })}
+          </List>
+        </Box>
       )}
     </Box>
   );
 }
 
-// メインコンテンツ
-function MainContent({ selectedNote, selectedSection, selectedPage, onSelectSection, onSelectPage }: {
-  selectedNote: Note | null;
+// ページリスト（サイドバーの横）
+function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId }: {
   selectedSection: Section | null;
-  selectedPage: Page | null;
-  onSelectSection: (noteId: string, sectionId: string) => void;
+  selectedPageId: string | null;
   onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
+  selectedNoteId: string;
 }) {
-  // ノート選択時：セクション一覧
-  if (selectedNote && !selectedSection) {
-    return (
-      <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
-            {selectedNote.name}
-          </Typography>
-        </Box>
-        <List sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
-          {selectedNote.sections.map((section) => (
-            <ListItem key={section.id} disablePadding>
-              <ListItemButton
-                onClick={() => onSelectSection(selectedNote.id, section.id)}
-                sx={{
-                  py: 1,
-                  "&:hover": {
-                    bgcolor: "grey.700",
-                  },
-                }}
-              >
-                <NoteIcon sx={{ mr: 1, color: "text.secondary" }} />
-                <ListItemText primary={section.title} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-    );
-  }
+  if (!selectedSection) return null;
 
-  // セクション選択時：ページ一覧
-  if (selectedSection && !selectedPage) {
-    return (
-      <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
-            {selectedSection.title}
-          </Typography>
-        </Box>
-        <List sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
-          {selectedSection.pages.map((page) => (
+  return (
+    <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ p: 1 }}>
+        <Button
+          startIcon={<CreateIcon />}
+          fullWidth
+          variant="outlined"
+          onClick={() => {
+            // TODO: ページ追加ハンドラーを実装
+          }}
+          sx={{
+            justifyContent: "flex-start",
+            textTransform: "none",
+            color: "text.primary",
+            borderColor: "divider",
+            "&:hover": {
+              borderColor: "text.secondary",
+            },
+          }}
+        >
+          ページを追加
+        </Button>
+      </Box>
+      <List sx={{ flexGrow: 1, overflow: "auto", p: 1 }}>
+        {selectedSection.pages.map((page) => {
+          const isPageSelected = selectedPageId === page.id;
+          return (
             <ListItem key={page.id} disablePadding>
               <ListItemButton
-                onClick={() => onSelectPage(selectedNote!.id, selectedSection.id, page.id)}
+                selected={isPageSelected}
+                onClick={() => onSelectPage(selectedNoteId, selectedSection.id, page.id)}
                 sx={{
-                  py: 1,
-                  "&:hover": {
+                  py: 0.5,
+                  "&.Mui-selected": {
                     bgcolor: "grey.700",
+                    borderRadius: 1,
+                    px: 1,
+                    "&:hover": {
+                      bgcolor: "grey.600",
+                    },
                   },
                 }}
               >
-                <DescriptionIcon sx={{ mr: 1, color: "text.secondary" }} />
-                <ListItemText primary={page.title} />
+                <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
               </ListItemButton>
             </ListItem>
-          ))}
-        </List>
-      </Box>
-    );
-  }
+          );
+        })}
+      </List>
+    </Box>
+  );
+}
 
+// メインコンテンツ
+function MainContent({ selectedPage }: {
+  selectedPage: Page | null;
+}) {
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
       <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
+        <Box sx={{ p: 3 }}>
           <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
             {selectedPage.title}
           </Typography>
@@ -309,18 +267,7 @@ function MainContent({ selectedNote, selectedSection, selectedPage, onSelectSect
 
   // 何も選択されていない場合
   return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100%",
-        bgcolor: "background.paper",
-        color: "text.secondary",
-      }}
-    >
-      ノートを選択してください
-    </Box>
+    <Box sx={{ height: "100%", bgcolor: "background.paper" }} />
   );
 }
 
@@ -403,7 +350,13 @@ export function NotePage() {
   const selectedPage = selectedSection?.pages.find((p) => p.id === selectedPageId) || null;
 
   const handleToggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    const newIsSidebarOpen = !isSidebarOpen;
+    setIsSidebarOpen(newIsSidebarOpen);
+    // サイドバーを閉じる場合、タブ内のコンテンツも全て閉じる
+    if (!newIsSidebarOpen) {
+      setSelectedSectionId(null);
+      setSelectedPageId(null);
+    }
   };
 
   const handleSelectNote = (id: string) => {
@@ -455,28 +408,32 @@ export function NotePage() {
         header={<Header />}
         hamburgerBar={<HamburgerBar onToggleSidebar={handleToggleSidebar} />}
         footer={<Footer />}
+        isSidebarOpen={isSidebarOpen}
         sidebar={
           <NoteList
             notes={notes}
             selectedNoteId={selectedNoteId}
             selectedSectionId={selectedSectionId}
-            selectedPageId={selectedPageId}
             expandedNoteIds={expandedNoteIds}
             onSelectNote={handleSelectNote}
             onSelectSection={handleSelectSection}
-            onSelectPage={handleSelectPage}
             onToggleExpand={handleToggleExpand}
-            onToggleSection={handleToggleSection}
             isSidebarOpen={isSidebarOpen}
           />
         }
+        pageList={
+          selectedSection ? (
+            <PageList
+              selectedSection={selectedSection}
+              selectedPageId={selectedPageId}
+              onSelectPage={handleSelectPage}
+              selectedNoteId={selectedNoteId}
+            />
+          ) : null
+        }
         main={
           <MainContent
-            selectedNote={selectedNote}
-            selectedSection={selectedSection}
             selectedPage={selectedPage}
-            onSelectSection={handleSelectSection}
-            onSelectPage={handleSelectPage}
           />
         }
       />
