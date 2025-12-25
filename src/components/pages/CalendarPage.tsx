@@ -253,20 +253,20 @@ export function CalendarPage() {
     const selectedSubcategoryType = recordForm.subcategoryType;
 
     if (selectedCategory === 'hospital') {
-      if (selectedSubcategoryType === 'medication' && (!recordForm.categoryField || !recordForm.medicineName)) {
-        setErrorMessage('必須項目を入力してください');
+      if (!recordForm.clinicId) {
+        setErrorMessage('病院を選択してください');
+        return;
+      }
+      if (selectedSubcategoryType === 'medication' && !recordForm.medicineName) {
+        setErrorMessage('薬名を入力してください');
         return;
       }
       if (selectedSubcategoryType === 'vaccine' && (!recordForm.vaccineType)) {
-        setErrorMessage('必須項目を入力してください');
+        setErrorMessage('ワクチン種類を入力してください');
         return;
       }
-      if (selectedSubcategoryType === 'visit' && (!recordForm.clinicId || !recordForm.diagnosis || !recordForm.weight || !recordForm.condition)) {
+      if (selectedSubcategoryType === 'visit' && (!recordForm.diagnosis || !recordForm.weight || !recordForm.condition)) {
         setErrorMessage('必須項目を入力してください');
-        return;
-      }
-      if (selectedSubcategoryType === 'visit' && !clinicsData?.content?.length) {
-        setErrorMessage('病院データが読み込まれていません。しばらくお待ちください。');
         return;
       }
       // prescriptionが入力された場合のバリデーション
@@ -301,9 +301,25 @@ export function CalendarPage() {
           note = `病院: ${recordForm.clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
         }
 
+        // clinicId から clinicName を取得
+        let clinicName = '';
+        if (recordForm.clinicId && clinicsData?.content) {
+          const clinic = clinicsData.content.find(c => c.id === recordForm.clinicId);
+          clinicName = clinic?.name || '';
+        }
+
+        // note を再構築
+        if (recordForm.subcategoryType === 'medication') {
+          note = recordForm.nextDate ? `次回: ${recordForm.nextDate}` : '';
+        } else if (recordForm.subcategoryType === 'vaccine') {
+          note = `Lot No: ${recordForm.lotNo || ''}, 次回: ${recordForm.nextVaccinationDate || ''}`;
+        } else if (recordForm.subcategoryType === 'visit') {
+          note = `病院: ${clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
+        }
+
         const visitFields: VisitFields = {
           petId: recordForm.petId,
-          clinicId: selectedSubcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || null), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
+          clinicId: recordForm.subcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || null), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
           visitedOn: `${selectedDate.toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
           visitType,
           reason,
@@ -380,7 +396,16 @@ export function CalendarPage() {
         queryClient.invalidateQueries({ queryKey: ['/items'] });
       }
 
-      handleDrawerClose();
+      // 編集モードの場合はサイドバーを閉じる、それ以外はドロワーを閉じる
+      if (isEditing && editingVisitId) {
+        setIsSidebarOpen(false);
+        setSelectedCard(null);
+        setIsSidebarEditing(false);
+        setIsEditing(false);
+        setEditingVisitId(null);
+      } else {
+        handleDrawerClose();
+      }
     } catch (error) {
       setErrorMessage(`記録の保存に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
@@ -586,6 +611,7 @@ export function CalendarPage() {
             onClose={() => {
               setIsSidebarOpen(false);
               setSelectedCard(null);
+              setIsSidebarEditing(false);
             }}
             sx={{
               '& .MuiDrawer-paper': {
@@ -598,7 +624,16 @@ export function CalendarPage() {
           >
             <Box sx={{ p: 3 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">{isSidebarEditing ? '記録を編集' : '詳細情報'}</Typography>
+                <Box display="flex" alignItems="center">
+                  {isSidebarEditing && (
+                    <IconButton onClick={() => setIsSidebarEditing(false)}>
+                      <ArrowBack />
+                    </IconButton>
+                  )}
+                  <Typography variant="h6" sx={{ ml: isSidebarEditing ? 1 : 0 }}>
+                    {isSidebarEditing ? '記録を編集' : '詳細情報'}
+                  </Typography>
+                </Box>
                 <Box>
                   {!isSidebarEditing && (
                     <IconButton onClick={() => {
@@ -609,27 +644,52 @@ export function CalendarPage() {
                         setEditingVisitId(visit.id);
                         // recordFormに既存データをセット
                         const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0];
-                        let category = 'hospital';
-                        let subcategoryType = 'medication';
+                        setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
                         let formData: any = {
                           petId: visit.petId,
                           date: dateStr,
                           category: 'hospital',
                         };
 
-                        // visit.reasonからカテゴリを推測
-                        if (visit.reason.includes('ワクチン')) {
-                          subcategoryType = 'vaccine';
+                        // visit.reasonからカテゴリを判定し、データを復元
+                        if (visit.reason && visit.reason.includes('ワクチン接種')) {
+                          formData.subcategoryType = 'vaccine';
                           formData.vaccineType = visit.reason.replace('ワクチン接種 - ', '');
-                        } else if (visit.reason.includes('診察')) {
-                          subcategoryType = 'visit';
-                          formData.diagnosis = visit.reason;
+                          // noteからLot Noと次回接種日を抽出
+                          if (visit.note) {
+                            const noteParts = visit.note.split(', ');
+                            formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
+                            const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                            if (nextDatePart) {
+                              formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                            }
+                          }
+                        } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
+                          formData.subcategoryType = 'visit';
+                          formData.diagnosis = visit.reason || '';
+                          // noteから病院、体重、体調、指示を抽出
+                          if (visit.note) {
+                            const noteParts = visit.note.split(', ');
+                            formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
+                            formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
+                            formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
+                            formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
+                          }
+                          // clinicIdをclinicNameから逆引き
+                          if (formData.clinicName && clinicsData?.content) {
+                            const clinic = clinicsData.content.find(c => c.name === formData.clinicName);
+                            if (clinic) {
+                              formData.clinicId = clinic.id;
+                            }
+                          }
                         } else {
-                          subcategoryType = 'medication';
-                          formData.medicineName = visit.reason.split(' - ')[1] || visit.reason;
+                          formData.subcategoryType = 'medication';
+                          formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
+                          // noteから区分と次回日を抽出
+                          if (visit.note && visit.note.startsWith('次回: ')) {
+                            formData.nextDate = visit.note.replace('次回: ', '');
+                          }
                         }
-
-                        formData.subcategoryType = subcategoryType;
 
                         setRecordForm(formData);
                         setIsSidebarEditing(true);
@@ -672,7 +732,10 @@ export function CalendarPage() {
                     label="日付"
                     type="date"
                     value={recordForm.date || ''}
-                    onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
+                    onChange={(e) => {
+                      setRecordForm({ ...recordForm, date: e.target.value });
+                      setSelectedDate(new Date(e.target.value)); // 日付変更時にselectedDateを更新
+                    }}
                     InputLabelProps={{ shrink: true }}
                   />
 
