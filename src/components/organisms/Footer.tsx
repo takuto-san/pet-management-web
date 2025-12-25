@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/stores/store";
 import HomeIcon from "@mui/icons-material/Home";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import PetsIcon from "@mui/icons-material/Pets";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 export function Footer() {
@@ -20,7 +20,7 @@ export function Footer() {
   const navigation = [
     { name: "ホーム", href: `/${currentUser.username}`, icon: HomeIcon },
     { name: "カレンダー", href: `/${currentUser.username}/calendar`, icon: CalendarTodayIcon },
-    { name: "ペット一覧", href: `/${currentUser.username}/pets`, icon: PetsIcon },
+    { name: "統計", href: `/${currentUser.username}/pets`, icon: AssessmentIcon },
     { name: "設定", href: `/${currentUser.username}/setting`, icon: SettingsIcon },
   ];
 
