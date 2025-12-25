@@ -63,11 +63,13 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, expandedNoteIds, onSelectNote, onToggleExpand, isSidebarOpen }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, isSidebarOpen }: {
   notes: Note[];
   selectedNoteId: string;
+  selectedSectionId: string | null;
   expandedNoteIds: string[];
   onSelectNote: (id: string) => void;
+  onSelectSection: (noteId: string, sectionId: string) => void;
   onToggleExpand: (id: string) => void;
   isSidebarOpen: boolean;
 }) {
@@ -77,14 +79,23 @@ function NoteList({ notes, selectedNoteId, expandedNoteIds, onSelectNote, onTogg
         <List sx={{ flexGrow: 1, overflow: "auto" }}>
           {notes.map((note) => {
             const isExpanded = expandedNoteIds.includes(note.id);
-            const isSelected = selectedNoteId === note.id;
+            const isSelected = selectedNoteId === note.id && selectedSectionId === null;
             return (
               <Box key={note.id}>
                 <ListItem disablePadding>
                   <ListItemButton
                     selected={isSelected}
                     onClick={() => onSelectNote(note.id)}
-                    sx={{ display: "flex", alignItems: "center" }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      "&.Mui-selected": {
+                        bgcolor: "grey.700",
+                        "&:hover": {
+                          bgcolor: "grey.600",
+                        },
+                      },
+                    }}
                   >
                     <ChevronRightIcon
                       sx={{
@@ -105,16 +116,28 @@ function NoteList({ notes, selectedNoteId, expandedNoteIds, onSelectNote, onTogg
                 </ListItem>
                 {isExpanded && (
                   <List sx={{ pl: 4 }}>
-                    {note.sections.map((section) => (
-                      <ListItem key={section.id} disablePadding>
-                        <ListItemButton
-                          onClick={() => onSelectNote(note.id)}
-                          sx={{ py: 0.5 }}
-                        >
-                          <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
-                        </ListItemButton>
-                      </ListItem>
-                    ))}
+                    {note.sections.map((section) => {
+                      const isSectionSelected = selectedSectionId === section.id;
+                      return (
+                        <ListItem key={section.id} disablePadding>
+                          <ListItemButton
+                            selected={isSectionSelected}
+                            onClick={() => onSelectSection(note.id, section.id)}
+                            sx={{
+                              py: 0.5,
+                              "&.Mui-selected": {
+                                bgcolor: "grey.700",
+                                "&:hover": {
+                                  bgcolor: "grey.600",
+                                },
+                              },
+                            }}
+                          >
+                            <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                          </ListItemButton>
+                        </ListItem>
+                      );
+                    })}
                   </List>
                 )}
               </Box>
@@ -275,12 +298,23 @@ export function NotePage() {
   ]);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>("1");
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>([]);
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleSelectNote = (id: string) => {
+    setSelectedNoteId(id);
+    setSelectedSectionId(null);
+  };
+
+  const handleSelectSection = (noteId: string, sectionId: string) => {
+    setSelectedNoteId(noteId);
+    setSelectedSectionId(sectionId);
   };
 
   const handleToggleExpand = (noteId: string) => {
@@ -318,8 +352,10 @@ export function NotePage() {
           <NoteList
             notes={notes}
             selectedNoteId={selectedNoteId}
+            selectedSectionId={selectedSectionId}
             expandedNoteIds={expandedNoteIds}
-            onSelectNote={setSelectedNoteId}
+            onSelectNote={handleSelectNote}
+            onSelectSection={handleSelectSection}
             onToggleExpand={handleToggleExpand}
             isSidebarOpen={isSidebarOpen}
           />
