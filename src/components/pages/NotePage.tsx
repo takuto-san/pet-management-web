@@ -21,11 +21,18 @@ import {
 } from "@mui/material";
 import { Menu as MenuIcon, ChevronRight as ChevronRightIcon } from "@mui/icons-material";
 
-// ノートセクションの型定義
-interface NoteSection {
+// ページの型定義
+interface Page {
   id: string;
   title: string;
   content: string;
+}
+
+// セクションの型定義
+interface Section {
+  id: string;
+  title: string;
+  pages: Page[];
   isExpanded: boolean;
 }
 
@@ -33,7 +40,7 @@ interface NoteSection {
 interface Note {
   id: string;
   name: string;
-  sections: NoteSection[];
+  sections: Section[];
   createdAt: Date;
 }
 
@@ -63,14 +70,17 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, isSidebarOpen }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, isSidebarOpen }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
+  selectedPageId: string | null;
   expandedNoteIds: string[];
   onSelectNote: (id: string) => void;
   onSelectSection: (noteId: string, sectionId: string) => void;
+  onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
   onToggleExpand: (id: string) => void;
+  onToggleSection: (noteId: string, sectionId: string) => void;
   isSidebarOpen: boolean;
 }) {
   return (
@@ -117,25 +127,69 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                 {isExpanded && (
                   <List sx={{ pl: 4 }}>
                     {note.sections.map((section) => {
-                      const isSectionSelected = selectedSectionId === section.id;
+                      const isSectionSelected = selectedSectionId === section.id && selectedPageId === null;
                       return (
-                        <ListItem key={section.id} disablePadding>
-                          <ListItemButton
-                            selected={isSectionSelected}
-                            onClick={() => onSelectSection(note.id, section.id)}
-                            sx={{
-                              py: 0.5,
-                              "&.Mui-selected": {
-                                bgcolor: "grey.700",
-                                "&:hover": {
-                                  bgcolor: "grey.600",
+                        <Box key={section.id}>
+                          <ListItem disablePadding>
+                            <ListItemButton
+                              selected={isSectionSelected}
+                              onClick={() => onSelectSection(note.id, section.id)}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                py: 0.5,
+                                "&.Mui-selected": {
+                                  bgcolor: "grey.700",
+                                  "&:hover": {
+                                    bgcolor: "grey.600",
+                                  },
                                 },
-                              },
-                            }}
-                          >
-                            <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
-                          </ListItemButton>
-                        </ListItem>
+                              }}
+                            >
+                              <ChevronRightIcon
+                                sx={{
+                                  transform: section.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                                  transition: "transform 0.2s",
+                                  mr: 1,
+                                  cursor: "pointer",
+                                  fontSize: "1rem",
+                                  color: "text.secondary",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onToggleSection(note.id, section.id);
+                                }}
+                              />
+                              <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                            </ListItemButton>
+                          </ListItem>
+                          {section.isExpanded && (
+                            <List sx={{ pl: 4 }}>
+                              {section.pages.map((page) => {
+                                const isPageSelected = selectedPageId === page.id;
+                                return (
+                                  <ListItem key={page.id} disablePadding>
+                                    <ListItemButton
+                                      selected={isPageSelected}
+                                      onClick={() => onSelectPage(note.id, section.id, page.id)}
+                                      sx={{
+                                        py: 0.25,
+                                        "&.Mui-selected": {
+                                          bgcolor: "grey.700",
+                                          "&:hover": {
+                                            bgcolor: "grey.600",
+                                          },
+                                        },
+                                      }}
+                                    >
+                                      <ListItemText primary={page.title} sx={{ fontSize: "0.8rem" }} />
+                                    </ListItemButton>
+                                  </ListItem>
+                                );
+                              })}
+                            </List>
+                          )}
+                        </Box>
                       );
                     })}
                   </List>
@@ -150,10 +204,8 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
 }
 
 // エディタ（メイン）
-function NoteEditor({ note, onToggleSection }: { note: Note | null; onToggleSection: (noteId: string, sectionId: string) => void }) {
-  const [title, setTitle] = useState(note?.name || "");
-
-  if (!note) {
+function NoteEditor({ selectedPage }: { selectedPage: Page | null }) {
+  if (!selectedPage) {
     return (
       <Box
         sx={{
@@ -165,7 +217,7 @@ function NoteEditor({ note, onToggleSection }: { note: Note | null; onToggleSect
           color: "text.secondary",
         }}
       >
-        ノートを選択してください
+        ページを選択してください
       </Box>
     );
   }
@@ -173,74 +225,30 @@ function NoteEditor({ note, onToggleSection }: { note: Note | null; onToggleSect
   return (
     <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
       <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
+        <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
+          {selectedPage.title}
+        </Typography>
+      </Box>
+      <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
         <TextField
           fullWidth
+          multiline
           variant="standard"
-          placeholder="ノートタイトル"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          placeholder="ここにページの内容を入力してください..."
+          value={selectedPage.content}
+          onChange={(e) => {
+            // TODO: コンテンツ更新ハンドラーを実装
+          }}
           InputProps={{
             disableUnderline: true,
           }}
           sx={{
             "& .MuiInputBase-input": {
-              fontSize: "2rem",
-              fontWeight: "bold",
-              color: "text.primary",
+              fontSize: "1rem",
+              lineHeight: 1.5,
             },
           }}
         />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {note.createdAt.toLocaleDateString("ja-JP")} {note.createdAt.toLocaleTimeString("ja-JP")}
-        </Typography>
-      </Box>
-      <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
-        {note.sections.map((section) => (
-          <Box key={section.id} sx={{ mb: 2 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                p: 1,
-                borderRadius: 1,
-                "&:hover": { bgcolor: "action.hover" },
-              }}
-              onClick={() => onToggleSection(note.id, section.id)}
-            >
-              <Typography
-                sx={{
-                  transform: section.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s",
-                  mr: 1,
-                  fontSize: "1.2rem",
-                }}
-              >
-                ▶
-              </Typography>
-              <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                {section.title}
-              </Typography>
-            </Box>
-            {section.isExpanded && (
-              <Box sx={{ pl: 4, mt: 1 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  variant="standard"
-                  placeholder="ここにセクションの内容を入力してください..."
-                  value={section.content}
-                  onChange={(e) => {
-                    // TODO: コンテンツ更新ハンドラーを実装
-                  }}
-                  InputProps={{
-                    disableUnderline: true,
-                  }}
-                />
-              </Box>
-            )}
-          </Box>
-        ))}
       </Box>
     </Box>
   );
@@ -270,13 +278,25 @@ export function NotePage() {
         {
           id: "1-1",
           title: "サドルリスト",
-          content: "サドルの在庫情報をここに記載します。",
+          pages: [
+            {
+              id: "1-1-1",
+              title: "在庫ページ",
+              content: "サドルの在庫情報をここに記載します。",
+            },
+          ],
           isExpanded: true,
         },
         {
           id: "1-2",
           title: "メンテナンス記録",
-          content: "サドルのメンテナンス履歴。",
+          pages: [
+            {
+              id: "1-2-1",
+              title: "履歴ページ",
+              content: "サドルのメンテナンス履歴。",
+            },
+          ],
           isExpanded: false,
         },
       ],
@@ -289,7 +309,13 @@ export function NotePage() {
         {
           id: "2-1",
           title: "一般ノート",
-          content: "他のノート内容。",
+          pages: [
+            {
+              id: "2-1-1",
+              title: "ノートページ",
+              content: "他のノート内容。",
+            },
+          ],
           isExpanded: true,
         },
       ],
@@ -298,10 +324,13 @@ export function NotePage() {
   ]);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>("1");
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
-  const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>([]);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>("1-1");
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>(["1"]);
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
+  const selectedSection = selectedNote?.sections.find((s) => s.id === selectedSectionId) || null;
+  const selectedPage = selectedSection?.pages.find((p) => p.id === selectedPageId) || null;
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -310,11 +339,19 @@ export function NotePage() {
   const handleSelectNote = (id: string) => {
     setSelectedNoteId(id);
     setSelectedSectionId(null);
+    setSelectedPageId(null);
   };
 
   const handleSelectSection = (noteId: string, sectionId: string) => {
     setSelectedNoteId(noteId);
     setSelectedSectionId(sectionId);
+    setSelectedPageId(null);
+  };
+
+  const handleSelectPage = (noteId: string, sectionId: string, pageId: string) => {
+    setSelectedNoteId(noteId);
+    setSelectedSectionId(sectionId);
+    setSelectedPageId(pageId);
   };
 
   const handleToggleExpand = (noteId: string) => {
@@ -353,15 +390,18 @@ export function NotePage() {
             notes={notes}
             selectedNoteId={selectedNoteId}
             selectedSectionId={selectedSectionId}
+            selectedPageId={selectedPageId}
             expandedNoteIds={expandedNoteIds}
             onSelectNote={handleSelectNote}
             onSelectSection={handleSelectSection}
+            onSelectPage={handleSelectPage}
             onToggleExpand={handleToggleExpand}
+            onToggleSection={handleToggleSection}
             isSidebarOpen={isSidebarOpen}
           />
         }
         main={
-          <NoteEditor note={selectedNote} onToggleSection={handleToggleSection} />
+          <NoteEditor selectedPage={selectedPage} />
         }
       />
     </ThemeProvider>
