@@ -71,7 +71,7 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingNoteName, editingSectionName, onDoubleClickNote, onDoubleClickSection, onNoteNameChange, onSectionNameChange, onEditingNoteNameChange, onEditingSectionNameChange }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
@@ -82,6 +82,16 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
   onAddSection: (noteId: string) => void;
   onAddNote: () => void;
   isSidebarOpen: boolean;
+  editingNoteId: string | null;
+  editingSectionId: string | null;
+  editingNoteName: string;
+  editingSectionName: string;
+  onDoubleClickNote: (id: string) => void;
+  onDoubleClickSection: (noteId: string, sectionId: string) => void;
+  onNoteNameChange: (noteId: string, newName: string) => void;
+  onSectionNameChange: (noteId: string, sectionId: string, newTitle: string) => void;
+  onEditingNoteNameChange: (name: string) => void;
+  onEditingSectionNameChange: (name: string) => void;
 }) {
   return (
     <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
@@ -97,6 +107,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                     <ListItemButton
                       selected={isSelected}
                       onClick={() => onSelectNote(note.id)}
+                      onDoubleClick={() => onDoubleClickNote(note.id)}
                       sx={{
                         display: "flex",
                         alignItems: "center",
@@ -124,7 +135,33 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                           onToggleExpand(note.id);
                         }}
                       />
-                      <ListItemText primary={note.name} />
+                      {editingNoteId === note.id ? (
+                        <TextField
+                          autoFocus
+                          value={editingNoteName}
+                          onChange={(e) => onEditingNoteNameChange(e.target.value)}
+                          onBlur={() => onNoteNameChange(note.id, editingNoteName)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              onNoteNameChange(note.id, editingNoteName);
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          fullWidth
+                          variant="standard"
+                          InputProps={{
+                            disableUnderline: true,
+                          }}
+                          sx={{
+                            "& .MuiInputBase-input": {
+                              color: "text.primary",
+                              fontSize: "1rem",
+                            },
+                          }}
+                        />
+                      ) : (
+                        <ListItemText primary={note.name} />
+                      )}
                     </ListItemButton>
                   </ListItem>
                   {isExpanded && (
@@ -136,6 +173,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                             <ListItemButton
                               selected={isSectionSelected}
                               onClick={() => onSelectSection(note.id, section.id)}
+                              onDoubleClick={() => onDoubleClickSection(note.id, section.id)}
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
@@ -150,7 +188,33 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                 },
                               }}
                             >
-                              <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                              {editingSectionId === section.id ? (
+                                <TextField
+                                  autoFocus
+                                  value={editingSectionName}
+                                  onChange={(e) => onEditingSectionNameChange(e.target.value)}
+                                  onBlur={() => onSectionNameChange(note.id, section.id, editingSectionName)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      onSectionNameChange(note.id, section.id, editingSectionName);
+                                    }
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                  fullWidth
+                                  variant="standard"
+                                  InputProps={{
+                                    disableUnderline: true,
+                                  }}
+                                  sx={{
+                                    "& .MuiInputBase-input": {
+                                      color: "text.primary",
+                                      fontSize: "0.9rem",
+                                    },
+                                  }}
+                                />
+                              ) : (
+                                <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                              )}
                             </ListItemButton>
                           </ListItem>
                         );
@@ -200,11 +264,16 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
 }
 
 // ページリスト（サイドバーの横）
-function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId }: {
+function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange }: {
   selectedSection: Section | null;
   selectedPageId: string | null;
   onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
   selectedNoteId: string;
+  editingPageId: string | null;
+  editingPageName: string;
+  onDoubleClickPage: (noteId: string, sectionId: string, pageId: string) => void;
+  onPageNameChange: (noteId: string, sectionId: string, pageId: string, newTitle: string) => void;
+  onEditingPageNameChange: (name: string) => void;
 }) {
   if (!selectedSection) return null;
 
@@ -239,6 +308,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
               <ListItemButton
                 selected={isPageSelected}
                 onClick={() => onSelectPage(selectedNoteId, selectedSection.id, page.id)}
+                onDoubleClick={() => onDoubleClickPage(selectedNoteId, selectedSection.id, page.id)}
                 sx={{
                   py: 0.5,
                   "&.Mui-selected": {
@@ -251,7 +321,33 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                   },
                 }}
               >
-                <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
+                {editingPageId === page.id ? (
+                  <TextField
+                    autoFocus
+                    value={editingPageName}
+                    onChange={(e) => onEditingPageNameChange(e.target.value)}
+                    onBlur={() => onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName);
+                      }
+                    }}
+                    onFocus={(e) => e.target.select()}
+                    fullWidth
+                    variant="standard"
+                    InputProps={{
+                      disableUnderline: true,
+                    }}
+                    sx={{
+                      "& .MuiInputBase-input": {
+                        color: "text.primary",
+                        fontSize: "0.9rem",
+                      },
+                    }}
+                  />
+                ) : (
+                  <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
+                )}
               </ListItemButton>
             </ListItem>
           );
@@ -262,17 +358,49 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
 }
 
 // メインコンテンツ
-function MainContent({ selectedPage }: {
+function MainContent({ selectedPage, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange }: {
   selectedPage: Page | null;
+  editingPageId: string | null;
+  editingPageName: string;
+  onDoubleClickPage: () => void;
+  onPageNameChange: (newTitle: string) => void;
+  onEditingPageNameChange: (name: string) => void;
 }) {
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
       <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ p: 3 }}>
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
-            {selectedPage.title}
-          </Typography>
+        <Box sx={{ p: 3 }} onDoubleClick={onDoubleClickPage}>
+          {editingPageId === selectedPage.id ? (
+            <TextField
+              autoFocus
+              value={editingPageName}
+              onChange={(e) => onEditingPageNameChange(e.target.value)}
+              onBlur={() => onPageNameChange(editingPageName)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onPageNameChange(editingPageName);
+                }
+              }}
+              onFocus={(e) => e.target.select()}
+              fullWidth
+              variant="standard"
+              InputProps={{
+                disableUnderline: true,
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  color: "text.primary",
+                  fontSize: "2rem",
+                  fontWeight: "bold",
+                },
+              }}
+            />
+          ) : (
+            <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
+              {selectedPage.title}
+            </Typography>
+          )}
         </Box>
         <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
           <TextField
@@ -379,6 +507,14 @@ export function NotePage() {
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>(["1"]);
 
+  // 編集状態の管理
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editingNoteName, setEditingNoteName] = useState<string>("");
+  const [editingSectionName, setEditingSectionName] = useState<string>("");
+  const [editingPageName, setEditingPageName] = useState<string>("");
+
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
   const selectedSection = selectedNote?.sections.find((s) => s.id === selectedSectionId) || null;
   const selectedPage = selectedSection?.pages.find((p) => p.id === selectedPageId) || null;
@@ -465,6 +601,86 @@ export function NotePage() {
     setSelectedPageId(null);
   };
 
+  // 名前変更ハンドラー
+  const handleNoteNameChange = (noteId: string, newName: string) => {
+    setNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note.id === noteId ? { ...note, name: newName } : note
+      )
+    );
+    setEditingNoteId(null);
+  };
+
+  const handleSectionNameChange = (noteId: string, sectionId: string, newTitle: string) => {
+    setNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note.id === noteId
+          ? {
+              ...note,
+              sections: note.sections.map((section) =>
+                section.id === sectionId ? { ...section, title: newTitle } : section
+              ),
+            }
+          : note
+      )
+    );
+    setEditingSectionId(null);
+  };
+
+  const handlePageNameChange = (noteId: string, sectionId: string, pageId: string, newTitle: string) => {
+    setNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note.id === noteId
+          ? {
+              ...note,
+              sections: note.sections.map((section) =>
+                section.id === sectionId
+                  ? {
+                      ...section,
+                      pages: section.pages.map((page) =>
+                        page.id === pageId ? { ...page, title: newTitle } : page
+                      ),
+                    }
+                  : section
+              ),
+            }
+          : note
+      )
+    );
+    setEditingPageId(null);
+  };
+
+  // ダブルクリックハンドラー
+  const handleDoubleClickNote = (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+      setEditingNoteId(noteId);
+      setEditingNoteName(note.name);
+    }
+  };
+
+  const handleDoubleClickSection = (noteId: string, sectionId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    const section = note?.sections.find(s => s.id === sectionId);
+    if (section) {
+      setEditingSectionId(sectionId);
+      setEditingSectionName(section.title);
+    }
+  };
+
+  const handleDoubleClickPage = (noteId: string, sectionId: string, pageId: string) => {
+    setSelectedNoteId(noteId);
+    setSelectedSectionId(sectionId);
+    setSelectedPageId(pageId);
+    const note = notes.find(n => n.id === noteId);
+    const section = note?.sections.find(s => s.id === sectionId);
+    const page = section?.pages.find(p => p.id === pageId);
+    if (page) {
+      setEditingPageId(pageId);
+      setEditingPageName(page.title);
+    }
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutTemplate
@@ -484,6 +700,16 @@ export function NotePage() {
             onAddSection={handleAddSection}
             onAddNote={handleAddNote}
             isSidebarOpen={isSidebarOpen}
+            editingNoteId={editingNoteId}
+            editingSectionId={editingSectionId}
+            editingNoteName={editingNoteName}
+            editingSectionName={editingSectionName}
+            onDoubleClickNote={handleDoubleClickNote}
+            onDoubleClickSection={handleDoubleClickSection}
+            onNoteNameChange={handleNoteNameChange}
+            onSectionNameChange={handleSectionNameChange}
+            onEditingNoteNameChange={setEditingNoteName}
+            onEditingSectionNameChange={setEditingSectionName}
           />
         }
         pageList={
@@ -493,12 +719,22 @@ export function NotePage() {
               selectedPageId={selectedPageId}
               onSelectPage={handleSelectPage}
               selectedNoteId={selectedNoteId}
+              editingPageId={editingPageId}
+              editingPageName={editingPageName}
+              onDoubleClickPage={handleDoubleClickPage}
+              onPageNameChange={handlePageNameChange}
+              onEditingPageNameChange={setEditingPageName}
             />
           ) : null
         }
         main={
           <MainContent
             selectedPage={selectedPage}
+            editingPageId={editingPageId}
+            editingPageName={editingPageName}
+            onDoubleClickPage={() => handleDoubleClickPage(selectedNoteId, selectedSectionId!, selectedPageId!)}
+            onPageNameChange={(newTitle) => handlePageNameChange(selectedNoteId, selectedSectionId!, selectedPageId!, newTitle)}
+            onEditingPageNameChange={setEditingPageName}
           />
         }
       />
