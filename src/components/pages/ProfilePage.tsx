@@ -1,10 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 
 export function ProfilePage() {
+  const router = useRouter();
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
+
+  useEffect(() => {
+    if (!isLoadingUser && !currentUser) {
+      router.push("/auth/signin");
+    }
+  }, [isLoadingUser, currentUser, router]);
+
   return (
     <LayoutTemplate
       header={<Header />}

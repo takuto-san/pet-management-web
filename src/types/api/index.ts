@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, item master, and JWT authentication.
- * OpenAPI spec version: 1.5
+ * OpenAPI spec version: 2
  */
 
 export * from "./adminUserUpdate";
@@ -14,6 +14,12 @@ export * from "./clinicFields";
 export * from "./clinicPage";
 export * from "./clinicPageAllOf";
 export * from "./currency";
+export * from "./document";
+export * from "./documentAllOf";
+export * from "./documentFields";
+export * from "./documentFieldsBody";
+export * from "./documentUpdateFields";
+export * from "./documentUpdateFieldsBody";
 export * from "./item";
 export * from "./itemAllOf";
 export * from "./itemCategory";
@@ -26,6 +32,7 @@ export * from "./listClinicsParams";
 export * from "./listItemsParams";
 export * from "./listPetsParams";
 export * from "./listPrescriptionsParams";
+export * from "./listUserItemsParams";
 export * from "./listUsersParams";
 export * from "./listVisitsParams";
 export * from "./pageMetadata";
@@ -51,9 +58,17 @@ export * from "./signoutResponse";
 export * from "./signupRequest";
 export * from "./signupResponse";
 export * from "./sizeParamParameter";
+export * from "./space";
+export * from "./spaceAllOf";
+export * from "./spaceFields";
 export * from "./tokenRefreshRequest";
 export * from "./tokenRefreshResponse";
 export * from "./userBase";
+export * from "./userItem";
+export * from "./userItemAllOf";
+export * from "./userItemFields";
+export * from "./userItemPage";
+export * from "./userItemPageAllOf";
 export * from "./userPage";
 export * from "./userPageAllOf";
 export * from "./userRegistration";

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Pet Management API
  * Pet Management API with health logs, prescriptions, item master, and JWT authentication.
- * OpenAPI spec version: 1.5
+ * OpenAPI spec version: 2
  */
 
 export type PetAllOf = {

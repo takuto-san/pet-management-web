@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useListPets } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
@@ -29,6 +33,18 @@ interface RecordForm {
 }
 
 export function CalendarPage() {
+  const router = useRouter();
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
+
+  useEffect(() => {
+    if (!isLoadingUser && !currentUser) {
+      router.push("/auth/signin");
+    }
+  }, [isLoadingUser, currentUser, router]);
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
