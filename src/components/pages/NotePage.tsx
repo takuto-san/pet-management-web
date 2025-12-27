@@ -519,6 +519,15 @@ export function NotePage() {
   const selectedSection = selectedNote?.sections.find((s) => s.id === selectedSectionId) || null;
   const selectedPage = selectedSection?.pages.find((p) => p.id === selectedPageId) || null;
 
+  // ページが選択されたらタイトルを変更
+  useEffect(() => {
+    if (selectedPage) {
+      document.title = selectedPage.title;
+    } else {
+      document.title = "PetManagemnt | ペット管理サイト";
+    }
+  }, [selectedPage]);
+
   const handleToggleSidebar = () => {
     const newIsSidebarOpen = !isSidebarOpen;
     setIsSidebarOpen(newIsSidebarOpen);
