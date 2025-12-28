@@ -526,6 +526,7 @@ export function NotePage() {
   const [isTemplateModeDialogOpen, setIsTemplateModeDialogOpen] = useState(false);
   const [isTemplateSelectDialogOpen, setIsTemplateSelectDialogOpen] = useState(false);
   const [isCreateSpaceDialogOpen, setIsCreateSpaceDialogOpen] = useState(false);
+  const [hasShownCreateSpaceDialog, setHasShownCreateSpaceDialog] = useState(false);
   const [templateSearchQuery, setTemplateSearchQuery] = useState("");
   const [createSpaceName, setCreateSpaceName] = useState("");
 
@@ -567,6 +568,16 @@ export function NotePage() {
       setExpandedNoteIds([notes[0].id]);
     }
   }, [notes, selectedNoteId]);
+
+  // ノートタブを開いたときにワークスペースが存在しない場合、ワークスペース作成ダイアログを表示
+  useEffect(() => {
+    if (spaces !== undefined && spaces.length === 0 && !hasShownCreateSpaceDialog) {
+      const defaultName = currentUser?.username ? `${currentUser.username}のワークスペース` : "ワークスペース";
+      setCreateSpaceName(defaultName);
+      setIsCreateSpaceDialogOpen(true);
+      setHasShownCreateSpaceDialog(true);
+    }
+  }, [spaces, hasShownCreateSpaceDialog, currentUser]);
 
   // 編集状態の管理
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -654,10 +665,12 @@ export function NotePage() {
 
   const handleAddNote = () => {
     if (!spaceId) {
-      // 初回スペース作成時のデフォルト値設定
-      const defaultName = currentUser?.username ? `${currentUser.username}のワークスペース` : "ワークスペース";
-      setCreateSpaceName(defaultName);
-      setIsCreateSpaceDialogOpen(true);
+      if (!isCreateSpaceDialogOpen) {
+        // 初回スペース作成時のデフォルト値設定
+        const defaultName = currentUser?.username ? `${currentUser.username}のワークスペース` : "ワークスペース";
+        setCreateSpaceName(defaultName);
+        setIsCreateSpaceDialogOpen(true);
+      }
     } else {
       setIsTemplateModeDialogOpen(true);
     }
