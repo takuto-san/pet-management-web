@@ -28,7 +28,7 @@ export const Header = ({ onNavigate }: HeaderProps) => {
   const pathname = usePathname();
   const queryClient = useQueryClient();
 
-  const { mutate: logout } = useLogoutUser({
+  const { mutate: logout, isPending: isLoggingOut } = useLogoutUser({
     mutation: {
       onSettled: () => {
         localStorage.removeItem("token");
@@ -52,6 +52,8 @@ export const Header = ({ onNavigate }: HeaderProps) => {
   let rightContent;
   if (isLoadingUser) {
     rightContent = null;
+  } else if (isLoggingOut) {
+    rightContent = <CircularProgress size={24} />;
   } else if (isNavigating) {
     rightContent = <CircularProgress size={24} />;
   } else if (currentUser) {

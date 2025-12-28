@@ -3,10 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { useQueryClient, useQueries } from "@tanstack/react-query";
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
+import { useListSpaces, useAddSpace, getListSpacesQueryKey } from "@/api/generated/space/space";
+import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument, getListDocumentsQueryKey, listDocuments } from "@/api/generated/document/document";
+import type { Document, DocumentFields, DocumentUpdateFields } from "@/types/api";
+import { Template, noteTemplates } from "@/types/noteTemplates";
 import {
   Box,
   List,
@@ -19,8 +24,14 @@ import {
   Button,
   ThemeProvider,
   createTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ListItemIcon,
+  InputAdornment,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon } from "@mui/icons-material";
+import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 
 // ページの型定義
 interface Page {
@@ -44,6 +55,18 @@ interface Note {
   sections: Section[];
   createdAt: Date;
 }
+
+// アイコン取得関数
+const getIcon = (icon: string) => {
+  switch (icon) {
+    case "health":
+      return <HealthAndSafetyIcon />;
+    case "diary":
+      return <BookIcon />;
+    default:
+      return <NoteIcon />;
+  }
+};
 
 // ダークテーマ
 const darkTheme = createTheme({
@@ -264,7 +287,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
 }
 
 // ページリスト（サイドバーの横）
-function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange }: {
+function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange, onAddPage }: {
   selectedSection: Section | null;
   selectedPageId: string | null;
   onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
@@ -274,6 +297,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
   onDoubleClickPage: (noteId: string, sectionId: string, pageId: string) => void;
   onPageNameChange: (noteId: string, sectionId: string, pageId: string, newTitle: string) => void;
   onEditingPageNameChange: (name: string) => void;
+  onAddPage: (sectionId: string) => void;
 }) {
   if (!selectedSection) return null;
 
@@ -284,9 +308,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
           startIcon={<CreateIcon />}
           fullWidth
           variant="outlined"
-          onClick={() => {
-            // TODO: ページ追加ハンドラーを実装
-          }}
+          onClick={() => onAddPage(selectedSection.id)}
           sx={{
             justifyContent: "flex-start",
             textTransform: "none",
@@ -433,6 +455,60 @@ function MainContent({ selectedPage, editingPageId, editingPageName, onDoubleCli
   );
 }
 
+// DocumentからNote構造に変換する関数
+function convertDocumentsToNotes(documents: Document[]): Note[] {
+  const notes: Note[] = [];
+  const sections: { [noteId: string]: Section[] } = {};
+  const pages: { [sectionId: string]: Page[] } = {};
+
+  // ノートを作成
+  documents.filter(doc => doc.parentDocId === null).forEach(doc => {
+    notes.push({
+      id: doc.id,
+      name: doc.title,
+      sections: [],
+      createdAt: new Date(doc.createdAt || Date.now()),
+    });
+  });
+
+  // セクションを作成
+  documents.filter(doc => doc.parentDocId && notes.some(note => note.id === doc.parentDocId)).forEach(doc => {
+    const section: Section = {
+      id: doc.id,
+      title: doc.title,
+      pages: [],
+      isExpanded: false,
+    };
+    if (!sections[doc.parentDocId!]) {
+      sections[doc.parentDocId!] = [];
+    }
+    sections[doc.parentDocId!].push(section);
+  });
+
+  // ページを作成
+  documents.filter(doc => doc.parentDocId && Object.keys(sections).some(noteId => sections[noteId].some(sec => sec.id === doc.parentDocId))).forEach(doc => {
+    const page: Page = {
+      id: doc.id,
+      title: doc.title,
+      content: (doc.body?.content as string) || "",
+    };
+    if (!pages[doc.parentDocId!]) {
+      pages[doc.parentDocId!] = [];
+    }
+    pages[doc.parentDocId!].push(page);
+  });
+
+  // 構造を組み立てる
+  notes.forEach(note => {
+    note.sections = sections[note.id] || [];
+    note.sections.forEach(section => {
+      section.pages = pages[section.id] || [];
+    });
+  });
+
+  return notes;
+}
+
 export function NotePage() {
   const router = useRouter();
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
@@ -447,65 +523,61 @@ export function NotePage() {
   }, [isLoadingUser, currentUser, router]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isTemplateModeDialogOpen, setIsTemplateModeDialogOpen] = useState(false);
+  const [isTemplateSelectDialogOpen, setIsTemplateSelectDialogOpen] = useState(false);
+  const [isCreateSpaceDialogOpen, setIsCreateSpaceDialogOpen] = useState(false);
+  const [hasShownCreateSpaceDialog, setHasShownCreateSpaceDialog] = useState(false);
+  const [templateSearchQuery, setTemplateSearchQuery] = useState("");
+  const [createSpaceName, setCreateSpaceName] = useState("");
 
-  // 仮のノートデータ
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: "1",
-      name: "Saddle Inventory",
-      sections: [
-        {
-          id: "1-1",
-          title: "サドルリスト",
-          pages: [
-            {
-              id: "1-1-1",
-              title: "在庫ページ",
-              content: "サドルの在庫情報をここに記載します。",
-            },
-          ],
-          isExpanded: true,
-        },
-        {
-          id: "1-2",
-          title: "メンテナンス記録",
-          pages: [
-            {
-              id: "1-2-1",
-              title: "履歴ページ",
-              content: "サドルのメンテナンス履歴。",
-            },
-          ],
-          isExpanded: false,
-        },
-      ],
-      createdAt: new Date(),
-    },
-    {
-      id: "2",
-      name: "Other Notes",
-      sections: [
-        {
-          id: "2-1",
-          title: "一般ノート",
-          pages: [
-            {
-              id: "2-1-1",
-              title: "ノートページ",
-              content: "他のノート内容。",
-            },
-          ],
-          isExpanded: true,
-        },
-      ],
-      createdAt: new Date(),
-    },
-  ]);
 
-  const [selectedNoteId, setSelectedNoteId] = useState<string>("1");
+
+  // API hooks
+  const { data: spaces } = useListSpaces();
+  const spaceId = spaces?.[0]?.id;
+  const spaceIds = spaces?.map(space => space.id) || [];
+  const documentsQueries = useQueries({
+    queries: spaceIds.map(sid => ({
+      queryKey: getListDocumentsQueryKey(sid),
+      queryFn: () => listDocuments(sid),
+      enabled: !!sid,
+    })),
+  });
+  const documents = documentsQueries.flatMap(query => query.data || []);
+  const addDocumentMutation = useAddDocument();
+  const updateDocumentMutation = useUpdateDocument();
+  const deleteDocumentMutation = useDeleteDocument();
+  const addSpaceMutation = useAddSpace();
+  const queryClient = useQueryClient();
+
+
+
+  // ノートデータをAPIから変換
+  const notes = convertDocumentsToNotes(documents);
+
+  const [selectedNoteId, setSelectedNoteId] = useState<string>("");
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>(["1"]);
+  const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>([]);
+  const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
+
+  // notesが変更されたときに初期選択を更新
+  useEffect(() => {
+    if (notes.length > 0 && !selectedNoteId) {
+      setSelectedNoteId(notes[0].id);
+      setExpandedNoteIds([notes[0].id]);
+    }
+  }, [notes, selectedNoteId]);
+
+  // ノートタブを開いたときにワークスペースが存在しない場合、ワークスペース作成ダイアログを表示
+  useEffect(() => {
+    if (spaces !== undefined && spaces.length === 0 && !hasShownCreateSpaceDialog) {
+      const defaultName = currentUser?.username ? `${currentUser.username}のワークスペース` : "ワークスペース";
+      setCreateSpaceName(defaultName);
+      setIsCreateSpaceDialogOpen(true);
+      setHasShownCreateSpaceDialog(true);
+    }
+  }, [spaces, hasShownCreateSpaceDialog, currentUser]);
 
   // 編集状態の管理
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -514,6 +586,16 @@ export function NotePage() {
   const [editingNoteName, setEditingNoteName] = useState<string>("");
   const [editingSectionName, setEditingSectionName] = useState<string>("");
   const [editingPageName, setEditingPageName] = useState<string>("");
+
+  const handleAddPage = (sectionId: string) => {
+    if (!spaceId) return;
+    const newDoc: DocumentFields = {
+      title: "新しいページ",
+      parentDocId: sectionId,
+      body: { content: "" },
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc });
+  };
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
   const selectedSection = selectedNote?.sections.find((s) => s.id === selectedSectionId) || null;
@@ -564,99 +646,170 @@ export function NotePage() {
     );
   };
 
-  const handleToggleSection = (noteId: string, sectionId: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              sections: note.sections.map((section) =>
-                section.id === sectionId
-                  ? { ...section, isExpanded: !section.isExpanded }
-                  : section
-              ),
-            }
-          : note
-      )
+  const handleToggleSection = (sectionId: string) => {
+    setExpandedSectionIds((prev) =>
+      prev.includes(sectionId)
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId]
     );
   };
 
   const handleAddSection = (noteId: string) => {
-    const newSection: Section = {
-      id: `new-${Date.now()}`,
+    if (!spaceId) return;
+    const newDoc: DocumentFields = {
       title: "新しいセクション",
-      pages: [],
-      isExpanded: false,
+      parentDocId: noteId,
     };
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? { ...note, sections: [...note.sections, newSection] }
-          : note
-      )
-    );
+    addDocumentMutation.mutate({ spaceId, data: newDoc });
   };
 
   const handleAddNote = () => {
-    const newNote: Note = {
-      id: `new-${Date.now()}`,
-      name: "新しいノート",
-      sections: [],
-      createdAt: new Date(),
+    if (!spaceId) {
+      if (!isCreateSpaceDialogOpen) {
+        // 初回スペース作成時のデフォルト値設定
+        const defaultName = currentUser?.username ? `${currentUser.username}のワークスペース` : "ワークスペース";
+        setCreateSpaceName(defaultName);
+        setIsCreateSpaceDialogOpen(true);
+      }
+    } else {
+      setIsTemplateModeDialogOpen(true);
+    }
+  };
+
+  const handleSelectTemplateMode = (mode: "template" | "custom") => {
+    if (mode === "custom") {
+      handleCreateNote("custom");
+    } else {
+      setIsTemplateModeDialogOpen(false);
+      setIsTemplateSelectDialogOpen(true);
+    }
+  };
+
+  const handleCreateSpace = () => {
+    if (!createSpaceName.trim()) return;
+    addSpaceMutation.mutate({ data: { name: createSpaceName } }, {
+      onSuccess: (newSpace) => {
+        queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
+        setIsCreateSpaceDialogOpen(false);
+        setCreateSpaceName("");
+        // スペース作成後にノート作成ダイアログを開く
+        setIsTemplateModeDialogOpen(true);
+      },
+    });
+  };
+
+  const handleCreateNote = (templateId: string) => {
+    if (!spaceId) {
+      setIsCreateSpaceDialogOpen(true);
+      return;
+    }
+
+    const createNoteInSpace = (currentSpaceId: string) => {
+      let title = "新しいノート";
+      let sections: { title: string; pages?: { title: string; content: string }[] }[] = [];
+
+      if (templateId === "custom") {
+        // カスタムの場合、空のノート
+      } else {
+        const template = noteTemplates.find(t => t.id === templateId);
+        if (template) {
+          title = template.name;
+          sections = template.sections;
+        }
+      }
+
+      // ノートを作成
+      const noteDoc: DocumentFields = {
+        title,
+        parentDocId: undefined,
+      };
+      addDocumentMutation.mutate({ spaceId: currentSpaceId, data: noteDoc }, {
+        onSuccess: (newNote) => {
+          setSelectedNoteId(newNote.id);
+          setSelectedSectionId(null);
+          setSelectedPageId(null);
+          setExpandedNoteIds((prev) => [...prev, newNote.id]);
+          setIsTemplateModeDialogOpen(false);
+          setIsTemplateSelectDialogOpen(false);
+
+          // セクションを作成
+          const sectionPromises = sections.map((section) => {
+            return new Promise<void>((resolve) => {
+              const sectionDoc: DocumentFields = {
+                title: section.title,
+                parentDocId: newNote.id,
+              };
+              addDocumentMutation.mutate({ spaceId: currentSpaceId, data: sectionDoc }, {
+                onSuccess: (newSection) => {
+                  // ページを作成
+                  if (section.pages) {
+                    const pagePromises = section.pages.map((page) => {
+                      return new Promise<void>((resolvePage) => {
+                        const pageDoc: DocumentFields = {
+                          title: page.title,
+                          parentDocId: newSection.id,
+                          body: { content: page.content },
+                        };
+                        addDocumentMutation.mutate({ spaceId: currentSpaceId, data: pageDoc }, {
+                          onSuccess: () => resolvePage(),
+                        });
+                      });
+                    });
+                    Promise.all(pagePromises).then(() => resolve());
+                  } else {
+                    resolve();
+                  }
+                },
+              });
+            });
+          });
+
+          Promise.all(sectionPromises).then(() => {
+            // すべてのドキュメント作成完了後にクエリを無効化
+            queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(currentSpaceId) });
+          });
+        },
+      });
     };
-    setNotes((prevNotes) => [...prevNotes, newNote]);
-    setSelectedNoteId(newNote.id);
-    setSelectedSectionId(null);
-    setSelectedPageId(null);
+
+    createNoteInSpace(spaceId);
   };
 
   // 名前変更ハンドラー
   const handleNoteNameChange = (noteId: string, newName: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId ? { ...note, name: newName } : note
-      )
-    );
-    setEditingNoteId(null);
+    if (!spaceId) return;
+    const updateData: DocumentUpdateFields = {
+      title: newName,
+    };
+    updateDocumentMutation.mutate({ spaceId, documentId: noteId, data: updateData }, {
+      onSuccess: () => {
+        setEditingNoteId(null);
+      },
+    });
   };
 
   const handleSectionNameChange = (noteId: string, sectionId: string, newTitle: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              sections: note.sections.map((section) =>
-                section.id === sectionId ? { ...section, title: newTitle } : section
-              ),
-            }
-          : note
-      )
-    );
-    setEditingSectionId(null);
+    if (!spaceId) return;
+    const updateData: DocumentUpdateFields = {
+      title: newTitle,
+    };
+    updateDocumentMutation.mutate({ spaceId, documentId: sectionId, data: updateData }, {
+      onSuccess: () => {
+        setEditingSectionId(null);
+      },
+    });
   };
 
   const handlePageNameChange = (noteId: string, sectionId: string, pageId: string, newTitle: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              sections: note.sections.map((section) =>
-                section.id === sectionId
-                  ? {
-                      ...section,
-                      pages: section.pages.map((page) =>
-                        page.id === pageId ? { ...page, title: newTitle } : page
-                      ),
-                    }
-                  : section
-              ),
-            }
-          : note
-      )
-    );
-    setEditingPageId(null);
+    if (!spaceId) return;
+    const updateData: DocumentUpdateFields = {
+      title: newTitle,
+    };
+    updateDocumentMutation.mutate({ spaceId, documentId: pageId, data: updateData }, {
+      onSuccess: () => {
+        setEditingPageId(null);
+      },
+    });
   };
 
   // ダブルクリックハンドラー
@@ -689,6 +842,8 @@ export function NotePage() {
       setEditingPageName(page.title);
     }
   };
+
+
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -733,6 +888,7 @@ export function NotePage() {
               onDoubleClickPage={handleDoubleClickPage}
               onPageNameChange={handlePageNameChange}
               onEditingPageNameChange={setEditingPageName}
+              onAddPage={handleAddPage}
             />
           ) : null
         }
@@ -741,12 +897,116 @@ export function NotePage() {
             selectedPage={selectedPage}
             editingPageId={editingPageId}
             editingPageName={editingPageName}
-            onDoubleClickPage={() => handleDoubleClickPage(selectedNoteId, selectedSectionId!, selectedPageId!)}
-            onPageNameChange={(newTitle) => handlePageNameChange(selectedNoteId, selectedSectionId!, selectedPageId!, newTitle)}
+            onDoubleClickPage={() => {
+              if (selectedNoteId && selectedSectionId && selectedPageId) {
+                handleDoubleClickPage(selectedNoteId, selectedSectionId, selectedPageId);
+              }
+            }}
+            onPageNameChange={(newTitle) => {
+              if (selectedNoteId && selectedSectionId && selectedPageId) {
+                handlePageNameChange(selectedNoteId, selectedSectionId, selectedPageId, newTitle);
+              }
+            }}
             onEditingPageNameChange={setEditingPageName}
           />
         }
       />
+      {/* テンプレートモード選択ダイアログ */}
+      <Dialog open={isTemplateModeDialogOpen} onClose={() => setIsTemplateModeDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>ノートを作成</DialogTitle>
+        <DialogContent>
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => handleSelectTemplateMode("template")}>
+                <ListItemIcon>
+                  <DescriptionIcon />
+                </ListItemIcon>
+                <ListItemText primary="テンプレートから作成" secondary="既存のテンプレートから選択" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => handleSelectTemplateMode("custom")}>
+                <ListItemIcon>
+                  <NoteIcon />
+                </ListItemIcon>
+                <ListItemText primary="カスタム" secondary="新しいノートを作成" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsTemplateModeDialogOpen(false)}>キャンセル</Button>
+        </DialogActions>
+      </Dialog>
+      {/* テンプレート選択ダイアログ */}
+      <Dialog open={isTemplateSelectDialogOpen} onClose={() => setIsTemplateSelectDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <IconButton
+              edge="start"
+              onClick={() => {
+                setIsTemplateSelectDialogOpen(false);
+                setIsTemplateModeDialogOpen(true);
+              }}
+              sx={{ mr: 1 }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            テンプレートを選択
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            placeholder="テンプレートを検索..."
+            value={templateSearchQuery}
+            onChange={(e) => setTemplateSearchQuery(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <List>
+            {noteTemplates
+              .filter(template => template.name.includes(templateSearchQuery) || template.description.includes(templateSearchQuery))
+              .map(template => (
+                <ListItem key={template.id} disablePadding>
+                  <ListItemButton onClick={() => handleCreateNote(template.id)}>
+                    <ListItemIcon>
+                      {getIcon(template.icon)}
+                    </ListItemIcon>
+                    <ListItemText primary={template.name} secondary={template.description} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsTemplateSelectDialogOpen(false)}>キャンセル</Button>
+        </DialogActions>
+      </Dialog>
+      {/* ワークスペース作成ダイアログ */}
+      <Dialog open={isCreateSpaceDialogOpen} onClose={() => setIsCreateSpaceDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>ワークスペースを作成</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="ワークスペース名"
+            value={createSpaceName}
+            onChange={(e) => setCreateSpaceName(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsCreateSpaceDialogOpen(false)}>キャンセル</Button>
+          <Button onClick={handleCreateSpace} variant="contained">作成</Button>
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 }
