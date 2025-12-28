@@ -7,6 +7,9 @@ import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
+import { useListSpaces } from "@/api/generated/space/space";
+import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument } from "@/api/generated/document/document";
+import type { Document, DocumentFields, DocumentUpdateFields } from "@/types/api";
 import {
   Box,
   List,
@@ -264,7 +267,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
 }
 
 // ページリスト（サイドバーの横）
-function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange }: {
+function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange, onAddPage }: {
   selectedSection: Section | null;
   selectedPageId: string | null;
   onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
@@ -274,6 +277,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
   onDoubleClickPage: (noteId: string, sectionId: string, pageId: string) => void;
   onPageNameChange: (noteId: string, sectionId: string, pageId: string, newTitle: string) => void;
   onEditingPageNameChange: (name: string) => void;
+  onAddPage: (sectionId: string) => void;
 }) {
   if (!selectedSection) return null;
 
@@ -284,9 +288,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
           startIcon={<CreateIcon />}
           fullWidth
           variant="outlined"
-          onClick={() => {
-            // TODO: ページ追加ハンドラーを実装
-          }}
+          onClick={() => onAddPage(selectedSection.id)}
           sx={{
             justifyContent: "flex-start",
             textTransform: "none",
@@ -433,6 +435,60 @@ function MainContent({ selectedPage, editingPageId, editingPageName, onDoubleCli
   );
 }
 
+// DocumentからNote構造に変換する関数
+function convertDocumentsToNotes(documents: Document[]): Note[] {
+  const notes: Note[] = [];
+  const sections: { [noteId: string]: Section[] } = {};
+  const pages: { [sectionId: string]: Page[] } = {};
+
+  // ノートを作成
+  documents.filter(doc => doc.parentDocId === null).forEach(doc => {
+    notes.push({
+      id: doc.id,
+      name: doc.title,
+      sections: [],
+      createdAt: new Date(doc.createdAt || Date.now()),
+    });
+  });
+
+  // セクションを作成
+  documents.filter(doc => doc.parentDocId && notes.some(note => note.id === doc.parentDocId)).forEach(doc => {
+    const section: Section = {
+      id: doc.id,
+      title: doc.title,
+      pages: [],
+      isExpanded: false,
+    };
+    if (!sections[doc.parentDocId!]) {
+      sections[doc.parentDocId!] = [];
+    }
+    sections[doc.parentDocId!].push(section);
+  });
+
+  // ページを作成
+  documents.filter(doc => doc.parentDocId && Object.keys(sections).some(noteId => sections[noteId].some(sec => sec.id === doc.parentDocId))).forEach(doc => {
+    const page: Page = {
+      id: doc.id,
+      title: doc.title,
+      content: (doc.body?.content as string) || "",
+    };
+    if (!pages[doc.parentDocId!]) {
+      pages[doc.parentDocId!] = [];
+    }
+    pages[doc.parentDocId!].push(page);
+  });
+
+  // 構造を組み立てる
+  notes.forEach(note => {
+    note.sections = sections[note.id] || [];
+    note.sections.forEach(section => {
+      section.pages = pages[section.id] || [];
+    });
+  });
+
+  return notes;
+}
+
 export function NotePage() {
   const router = useRouter();
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
@@ -448,64 +504,30 @@ export function NotePage() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // 仮のノートデータ
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: "1",
-      name: "Saddle Inventory",
-      sections: [
-        {
-          id: "1-1",
-          title: "サドルリスト",
-          pages: [
-            {
-              id: "1-1-1",
-              title: "在庫ページ",
-              content: "サドルの在庫情報をここに記載します。",
-            },
-          ],
-          isExpanded: true,
-        },
-        {
-          id: "1-2",
-          title: "メンテナンス記録",
-          pages: [
-            {
-              id: "1-2-1",
-              title: "履歴ページ",
-              content: "サドルのメンテナンス履歴。",
-            },
-          ],
-          isExpanded: false,
-        },
-      ],
-      createdAt: new Date(),
-    },
-    {
-      id: "2",
-      name: "Other Notes",
-      sections: [
-        {
-          id: "2-1",
-          title: "一般ノート",
-          pages: [
-            {
-              id: "2-1-1",
-              title: "ノートページ",
-              content: "他のノート内容。",
-            },
-          ],
-          isExpanded: true,
-        },
-      ],
-      createdAt: new Date(),
-    },
-  ]);
+  // API hooks
+  const { data: spaces } = useListSpaces();
+  const spaceId = spaces?.[0]?.id;
+  const { data: documents = [] } = useListDocuments(spaceId || "", { query: { enabled: !!spaceId } });
+  const addDocumentMutation = useAddDocument();
+  const updateDocumentMutation = useUpdateDocument();
+  const deleteDocumentMutation = useDeleteDocument();
 
-  const [selectedNoteId, setSelectedNoteId] = useState<string>("1");
+  // ノートデータをAPIから変換
+  const notes = convertDocumentsToNotes(documents);
+
+  const [selectedNoteId, setSelectedNoteId] = useState<string>("");
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>(["1"]);
+  const [expandedNoteIds, setExpandedNoteIds] = useState<string[]>([]);
+  const [expandedSectionIds, setExpandedSectionIds] = useState<string[]>([]);
+
+  // notesが変更されたときに初期選択を更新
+  useEffect(() => {
+    if (notes.length > 0 && !selectedNoteId) {
+      setSelectedNoteId(notes[0].id);
+      setExpandedNoteIds([notes[0].id]);
+    }
+  }, [notes, selectedNoteId]);
 
   // 編集状態の管理
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -514,6 +536,16 @@ export function NotePage() {
   const [editingNoteName, setEditingNoteName] = useState<string>("");
   const [editingSectionName, setEditingSectionName] = useState<string>("");
   const [editingPageName, setEditingPageName] = useState<string>("");
+
+  const handleAddPage = (sectionId: string) => {
+    if (!spaceId) return;
+    const newDoc: DocumentFields = {
+      title: "新しいページ",
+      parentDocId: sectionId,
+      body: { content: "" },
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc });
+  };
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
   const selectedSection = selectedNote?.sections.find((s) => s.id === selectedSectionId) || null;
@@ -564,99 +596,74 @@ export function NotePage() {
     );
   };
 
-  const handleToggleSection = (noteId: string, sectionId: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              sections: note.sections.map((section) =>
-                section.id === sectionId
-                  ? { ...section, isExpanded: !section.isExpanded }
-                  : section
-              ),
-            }
-          : note
-      )
+  const handleToggleSection = (sectionId: string) => {
+    setExpandedSectionIds((prev) =>
+      prev.includes(sectionId)
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId]
     );
   };
 
   const handleAddSection = (noteId: string) => {
-    const newSection: Section = {
-      id: `new-${Date.now()}`,
+    if (!spaceId) return;
+    const newDoc: DocumentFields = {
       title: "新しいセクション",
-      pages: [],
-      isExpanded: false,
+      parentDocId: noteId,
     };
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? { ...note, sections: [...note.sections, newSection] }
-          : note
-      )
-    );
+    addDocumentMutation.mutate({ spaceId, data: newDoc });
   };
 
   const handleAddNote = () => {
-    const newNote: Note = {
-      id: `new-${Date.now()}`,
-      name: "新しいノート",
-      sections: [],
-      createdAt: new Date(),
+    if (!spaceId) return;
+    const newDoc: DocumentFields = {
+      title: "新しいノート",
+      parentDocId: undefined,
     };
-    setNotes((prevNotes) => [...prevNotes, newNote]);
-    setSelectedNoteId(newNote.id);
-    setSelectedSectionId(null);
-    setSelectedPageId(null);
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: (newDocument) => {
+        setSelectedNoteId(newDocument.id);
+        setSelectedSectionId(null);
+        setSelectedPageId(null);
+        setExpandedNoteIds((prev) => [...prev, newDocument.id]);
+      },
+    });
   };
 
   // 名前変更ハンドラー
   const handleNoteNameChange = (noteId: string, newName: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId ? { ...note, name: newName } : note
-      )
-    );
-    setEditingNoteId(null);
+    if (!spaceId) return;
+    const updateData: DocumentUpdateFields = {
+      title: newName,
+    };
+    updateDocumentMutation.mutate({ spaceId, documentId: noteId, data: updateData }, {
+      onSuccess: () => {
+        setEditingNoteId(null);
+      },
+    });
   };
 
   const handleSectionNameChange = (noteId: string, sectionId: string, newTitle: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              sections: note.sections.map((section) =>
-                section.id === sectionId ? { ...section, title: newTitle } : section
-              ),
-            }
-          : note
-      )
-    );
-    setEditingSectionId(null);
+    if (!spaceId) return;
+    const updateData: DocumentUpdateFields = {
+      title: newTitle,
+    };
+    updateDocumentMutation.mutate({ spaceId, documentId: sectionId, data: updateData }, {
+      onSuccess: () => {
+        setEditingSectionId(null);
+      },
+    });
   };
 
   const handlePageNameChange = (noteId: string, sectionId: string, pageId: string, newTitle: string) => {
-    setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              sections: note.sections.map((section) =>
-                section.id === sectionId
-                  ? {
-                      ...section,
-                      pages: section.pages.map((page) =>
-                        page.id === pageId ? { ...page, title: newTitle } : page
-                      ),
-                    }
-                  : section
-              ),
-            }
-          : note
-      )
-    );
-    setEditingPageId(null);
+    if (!spaceId) return;
+    const updateData: DocumentUpdateFields = {
+      title: newTitle,
+    };
+    updateDocumentMutation.mutate({ spaceId, documentId: pageId, data: updateData }, {
+      onSuccess: () => {
+        setEditingPageId(null);
+      },
+    });
   };
 
   // ダブルクリックハンドラー
@@ -733,6 +740,7 @@ export function NotePage() {
               onDoubleClickPage={handleDoubleClickPage}
               onPageNameChange={handlePageNameChange}
               onEditingPageNameChange={setEditingPageName}
+              onAddPage={handleAddPage}
             />
           ) : null
         }
@@ -741,8 +749,16 @@ export function NotePage() {
             selectedPage={selectedPage}
             editingPageId={editingPageId}
             editingPageName={editingPageName}
-            onDoubleClickPage={() => handleDoubleClickPage(selectedNoteId, selectedSectionId!, selectedPageId!)}
-            onPageNameChange={(newTitle) => handlePageNameChange(selectedNoteId, selectedSectionId!, selectedPageId!, newTitle)}
+            onDoubleClickPage={() => {
+              if (selectedNoteId && selectedSectionId && selectedPageId) {
+                handleDoubleClickPage(selectedNoteId, selectedSectionId, selectedPageId);
+              }
+            }}
+            onPageNameChange={(newTitle) => {
+              if (selectedNoteId && selectedSectionId && selectedPageId) {
+                handlePageNameChange(selectedNoteId, selectedSectionId, selectedPageId, newTitle);
+              }
+            }}
             onEditingPageNameChange={setEditingPageName}
           />
         }
