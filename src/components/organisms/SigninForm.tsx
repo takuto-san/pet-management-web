@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
-import { useAuthenticateUser, useGetCurrentUser } from "@/api/generated/auth/auth";
-import { setsigninPending, setUser } from "@/stores/slices/userSlice";
+import { useAuthenticateUser } from "@/api/generated/auth/auth";
+import { setsigninPending } from "@/stores/slices/userSlice";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { PasswordInput } from "@/components/molecules/PasswordInput";
@@ -23,6 +23,8 @@ export function SigninForm() {
   const router = useRouter();
   const dispatch = useDispatch();
   const signinPending = useSelector((state: RootState) => state.user.signinPending);
+
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
   const { mutate: signin, isPending } = useAuthenticateUser({
     mutation: {
@@ -51,23 +53,16 @@ export function SigninForm() {
 
   const isLoading = isPending || signinPending;
 
-  const { data: userData } = useGetCurrentUser({
-    query: {
-      enabled: false,
-    },
-  });
-
   useEffect(() => {
-    if (userData) {
-      dispatch(setUser(userData));
-      if (userData.username && userData.firstName && userData.lastName) {
+    if (currentUser) {
+      if (currentUser.username && currentUser.firstName && currentUser.lastName) {
         // ログイン成功後はダッシュボードにリダイレクト
-        router.push(`/${userData.username}`);
+        router.push(`/${currentUser.username}`);
       } else {
         router.push("/onboarding");
       }
     }
-  }, [userData, dispatch, router]);
+  }, [currentUser, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

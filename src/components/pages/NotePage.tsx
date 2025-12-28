@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
-import { useListSpaces } from "@/api/generated/space/space";
-import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument } from "@/api/generated/document/document";
+import { useListSpaces, useAddSpace, getListSpacesQueryKey } from "@/api/generated/space/space";
+import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument, getListDocumentsQueryKey } from "@/api/generated/document/document";
 import type { Document, DocumentFields, DocumentUpdateFields } from "@/types/api";
+import { Template, noteTemplates } from "@/types/noteTemplates";
 import {
   Box,
   List,
@@ -54,14 +56,17 @@ interface Note {
   createdAt: Date;
 }
 
-// テンプレートの型定義
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactElement;
-  sections: { title: string; pages?: { title: string; content: string }[] }[];
-}
+// アイコン取得関数
+const getIcon = (icon: string) => {
+  switch (icon) {
+    case "health":
+      return <HealthAndSafetyIcon />;
+    case "diary":
+      return <BookIcon />;
+    default:
+      return <NoteIcon />;
+  }
+};
 
 // ダークテーマ
 const darkTheme = createTheme({
@@ -522,29 +527,7 @@ export function NotePage() {
   const [isTemplateSelectDialogOpen, setIsTemplateSelectDialogOpen] = useState(false);
   const [templateSearchQuery, setTemplateSearchQuery] = useState("");
 
-  // テンプレートデータ
-  const templates: Template[] = [
-    {
-      id: "health",
-      name: "健康手帳",
-      description: "ペットの健康記録用",
-      icon: <HealthAndSafetyIcon />,
-      sections: [
-        { title: "体重記録", pages: [{ title: "体重グラフ", content: "" }] },
-        { title: "ワクチン記録", pages: [{ title: "接種履歴", content: "" }] },
-        { title: "健康メモ", pages: [{ title: "日々の健康状態", content: "" }] },
-      ],
-    },
-    {
-      id: "diary",
-      name: "日記",
-      description: "ペットの日常を記録",
-      icon: <BookIcon />,
-      sections: [
-        { title: "2024年", pages: [{ title: "1月", content: "" }] },
-      ],
-    },
-  ];
+
 
   // API hooks
   const { data: spaces } = useListSpaces();
@@ -553,6 +536,20 @@ export function NotePage() {
   const addDocumentMutation = useAddDocument();
   const updateDocumentMutation = useUpdateDocument();
   const deleteDocumentMutation = useDeleteDocument();
+  const addSpaceMutation = useAddSpace();
+  const queryClient = useQueryClient();
+
+  // ノートページを開いた時にスペースが存在しない場合に作成
+  useEffect(() => {
+    if (spaces !== undefined && spaces.length === 0) {
+      const spaceData = { name: "Default Space" };
+      addSpaceMutation.mutate({ data: spaceData }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
+        },
+      });
+    }
+  }, [spaces, addSpaceMutation, queryClient]);
 
   // ノートデータをAPIから変換
   const notes = convertDocumentsToNotes(documents);
@@ -669,58 +666,91 @@ export function NotePage() {
   };
 
   const handleCreateNote = (templateId: string) => {
-    if (!spaceId) return;
-    let title = "新しいノート";
-    let sections: { title: string; pages?: { title: string; content: string }[] }[] = [];
+    const createNoteInSpace = (currentSpaceId: string) => {
+      let title = "新しいノート";
+      let sections: { title: string; pages?: { title: string; content: string }[] }[] = [];
 
-    if (templateId === "custom") {
-      // カスタムの場合、空のノート
-    } else {
-      const template = templates.find(t => t.id === templateId);
-      if (template) {
-        title = template.name;
-        sections = template.sections;
+      if (templateId === "custom") {
+        // カスタムの場合、空のノート
+      } else {
+        const template = noteTemplates.find(t => t.id === templateId);
+        if (template) {
+          title = template.name;
+          sections = template.sections;
+        }
       }
-    }
 
-    // ノートを作成
-    const noteDoc: DocumentFields = {
-      title,
-      parentDocId: undefined,
-    };
-    addDocumentMutation.mutate({ spaceId, data: noteDoc }, {
-      onSuccess: (newNote) => {
-        setSelectedNoteId(newNote.id);
-        setSelectedSectionId(null);
-        setSelectedPageId(null);
-        setExpandedNoteIds((prev) => [...prev, newNote.id]);
-        setIsTemplateModeDialogOpen(false);
-        setIsTemplateSelectDialogOpen(false);
+      // ノートを作成
+      const noteDoc: DocumentFields = {
+        title,
+        parentDocId: undefined,
+      };
+      addDocumentMutation.mutate({ spaceId: currentSpaceId, data: noteDoc }, {
+        onSuccess: (newNote) => {
+          setSelectedNoteId(newNote.id);
+          setSelectedSectionId(null);
+          setSelectedPageId(null);
+          setExpandedNoteIds((prev) => [...prev, newNote.id]);
+          setIsTemplateModeDialogOpen(false);
+          setIsTemplateSelectDialogOpen(false);
 
-        // セクションを作成
-        sections.forEach((section, index) => {
-          const sectionDoc: DocumentFields = {
-            title: section.title,
-            parentDocId: newNote.id,
-          };
-          addDocumentMutation.mutate({ spaceId, data: sectionDoc }, {
-            onSuccess: (newSection) => {
-              // ページを作成
-              if (section.pages) {
-                section.pages.forEach((page) => {
-                  const pageDoc: DocumentFields = {
-                    title: page.title,
-                    parentDocId: newSection.id,
-                    body: { content: page.content },
-                  };
-                  addDocumentMutation.mutate({ spaceId, data: pageDoc });
-                });
-              }
-            },
+          // セクションを作成
+          const sectionPromises = sections.map((section) => {
+            return new Promise<void>((resolve) => {
+              const sectionDoc: DocumentFields = {
+                title: section.title,
+                parentDocId: newNote.id,
+              };
+              addDocumentMutation.mutate({ spaceId: currentSpaceId, data: sectionDoc }, {
+                onSuccess: (newSection) => {
+                  // ページを作成
+                  if (section.pages) {
+                    const pagePromises = section.pages.map((page) => {
+                      return new Promise<void>((resolvePage) => {
+                        const pageDoc: DocumentFields = {
+                          title: page.title,
+                          parentDocId: newSection.id,
+                          body: { content: page.content },
+                        };
+                        addDocumentMutation.mutate({ spaceId: currentSpaceId, data: pageDoc }, {
+                          onSuccess: () => resolvePage(),
+                        });
+                      });
+                    });
+                    Promise.all(pagePromises).then(() => resolve());
+                  } else {
+                    resolve();
+                  }
+                },
+              });
+            });
           });
-        });
-      },
-    });
+
+          Promise.all(sectionPromises).then(() => {
+            // すべてのドキュメント作成完了後にクエリを無効化
+            queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(currentSpaceId) });
+          });
+        },
+      });
+    };
+
+    if (!spaceId) {
+      // spaceを作成
+      const spaceData = { name: "Default Space" };
+      addSpaceMutation.mutate({ data: spaceData }, {
+        onSuccess: (newSpace) => {
+          // spacesクエリを無効化してspaceIdを取得
+          queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
+          // 新しいspaceIdでノート作成
+          createNoteInSpace(newSpace.id);
+        },
+        onError: () => {
+          // エラーハンドリング：何もしない
+        },
+      });
+    } else {
+      createNoteInSpace(spaceId);
+    }
   };
 
   // 名前変更ハンドラー
@@ -790,6 +820,8 @@ export function NotePage() {
       setEditingPageName(page.title);
     }
   };
+
+
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -917,13 +949,13 @@ export function NotePage() {
             }}
           />
           <List>
-            {templates
+            {noteTemplates
               .filter(template => template.name.includes(templateSearchQuery) || template.description.includes(templateSearchQuery))
               .map(template => (
                 <ListItem key={template.id} disablePadding>
                   <ListItemButton onClick={() => handleCreateNote(template.id)}>
                     <ListItemIcon>
-                      {template.icon}
+                      {getIcon(template.icon)}
                     </ListItemIcon>
                     <ListItemText primary={template.name} secondary={template.description} />
                   </ListItemButton>
