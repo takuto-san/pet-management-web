@@ -22,8 +22,14 @@ import {
   Button,
   ThemeProvider,
   createTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ListItemIcon,
+  InputAdornment,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon } from "@mui/icons-material";
+import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 
 // ページの型定義
 interface Page {
@@ -46,6 +52,15 @@ interface Note {
   name: string;
   sections: Section[];
   createdAt: Date;
+}
+
+// テンプレートの型定義
+interface Template {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactElement;
+  sections: { title: string; pages?: { title: string; content: string }[] }[];
 }
 
 // ダークテーマ
@@ -503,6 +518,33 @@ export function NotePage() {
   }, [isLoadingUser, currentUser, router]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isTemplateModeDialogOpen, setIsTemplateModeDialogOpen] = useState(false);
+  const [isTemplateSelectDialogOpen, setIsTemplateSelectDialogOpen] = useState(false);
+  const [templateSearchQuery, setTemplateSearchQuery] = useState("");
+
+  // テンプレートデータ
+  const templates: Template[] = [
+    {
+      id: "health",
+      name: "健康手帳",
+      description: "ペットの健康記録用",
+      icon: <HealthAndSafetyIcon />,
+      sections: [
+        { title: "体重記録", pages: [{ title: "体重グラフ", content: "" }] },
+        { title: "ワクチン記録", pages: [{ title: "接種履歴", content: "" }] },
+        { title: "健康メモ", pages: [{ title: "日々の健康状態", content: "" }] },
+      ],
+    },
+    {
+      id: "diary",
+      name: "日記",
+      description: "ペットの日常を記録",
+      icon: <BookIcon />,
+      sections: [
+        { title: "2024年", pages: [{ title: "1月", content: "" }] },
+      ],
+    },
+  ];
 
   // API hooks
   const { data: spaces } = useListSpaces();
@@ -614,17 +656,69 @@ export function NotePage() {
   };
 
   const handleAddNote = () => {
+    setIsTemplateModeDialogOpen(true);
+  };
+
+  const handleSelectTemplateMode = (mode: "template" | "custom") => {
+    if (mode === "custom") {
+      handleCreateNote("custom");
+    } else {
+      setIsTemplateModeDialogOpen(false);
+      setIsTemplateSelectDialogOpen(true);
+    }
+  };
+
+  const handleCreateNote = (templateId: string) => {
     if (!spaceId) return;
-    const newDoc: DocumentFields = {
-      title: "新しいノート",
+    let title = "新しいノート";
+    let sections: { title: string; pages?: { title: string; content: string }[] }[] = [];
+
+    if (templateId === "custom") {
+      // カスタムの場合、空のノート
+    } else {
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        title = template.name;
+        sections = template.sections;
+      }
+    }
+
+    // ノートを作成
+    const noteDoc: DocumentFields = {
+      title,
       parentDocId: undefined,
     };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: (newDocument) => {
-        setSelectedNoteId(newDocument.id);
+    addDocumentMutation.mutate({ spaceId, data: noteDoc }, {
+      onSuccess: (newNote) => {
+        setSelectedNoteId(newNote.id);
         setSelectedSectionId(null);
         setSelectedPageId(null);
-        setExpandedNoteIds((prev) => [...prev, newDocument.id]);
+        setExpandedNoteIds((prev) => [...prev, newNote.id]);
+        setIsTemplateModeDialogOpen(false);
+        setIsTemplateSelectDialogOpen(false);
+
+        // セクションを作成
+        sections.forEach((section, index) => {
+          const sectionDoc: DocumentFields = {
+            title: section.title,
+            parentDocId: newNote.id,
+          };
+          addDocumentMutation.mutate({ spaceId, data: sectionDoc }, {
+            onSuccess: (newSection) => {
+              // ページを作成
+              if (section.pages) {
+                section.pages.forEach((page) => {
+                  const pageDoc: DocumentFields = {
+                    title: page.title,
+                    parentDocId: newSection.id,
+                    body: { content: page.content },
+                  };
+                  addDocumentMutation.mutate({ spaceId, data: pageDoc });
+                });
+              }
+            },
+          });
+        });
       },
     });
   };
@@ -763,6 +857,84 @@ export function NotePage() {
           />
         }
       />
+      {/* テンプレートモード選択ダイアログ */}
+      <Dialog open={isTemplateModeDialogOpen} onClose={() => setIsTemplateModeDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>ノートを作成</DialogTitle>
+        <DialogContent>
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => handleSelectTemplateMode("template")}>
+                <ListItemIcon>
+                  <DescriptionIcon />
+                </ListItemIcon>
+                <ListItemText primary="テンプレートから作成" secondary="既存のテンプレートから選択" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => handleSelectTemplateMode("custom")}>
+                <ListItemIcon>
+                  <NoteIcon />
+                </ListItemIcon>
+                <ListItemText primary="カスタム" secondary="新しいノートを作成" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsTemplateModeDialogOpen(false)}>キャンセル</Button>
+        </DialogActions>
+      </Dialog>
+      {/* テンプレート選択ダイアログ */}
+      <Dialog open={isTemplateSelectDialogOpen} onClose={() => setIsTemplateSelectDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <IconButton
+              edge="start"
+              onClick={() => {
+                setIsTemplateSelectDialogOpen(false);
+                setIsTemplateModeDialogOpen(true);
+              }}
+              sx={{ mr: 1 }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            テンプレートを選択
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            placeholder="テンプレートを検索..."
+            value={templateSearchQuery}
+            onChange={(e) => setTemplateSearchQuery(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <List>
+            {templates
+              .filter(template => template.name.includes(templateSearchQuery) || template.description.includes(templateSearchQuery))
+              .map(template => (
+                <ListItem key={template.id} disablePadding>
+                  <ListItemButton onClick={() => handleCreateNote(template.id)}>
+                    <ListItemIcon>
+                      {template.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={template.name} secondary={template.description} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsTemplateSelectDialogOpen(false)}>キャンセル</Button>
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 }
