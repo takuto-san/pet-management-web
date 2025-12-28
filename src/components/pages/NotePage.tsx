@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQueries } from "@tanstack/react-query";
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { useListSpaces, useAddSpace, getListSpacesQueryKey } from "@/api/generated/space/space";
-import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument, getListDocumentsQueryKey } from "@/api/generated/document/document";
+import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument, getListDocumentsQueryKey, listDocuments } from "@/api/generated/document/document";
 import type { Document, DocumentFields, DocumentUpdateFields } from "@/types/api";
 import { Template, noteTemplates } from "@/types/noteTemplates";
 import {
@@ -525,31 +525,31 @@ export function NotePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isTemplateModeDialogOpen, setIsTemplateModeDialogOpen] = useState(false);
   const [isTemplateSelectDialogOpen, setIsTemplateSelectDialogOpen] = useState(false);
+  const [isCreateSpaceDialogOpen, setIsCreateSpaceDialogOpen] = useState(false);
   const [templateSearchQuery, setTemplateSearchQuery] = useState("");
+  const [createSpaceName, setCreateSpaceName] = useState("");
 
 
 
   // API hooks
   const { data: spaces } = useListSpaces();
   const spaceId = spaces?.[0]?.id;
-  const { data: documents = [] } = useListDocuments(spaceId || "", { query: { enabled: !!spaceId } });
+  const spaceIds = spaces?.map(space => space.id) || [];
+  const documentsQueries = useQueries({
+    queries: spaceIds.map(sid => ({
+      queryKey: getListDocumentsQueryKey(sid),
+      queryFn: () => listDocuments(sid),
+      enabled: !!sid,
+    })),
+  });
+  const documents = documentsQueries.flatMap(query => query.data || []);
   const addDocumentMutation = useAddDocument();
   const updateDocumentMutation = useUpdateDocument();
   const deleteDocumentMutation = useDeleteDocument();
   const addSpaceMutation = useAddSpace();
   const queryClient = useQueryClient();
 
-  // ノートページを開いた時にスペースが存在しない場合に作成
-  useEffect(() => {
-    if (spaces !== undefined && spaces.length === 0) {
-      const spaceData = { name: "Default Space" };
-      addSpaceMutation.mutate({ data: spaceData }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
-        },
-      });
-    }
-  }, [spaces, addSpaceMutation, queryClient]);
+
 
   // ノートデータをAPIから変換
   const notes = convertDocumentsToNotes(documents);
@@ -653,7 +653,14 @@ export function NotePage() {
   };
 
   const handleAddNote = () => {
-    setIsTemplateModeDialogOpen(true);
+    if (!spaceId) {
+      // 初回スペース作成時のデフォルト値設定
+      const defaultName = currentUser?.username ? `${currentUser.username}のワークスペース` : "ワークスペース";
+      setCreateSpaceName(defaultName);
+      setIsCreateSpaceDialogOpen(true);
+    } else {
+      setIsTemplateModeDialogOpen(true);
+    }
   };
 
   const handleSelectTemplateMode = (mode: "template" | "custom") => {
@@ -665,7 +672,25 @@ export function NotePage() {
     }
   };
 
+  const handleCreateSpace = () => {
+    if (!createSpaceName.trim()) return;
+    addSpaceMutation.mutate({ data: { name: createSpaceName } }, {
+      onSuccess: (newSpace) => {
+        queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
+        setIsCreateSpaceDialogOpen(false);
+        setCreateSpaceName("");
+        // スペース作成後にノート作成ダイアログを開く
+        setIsTemplateModeDialogOpen(true);
+      },
+    });
+  };
+
   const handleCreateNote = (templateId: string) => {
+    if (!spaceId) {
+      setIsCreateSpaceDialogOpen(true);
+      return;
+    }
+
     const createNoteInSpace = (currentSpaceId: string) => {
       let title = "新しいノート";
       let sections: { title: string; pages?: { title: string; content: string }[] }[] = [];
@@ -734,23 +759,7 @@ export function NotePage() {
       });
     };
 
-    if (!spaceId) {
-      // spaceを作成
-      const spaceData = { name: "Default Space" };
-      addSpaceMutation.mutate({ data: spaceData }, {
-        onSuccess: (newSpace) => {
-          // spacesクエリを無効化してspaceIdを取得
-          queryClient.invalidateQueries({ queryKey: getListSpacesQueryKey() });
-          // 新しいspaceIdでノート作成
-          createNoteInSpace(newSpace.id);
-        },
-        onError: () => {
-          // エラーハンドリング：何もしない
-        },
-      });
-    } else {
-      createNoteInSpace(spaceId);
-    }
+    createNoteInSpace(spaceId);
   };
 
   // 名前変更ハンドラー
@@ -965,6 +974,24 @@ export function NotePage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsTemplateSelectDialogOpen(false)}>キャンセル</Button>
+        </DialogActions>
+      </Dialog>
+      {/* ワークスペース作成ダイアログ */}
+      <Dialog open={isCreateSpaceDialogOpen} onClose={() => setIsCreateSpaceDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>ワークスペースを作成</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="ワークスペース名"
+            value={createSpaceName}
+            onChange={(e) => setCreateSpaceName(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsCreateSpaceDialogOpen(false)}>キャンセル</Button>
+          <Button onClick={handleCreateSpace} variant="contained">作成</Button>
         </DialogActions>
       </Dialog>
     </ThemeProvider>

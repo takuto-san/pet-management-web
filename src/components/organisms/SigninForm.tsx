@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
 import { useAuthenticateUser } from "@/api/generated/auth/auth";
 import { setsigninPending } from "@/stores/slices/userSlice";
@@ -22,6 +23,7 @@ export function SigninForm() {
   const [success, setSuccess] = useState("");
   const router = useRouter();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const signinPending = useSelector((state: RootState) => state.user.signinPending);
 
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
@@ -35,6 +37,8 @@ export function SigninForm() {
           localStorage.setItem("refreshToken", data.refreshToken);
         }
         dispatch(setsigninPending());
+        // Invalidate the current user query to trigger re-fetch
+        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
       },
       onError: (err: any) => {
         const status = err?.response?.status;
