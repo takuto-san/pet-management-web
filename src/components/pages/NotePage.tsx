@@ -625,6 +625,12 @@ export function NotePage() {
   const [createSpaceName, setCreateSpaceName] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'note' | 'section' | 'page'; id: string; name: string } | null>(null);
+  const [isAddSectionDialogOpen, setIsAddSectionDialogOpen] = useState(false);
+  const [addSectionName, setAddSectionName] = useState("");
+  const [isAddPageDialogOpen, setIsAddPageDialogOpen] = useState(false);
+  const [addPageName, setAddPageName] = useState("");
+  const [addSectionNoteId, setAddSectionNoteId] = useState<string>("");
+  const [addPageSectionId, setAddPageSectionId] = useState<string>("");
 
 
 
@@ -688,17 +694,9 @@ export function NotePage() {
   const [editingPageName, setEditingPageName] = useState<string>("");
 
   const handleAddPage = (sectionId: string) => {
-    if (!spaceId) return;
-    const newDoc: DocumentFields = {
-      title: "新しいページ",
-      parentDocId: sectionId,
-      body: { content: "" },
-    };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-      },
-    });
+    setAddPageSectionId(sectionId);
+    setAddPageName("");
+    setIsAddPageDialogOpen(true);
   };
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
@@ -759,16 +757,9 @@ export function NotePage() {
   };
 
   const handleAddSection = (noteId: string) => {
-    if (!spaceId) return;
-    const newDoc: DocumentFields = {
-      title: "新しいセクション",
-      parentDocId: noteId,
-    };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-      },
-    });
+    setAddSectionNoteId(noteId);
+    setAddSectionName("");
+    setIsAddSectionDialogOpen(true);
   };
 
   const handleAddNote = () => {
@@ -1014,6 +1005,45 @@ export function NotePage() {
     }
   };
 
+  const handleCreateSection = () => {
+    if (!addSectionName.trim() || !spaceId) {
+      setIsAddSectionDialogOpen(false);
+      return;
+    }
+    setIsAddSectionDialogOpen(false);
+    const newDoc: DocumentFields = {
+      title: addSectionName,
+      parentDocId: addSectionNoteId,
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        setAddSectionName("");
+        setAddSectionNoteId("");
+      },
+    });
+  };
+
+  const handleCreatePage = () => {
+    if (!addPageName.trim() || !spaceId) {
+      setIsAddPageDialogOpen(false);
+      return;
+    }
+    setIsAddPageDialogOpen(false);
+    const newDoc: DocumentFields = {
+      title: addPageName,
+      parentDocId: addPageSectionId,
+      body: { content: "" },
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        setAddPageName("");
+        setAddPageSectionId("");
+      },
+    });
+  };
+
 
 
   return (
@@ -1203,6 +1233,52 @@ export function NotePage() {
           <Button onClick={handleConfirmDelete} variant="contained" color="error">
             削除
           </Button>
+        </DialogActions>
+      </Dialog>
+      {/* セクション追加ダイアログ */}
+      <Dialog open={isAddSectionDialogOpen} onClose={() => setIsAddSectionDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>セクションを追加</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="セクション名"
+            value={addSectionName}
+            onChange={(e) => setAddSectionName(e.target.value)}
+            sx={{ mt: 2 }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleCreateSection();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsAddSectionDialogOpen(false)}>キャンセル</Button>
+          <Button onClick={handleCreateSection} variant="contained">追加</Button>
+        </DialogActions>
+      </Dialog>
+      {/* ページ追加ダイアログ */}
+      <Dialog open={isAddPageDialogOpen} onClose={() => setIsAddPageDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>ページを追加</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="ページ名"
+            value={addPageName}
+            onChange={(e) => setAddPageName(e.target.value)}
+            sx={{ mt: 2 }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleCreatePage();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsAddPageDialogOpen(false)}>キャンセル</Button>
+          <Button onClick={handleCreatePage} variant="contained">追加</Button>
         </DialogActions>
       </Dialog>
     </ThemeProvider>
