@@ -147,7 +147,9 @@ export function CalendarPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // API: ユーザーのペットを取得
-  const { data: petsData } = useListPetsByUser(currentUser?.id);
+  const { data: petsData } = useListPetsByUser(currentUser?.id || '', undefined, {
+    query: { enabled: !!currentUser?.id },
+  });
 
   // 各ペットIDに対してvisitsを取得
   const visitsQueries = useQueries({
