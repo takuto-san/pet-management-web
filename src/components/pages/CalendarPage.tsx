@@ -24,6 +24,74 @@ import { useListClinics } from "@/api/generated/clinic/clinic";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
 import { VisitFields, VisitType, ItemCategory, PrescriptionFields, PrescriptionCategory, VisitPrescriptionFields } from "@/types/api";
 
+// ユーティリティ関数：visitTypeの日本語化
+const getVisitTypeDisplayName = (visitType: string | undefined): string => {
+  switch (visitType) {
+    case VisitType.general:
+      return "定期検診";
+    case VisitType.checkup:
+      return "通院";
+    case VisitType.vaccine:
+      return "ワクチン";
+    case VisitType.heartworm:
+      return "フィラリア";
+    case VisitType.flea_tick:
+      return "ノミダニ";
+    default:
+      return visitType || "";
+  }
+};
+
+// ユーティリティ関数：理由の日本語化と整形
+const getReasonDisplayName = (reason: string | undefined): string => {
+  if (!reason) return "";
+
+  let display = reason;
+
+  // カテゴリの日本語化
+  display = display.replace(/^hospital/, "通院");
+  display = display.replace(/^supplies/, "備品");
+  display = display.replace(/^general/, "定期検診");
+
+  // undefined の除去（値が存在しない場合の区切り文字も除去）
+  display = display.replace(/ - undefined/g, "");
+  display = display.replace(/^undefined/, "");
+  display = display.replace(/undefined$/, "");
+  display = display.replace(/undefined - /g, "");
+
+  // 空の区切り文字の除去
+  display = display.replace(/^ - /, "");
+  display = display.replace(/ - $/, "");
+
+  return display.trim();
+};
+
+// ユーティリティ関数：タイトルの整形
+const formatTitle = (reason: string | undefined): string => {
+  if (!reason) return "診察";
+
+  const displayReason = getReasonDisplayName(reason);
+
+  // 日本語化された理由をタイトルとして使用
+  if (displayReason) {
+    return displayReason;
+  }
+
+  return "定期検診";
+};
+
+// ユーティリティ関数：noteの整形
+const formatNote = (note: string | undefined): string => {
+  if (!note) return "";
+
+  const parts = note.split(", ").filter(part => {
+    const value = part.split(": ")[1];
+    return value && value.trim() !== "";
+  });
+
+  return parts.join(", ");
+};
+
 interface RecordForm {
   petId?: string;
   category?: 'hospital' | 'supplies';
@@ -126,8 +194,8 @@ export function CalendarPage() {
     return dayVisits.map(visit => ({
       id: visit.id,
       time: visit.visitedOn ? new Date(visit.visitedOn).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '08:00',
-      medicine: visit.reason || '診察',
-      dosage: visit.note || '',
+      medicine: formatTitle(visit.reason || '診察'),
+      dosage: formatNote(visit.note || ''),
       petName: petsData.content.find(pet => pet.id === visit.petId)?.name || '不明',
       completed: cardCompletions[visit.id] ?? false,
     }));
@@ -1047,7 +1115,7 @@ export function CalendarPage() {
                 selectedCard && (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                      {selectedCard.time} - {selectedCard.medicine}
+                      {selectedCard.time} - {formatTitle(selectedCard.medicine)}
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1075,9 +1143,9 @@ export function CalendarPage() {
                               追加情報
                             </Typography>
                             <Typography>訪問日時: {visit.visitedOn}</Typography>
-                            <Typography>訪問タイプ: {visit.visitType}</Typography>
-                            <Typography>理由: {visit.reason}</Typography>
-                            {visit.note && <Typography>メモ: {visit.note}</Typography>}
+                            <Typography>訪問タイプ: {getVisitTypeDisplayName(visit.visitType)}</Typography>
+                            <Typography>理由: {getReasonDisplayName(visit.reason)}</Typography>
+                            {visit.note && formatNote(visit.note) && <Typography>メモ: {formatNote(visit.note)}</Typography>}
                           </Box>
                         );
                       }
