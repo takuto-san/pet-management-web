@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
@@ -130,11 +130,16 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                     <ListItemButton
                       selected={isSelected}
                       onClick={() => onSelectNote(note.id)}
-                      onDoubleClick={() => onDoubleClickNote(note.id)}
+                      onDoubleClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDoubleClickNote(note.id);
+                      }}
                       sx={{
                         display: "flex",
                         alignItems: "center",
                         px: 1,
+                        userSelect: "none",
                         "&.Mui-selected": {
                           bgcolor: "grey.700",
                           borderRadius: 1,
@@ -196,11 +201,16 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                             <ListItemButton
                               selected={isSectionSelected}
                               onClick={() => onSelectSection(note.id, section.id)}
-                              onDoubleClick={() => onDoubleClickSection(note.id, section.id)}
+                              onDoubleClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onDoubleClickSection(note.id, section.id);
+                              }}
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
                                 py: 0.5,
+                                userSelect: "none",
                                 "&.Mui-selected": {
                                   bgcolor: "grey.700",
                                   borderRadius: 1,
@@ -330,9 +340,14 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
               <ListItemButton
                 selected={isPageSelected}
                 onClick={() => onSelectPage(selectedNoteId, selectedSection.id, page.id)}
-                onDoubleClick={() => onDoubleClickPage(selectedNoteId, selectedSection.id, page.id)}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDoubleClickPage(selectedNoteId, selectedSection.id, page.id);
+                }}
                 sx={{
                   py: 0.5,
+                  userSelect: "none",
                   "&.Mui-selected": {
                     bgcolor: "grey.700",
                     borderRadius: 1,
@@ -380,49 +395,17 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
 }
 
 // メインコンテンツ
-function MainContent({ selectedPage, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange }: {
+function MainContent({ selectedPage }: {
   selectedPage: Page | null;
-  editingPageId: string | null;
-  editingPageName: string;
-  onDoubleClickPage: () => void;
-  onPageNameChange: (newTitle: string) => void;
-  onEditingPageNameChange: (name: string) => void;
 }) {
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
       <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ p: 3 }} onDoubleClick={onDoubleClickPage}>
-          {editingPageId === selectedPage.id ? (
-            <TextField
-              autoFocus
-              value={editingPageName}
-              onChange={(e) => onEditingPageNameChange(e.target.value)}
-              onBlur={() => onPageNameChange(editingPageName)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  onPageNameChange(editingPageName);
-                }
-              }}
-              onFocus={(e) => e.target.select()}
-              fullWidth
-              variant="standard"
-              InputProps={{
-                disableUnderline: true,
-              }}
-              sx={{
-                "& .MuiInputBase-input": {
-                  color: "text.primary",
-                  fontSize: "2rem",
-                  fontWeight: "bold",
-                },
-              }}
-            />
-          ) : (
-            <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
-              {selectedPage.title}
-            </Typography>
-          )}
+        <Box sx={{ p: 3, userSelect: "none" }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
+            {selectedPage.title}
+          </Typography>
         </Box>
         <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
           <TextField
@@ -543,7 +526,9 @@ export function NotePage() {
       enabled: !!sid,
     })),
   });
-  const documents = documentsQueries.flatMap(query => query.data || []);
+  const documents = useMemo(() => {
+    return documentsQueries.flatMap(query => query.data || []);
+  }, [JSON.stringify(documentsQueries.map(q => q.data))]);
   const addDocumentMutation = useAddDocument();
   const updateDocumentMutation = useUpdateDocument();
   const deleteDocumentMutation = useDeleteDocument();
@@ -553,7 +538,7 @@ export function NotePage() {
 
 
   // ノートデータをAPIから変換
-  const notes = convertDocumentsToNotes(documents);
+  const notes = useMemo(() => convertDocumentsToNotes(documents), [documents]);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>("");
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
@@ -594,7 +579,11 @@ export function NotePage() {
       parentDocId: sectionId,
       body: { content: "" },
     };
-    addDocumentMutation.mutate({ spaceId, data: newDoc });
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+      },
+    });
   };
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
@@ -660,7 +649,11 @@ export function NotePage() {
       title: "新しいセクション",
       parentDocId: noteId,
     };
-    addDocumentMutation.mutate({ spaceId, data: newDoc });
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+      },
+    });
   };
 
   const handleAddNote = () => {
@@ -776,40 +769,49 @@ export function NotePage() {
   };
 
   // 名前変更ハンドラー
-  const handleNoteNameChange = (noteId: string, newName: string) => {
+  const handleNoteNameChange = async (noteId: string, newName: string) => {
     if (!spaceId) return;
-    const updateData: DocumentUpdateFields = {
-      title: newName,
-    };
-    updateDocumentMutation.mutate({ spaceId, documentId: noteId, data: updateData }, {
-      onSuccess: () => {
-        setEditingNoteId(null);
-      },
-    });
+
+    try {
+      const updateData: DocumentUpdateFields = {
+        title: newName,
+      };
+      await updateDocumentMutation.mutateAsync({ spaceId, documentId: noteId, data: updateData });
+      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+      setEditingNoteId(null);
+    } catch (error) {
+      // TODO: エラー表示
+    }
   };
 
-  const handleSectionNameChange = (noteId: string, sectionId: string, newTitle: string) => {
+  const handleSectionNameChange = async (noteId: string, sectionId: string, newTitle: string) => {
     if (!spaceId) return;
-    const updateData: DocumentUpdateFields = {
-      title: newTitle,
-    };
-    updateDocumentMutation.mutate({ spaceId, documentId: sectionId, data: updateData }, {
-      onSuccess: () => {
-        setEditingSectionId(null);
-      },
-    });
+
+    try {
+      const updateData: DocumentUpdateFields = {
+        title: newTitle,
+      };
+      await updateDocumentMutation.mutateAsync({ spaceId, documentId: sectionId, data: updateData });
+      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+      setEditingSectionId(null);
+    } catch (error) {
+      // TODO: エラー表示
+    }
   };
 
-  const handlePageNameChange = (noteId: string, sectionId: string, pageId: string, newTitle: string) => {
+  const handlePageNameChange = async (noteId: string, sectionId: string, pageId: string, newTitle: string) => {
     if (!spaceId) return;
-    const updateData: DocumentUpdateFields = {
-      title: newTitle,
-    };
-    updateDocumentMutation.mutate({ spaceId, documentId: pageId, data: updateData }, {
-      onSuccess: () => {
-        setEditingPageId(null);
-      },
-    });
+
+    try {
+      const updateData: DocumentUpdateFields = {
+        title: newTitle,
+      };
+      await updateDocumentMutation.mutateAsync({ spaceId, documentId: pageId, data: updateData });
+      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+      setEditingPageId(null);
+    } catch (error) {
+      // TODO: エラー表示
+    }
   };
 
   // ダブルクリックハンドラー
@@ -895,19 +897,6 @@ export function NotePage() {
         main={
           <MainContent
             selectedPage={selectedPage}
-            editingPageId={editingPageId}
-            editingPageName={editingPageName}
-            onDoubleClickPage={() => {
-              if (selectedNoteId && selectedSectionId && selectedPageId) {
-                handleDoubleClickPage(selectedNoteId, selectedSectionId, selectedPageId);
-              }
-            }}
-            onPageNameChange={(newTitle) => {
-              if (selectedNoteId && selectedSectionId && selectedPageId) {
-                handlePageNameChange(selectedNoteId, selectedSectionId, selectedPageId, newTitle);
-              }
-            }}
-            onEditingPageNameChange={setEditingPageName}
           />
         }
       />
