@@ -1201,10 +1201,10 @@ export function CalendarPage() {
 
                   {/* ペット選択 */}
                   <FormControl fullWidth>
-                    <InputLabel>ペット</InputLabel>
+                    <InputLabel>ペット*</InputLabel>
                     <Select
                       value={recordForm.petId || ''}
-                      label="ペット"
+                      label="ペット*"
                       onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
                     >
                       {petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => (
