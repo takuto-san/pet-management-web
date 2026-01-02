@@ -745,16 +745,28 @@ export function CalendarPage() {
                           // recordFormに既存データをセット
                           const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0]; // これはUTCなのでそのまま使う
                           setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
-                          let formData: any = {
-                            petId: visit.petId,
-                            date: dateStr,
-                            category: 'hospital',
-                          };
+  let formData: any = {
+    petId: visit.petId,
+    date: dateStr,
+    category: 'hospital',
+    subcategoryType: '',
+    clinicId: visit.clinicId || '',
+    medicineName: '',
+    vaccineType: '',
+    diagnosis: '',
+    clinicName: '',
+    weight: '',
+    condition: '',
+    doctorNote: '',
+    lotNo: '',
+    nextDate: '',
+    nextVaccinationDate: '',
+  };
 
                           // visit.reasonからカテゴリを判定し、データを復元
                           if (visit.reason && visit.reason.includes('ワクチン接種')) {
                             formData.subcategoryType = 'vaccine';
-                            formData.vaccineType = visit.reason.replace('ワクチン接種 - ', '');
+                            formData.vaccineType = visit.reason?.replace('ワクチン接種 - ', '') || '';
                             // noteからLot Noと次回接種日を抽出
                             if (visit.note) {
                               const noteParts = visit.note.split(', ');
@@ -775,13 +787,6 @@ export function CalendarPage() {
                               formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
                               formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
                             }
-                            // clinicIdをclinicNameから逆引き
-                            if (formData.clinicName && clinicsData?.content) {
-                              const clinic = clinicsData.content.find(c => c.name === formData.clinicName);
-                              if (clinic) {
-                                formData.clinicId = clinic.id;
-                              }
-                            }
                           } else {
                             formData.subcategoryType = 'medication';
                             formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
@@ -794,10 +799,15 @@ export function CalendarPage() {
                                 formData.nextDate = nextDatePart.replace('次回: ', '');
                               }
                             }
-                          }
+  }
 
-                          setRecordForm(formData);
-                          setIsSidebarEditing(true);
+  // 'undefined' 文字列を空文字に置換
+  Object.keys(formData).forEach(key => {
+    if (formData[key] === 'undefined') formData[key] = '';
+  });
+
+  setRecordForm(formData);
+  setIsSidebarEditing(true);
                         }
                       }}>
                         <Edit />
