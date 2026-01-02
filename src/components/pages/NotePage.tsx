@@ -31,7 +31,7 @@ import {
   ListItemIcon,
   InputAdornment,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
 // ページの型定義
 interface Page {
@@ -94,7 +94,7 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 }
 
 // ノート一覧（サイドバー）
-function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingNoteName, editingSectionName, onDoubleClickNote, onDoubleClickSection, onNoteNameChange, onSectionNameChange, onEditingNoteNameChange, onEditingSectionNameChange }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingNoteName, editingSectionName, onDoubleClickNote, onDoubleClickSection, onNoteNameChange, onSectionNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onDeleteNote, onDeleteSection }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
@@ -115,6 +115,8 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
   onSectionNameChange: (noteId: string, sectionId: string, newTitle: string) => void;
   onEditingNoteNameChange: (name: string) => void;
   onEditingSectionNameChange: (name: string) => void;
+  onDeleteNote: (noteId: string) => void;
+  onDeleteSection: (noteId: string, sectionId: string) => void;
 }) {
   return (
     <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
@@ -149,46 +151,65 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                         },
                       }}
                     >
-                      <ChevronRightIcon
-                        sx={{
-                          transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                          transition: "transform 0.2s",
-                          mr: 1,
-                          cursor: "pointer",
-                          fontSize: "1.2rem",
-                          color: "text.secondary",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleExpand(note.id);
-                        }}
-                      />
-                      {editingNoteId === note.id ? (
-                        <TextField
-                          autoFocus
-                          value={editingNoteName}
-                          onChange={(e) => onEditingNoteNameChange(e.target.value)}
-                          onBlur={() => onNoteNameChange(note.id, editingNoteName)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              onNoteNameChange(note.id, editingNoteName);
-                            }
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          fullWidth
-                          variant="standard"
-                          InputProps={{
-                            disableUnderline: true,
-                          }}
+                      <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                        <ChevronRightIcon
                           sx={{
-                            "& .MuiInputBase-input": {
-                              color: "text.primary",
-                              fontSize: "1rem",
-                            },
+                            transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                            transition: "transform 0.2s",
+                            mr: 1,
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            color: "text.secondary",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleExpand(note.id);
                           }}
                         />
-                      ) : (
-                        <ListItemText primary={note.name} />
+                        {editingNoteId === note.id ? (
+                          <TextField
+                            autoFocus
+                            value={editingNoteName}
+                            onChange={(e) => onEditingNoteNameChange(e.target.value)}
+                            onBlur={() => onNoteNameChange(note.id, editingNoteName)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                onNoteNameChange(note.id, editingNoteName);
+                              }
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            fullWidth
+                            variant="standard"
+                            InputProps={{
+                              disableUnderline: true,
+                            }}
+                            sx={{
+                              "& .MuiInputBase-input": {
+                                color: "text.primary",
+                                fontSize: "1rem",
+                              },
+                            }}
+                          />
+                        ) : (
+                          <ListItemText primary={note.name} />
+                        )}
+                      </Box>
+                      {isSelected && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteNote(note.id);
+                          }}
+                          sx={{
+                            opacity: 0.7,
+                            "&:hover": {
+                              opacity: 1,
+                            },
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
                       )}
                     </ListItemButton>
                   </ListItem>
@@ -221,32 +242,51 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                 },
                               }}
                             >
-                              {editingSectionId === section.id ? (
-                                <TextField
-                                  autoFocus
-                                  value={editingSectionName}
-                                  onChange={(e) => onEditingSectionNameChange(e.target.value)}
-                                  onBlur={() => onSectionNameChange(note.id, section.id, editingSectionName)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      onSectionNameChange(note.id, section.id, editingSectionName);
-                                    }
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  fullWidth
-                                  variant="standard"
-                                  InputProps={{
-                                    disableUnderline: true,
+                              <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                                {editingSectionId === section.id ? (
+                                  <TextField
+                                    autoFocus
+                                    value={editingSectionName}
+                                    onChange={(e) => onEditingSectionNameChange(e.target.value)}
+                                    onBlur={() => onSectionNameChange(note.id, section.id, editingSectionName)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        onSectionNameChange(note.id, section.id, editingSectionName);
+                                      }
+                                    }}
+                                    onFocus={(e) => e.target.select()}
+                                    fullWidth
+                                    variant="standard"
+                                    InputProps={{
+                                      disableUnderline: true,
+                                    }}
+                                    sx={{
+                                      "& .MuiInputBase-input": {
+                                        color: "text.primary",
+                                        fontSize: "0.9rem",
+                                      },
+                                    }}
+                                  />
+                                ) : (
+                                  <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                                )}
+                              </Box>
+                              {isSectionSelected && (
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteSection(note.id, section.id);
                                   }}
                                   sx={{
-                                    "& .MuiInputBase-input": {
-                                      color: "text.primary",
-                                      fontSize: "0.9rem",
+                                    opacity: 0.7,
+                                    "&:hover": {
+                                      opacity: 1,
                                     },
                                   }}
-                                />
-                              ) : (
-                                <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
                               )}
                             </ListItemButton>
                           </ListItem>
@@ -297,7 +337,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
 }
 
 // ページリスト（サイドバーの横）
-function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange, onAddPage }: {
+function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange, onAddPage, onDeletePage }: {
   selectedSection: Section | null;
   selectedPageId: string | null;
   onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
@@ -308,6 +348,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
   onPageNameChange: (noteId: string, sectionId: string, pageId: string, newTitle: string) => void;
   onEditingPageNameChange: (name: string) => void;
   onAddPage: (sectionId: string) => void;
+  onDeletePage: (noteId: string, sectionId: string, pageId: string) => void;
 }) {
   if (!selectedSection) return null;
 
@@ -358,32 +399,51 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                   },
                 }}
               >
-                {editingPageId === page.id ? (
-                  <TextField
-                    autoFocus
-                    value={editingPageName}
-                    onChange={(e) => onEditingPageNameChange(e.target.value)}
-                    onBlur={() => onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName);
-                      }
-                    }}
-                    onFocus={(e) => e.target.select()}
-                    fullWidth
-                    variant="standard"
-                    InputProps={{
-                      disableUnderline: true,
+                <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                  {editingPageId === page.id ? (
+                    <TextField
+                      autoFocus
+                      value={editingPageName}
+                      onChange={(e) => onEditingPageNameChange(e.target.value)}
+                      onBlur={() => onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName);
+                        }
+                      }}
+                      onFocus={(e) => e.target.select()}
+                      fullWidth
+                      variant="standard"
+                      InputProps={{
+                        disableUnderline: true,
+                      }}
+                      sx={{
+                        "& .MuiInputBase-input": {
+                          color: "text.primary",
+                          fontSize: "0.9rem",
+                        },
+                      }}
+                    />
+                  ) : (
+                    <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
+                  )}
+                </Box>
+                {isPageSelected && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeletePage(selectedNoteId, selectedSection.id, page.id);
                     }}
                     sx={{
-                      "& .MuiInputBase-input": {
-                        color: "text.primary",
-                        fontSize: "0.9rem",
+                      opacity: 0.7,
+                      "&:hover": {
+                        opacity: 1,
                       },
                     }}
-                  />
-                ) : (
-                  <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 )}
               </ListItemButton>
             </ListItem>
@@ -512,6 +572,8 @@ export function NotePage() {
   const [hasShownCreateSpaceDialog, setHasShownCreateSpaceDialog] = useState(false);
   const [templateSearchQuery, setTemplateSearchQuery] = useState("");
   const [createSpaceName, setCreateSpaceName] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'note' | 'section' | 'page'; id: string; name: string } | null>(null);
 
 
 
@@ -845,6 +907,60 @@ export function NotePage() {
     }
   };
 
+  // 削除ハンドラー
+  const handleDeleteNote = (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+      setDeleteTarget({ type: 'note', id: noteId, name: note.name });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleDeleteSection = (noteId: string, sectionId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    const section = note?.sections.find(s => s.id === sectionId);
+    if (section) {
+      setDeleteTarget({ type: 'section', id: sectionId, name: section.title });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleDeletePage = (noteId: string, sectionId: string, pageId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    const section = note?.sections.find(s => s.id === sectionId);
+    const page = section?.pages.find(p => p.id === pageId);
+    if (page) {
+      setDeleteTarget({ type: 'page', id: pageId, name: page.title });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || !spaceId) return;
+
+    try {
+      await deleteDocumentMutation.mutateAsync({ spaceId, documentId: deleteTarget.id });
+      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+
+      // 選択状態のリセット
+      if (deleteTarget.type === 'note' && selectedNoteId === deleteTarget.id) {
+        setSelectedNoteId(notes.length > 1 ? notes.find(n => n.id !== deleteTarget.id)?.id || '' : '');
+        setSelectedSectionId(null);
+        setSelectedPageId(null);
+      } else if (deleteTarget.type === 'section' && selectedSectionId === deleteTarget.id) {
+        setSelectedSectionId(null);
+        setSelectedPageId(null);
+      } else if (deleteTarget.type === 'page' && selectedPageId === deleteTarget.id) {
+        setSelectedPageId(null);
+      }
+
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
+    } catch (error) {
+      // TODO: エラー表示
+    }
+  };
+
 
 
   return (
@@ -876,6 +992,8 @@ export function NotePage() {
             onSectionNameChange={handleSectionNameChange}
             onEditingNoteNameChange={setEditingNoteName}
             onEditingSectionNameChange={setEditingSectionName}
+            onDeleteNote={handleDeleteNote}
+            onDeleteSection={handleDeleteSection}
           />
         }
         pageList={
@@ -891,6 +1009,7 @@ export function NotePage() {
               onPageNameChange={handlePageNameChange}
               onEditingPageNameChange={setEditingPageName}
               onAddPage={handleAddPage}
+              onDeletePage={handleDeletePage}
             />
           ) : null
         }
@@ -994,6 +1113,21 @@ export function NotePage() {
         <DialogActions>
           <Button onClick={() => setIsCreateSpaceDialogOpen(false)}>キャンセル</Button>
           <Button onClick={handleCreateSpace} variant="contained">作成</Button>
+        </DialogActions>
+      </Dialog>
+      {/* 削除確認ダイアログ */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>削除の確認</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {deleteTarget ? `${deleteTarget.name} を削除しますか？この操作は取り消すことができません。` : ''}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>キャンセル</Button>
+          <Button onClick={handleConfirmDelete} variant="contained" color="error">
+            削除
+          </Button>
         </DialogActions>
       </Dialog>
     </ThemeProvider>
