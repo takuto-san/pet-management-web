@@ -8,21 +8,89 @@ import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { useState } from "react";
-import { useListPets } from "@/api/generated/pet/pet";
-import { useListVisits } from "@/api/generated/visit/visit";
+import { useListPetsByUser } from "@/api/generated/pet/pet";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
-import { Info, Pets, Check, CalendarToday, Add, Close, Edit } from '@mui/icons-material';
-import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import { listVisits } from "@/api/generated/visit/visit";
+import { Info, Pets, Check, CalendarToday, Add, Close, Edit, Delete } from '@mui/icons-material';
+import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useAddVisit, useUpdateVisit } from "@/api/generated/visit/visit";
+import { useAddVisit, useUpdateVisit, useDeleteVisit } from "@/api/generated/visit/visit";
 import { useAddVisitPrescription } from "@/api/generated/visit-prescription/visit-prescription";
 import { useAddItem } from "@/api/generated/item/item";
 import { useAddPrescription } from "@/api/generated/prescription/prescription";
 import { useListClinics } from "@/api/generated/clinic/clinic";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQueries } from "@tanstack/react-query";
 import { VisitFields, VisitType, ItemCategory, PrescriptionFields, PrescriptionCategory, VisitPrescriptionFields } from "@/types/api";
+
+// ユーティリティ関数：visitTypeの日本語化
+const getVisitTypeDisplayName = (visitType: string | undefined): string => {
+  switch (visitType) {
+    case VisitType.general:
+      return "定期検診";
+    case VisitType.checkup:
+      return "通院";
+    case VisitType.vaccine:
+      return "ワクチン";
+    case VisitType.heartworm:
+      return "フィラリア";
+    case VisitType.flea_tick:
+      return "ノミダニ";
+    default:
+      return visitType || "";
+  }
+};
+
+// ユーティリティ関数：理由の日本語化と整形
+const getReasonDisplayName = (reason: string | undefined): string => {
+  if (!reason) return "";
+
+  let display = reason;
+
+  // カテゴリの日本語化
+  display = display.replace(/^hospital/, "通院");
+  display = display.replace(/^supplies/, "備品");
+  display = display.replace(/^general/, "定期検診");
+
+  // undefined の除去（値が存在しない場合の区切り文字も除去）
+  display = display.replace(/ - undefined/g, "");
+  display = display.replace(/^undefined/, "");
+  display = display.replace(/undefined$/, "");
+  display = display.replace(/undefined - /g, "");
+
+  // 空の区切り文字の除去
+  display = display.replace(/^ - /, "");
+  display = display.replace(/ - $/, "");
+
+  return display.trim();
+};
+
+// ユーティリティ関数：タイトルの整形
+const formatTitle = (reason: string | undefined): string => {
+  if (!reason) return "診察";
+
+  const displayReason = getReasonDisplayName(reason);
+
+  // 日本語化された理由をタイトルとして使用
+  if (displayReason) {
+    return displayReason;
+  }
+
+  return "定期検診";
+};
+
+// ユーティリティ関数：noteの整形
+const formatNote = (note: string | undefined): string => {
+  if (!note) return "";
+
+  const parts = note.split(", ").filter(part => {
+    const value = part.split(": ")[1];
+    return value && value.trim() !== "";
+  });
+
+  return parts.join(", ");
+};
 
 interface RecordForm {
   petId?: string;
@@ -75,11 +143,26 @@ export function CalendarPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingVisitId, setEditingVisitId] = useState<string | null>(null);
 
-  // API: ユーザーのペットを取得
-  const { data: petsData } = useListPets();
+  // 削除確認ダイアログ用の状態
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // API: 全visitsを取得（実際にはユーザーのものにフィルタ）
-  const { data: visitsData } = useListVisits();
+  // API: ユーザーのペットを取得
+  const { data: petsData } = useListPetsByUser(currentUser?.id || '', undefined, {
+    query: { enabled: !!currentUser?.id },
+  });
+
+  // 各ペットIDに対してvisitsを取得
+  const visitsQueries = useQueries({
+    queries: (petsData?.content?.map(pet => pet.id) || []).map(petId => ({
+      queryKey: ['/visits', { petId }],
+      queryFn: () => listVisits({ petId }),
+    })),
+  });
+
+  // 結果をマージ
+  const visitsData = {
+    content: visitsQueries.flatMap(query => query.data?.content || []),
+  };
 
   // API: クリニックを取得
   const { data: clinicsData } = useListClinics();
@@ -94,16 +177,17 @@ export function CalendarPage() {
   const queryClient = useQueryClient();
   const addVisitMutation = useAddVisit();
   const updateVisitMutation = useUpdateVisit();
+  const deleteVisitMutation = useDeleteVisit();
   const addVisitPrescriptionMutation = useAddVisitPrescription();
   const addItemMutation = useAddItem();
   const addPrescriptionMutation = useAddPrescription();
 
   // カードデータを日付ごとにグループ化（実際のvisitsデータから生成）
   const getCardsForDate = (date: Date) => {
-    if (!visitsData?.content) return [];
+    if (!visitsData?.content || !petsData?.content) return [];
 
     // 選択された日付のvisitsをフィルタ
-    const targetDateStr = date.toISOString().split('T')[0];
+    const targetDateStr = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const dayVisits = visitsData.content.filter(visit =>
       visit.visitedOn && visit.visitedOn.startsWith(targetDateStr)
     );
@@ -111,10 +195,10 @@ export function CalendarPage() {
     // visitsをカード形式に変換
     return dayVisits.map(visit => ({
       id: visit.id,
-      time: '08:00', // 仮の時間（実際にはvisit.visitedOnから取得可能）
-      medicine: visit.reason || '診察',
-      dosage: visit.note || '',
-      petName: petsData?.content?.find(pet => pet.id === visit.petId)?.name || '不明',
+      time: visit.visitedOn ? new Date(visit.visitedOn).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '08:00',
+      medicine: formatTitle(visit.reason || '診察'),
+      dosage: formatNote(visit.note || ''),
+      petName: petsData.content.find(pet => pet.id === visit.petId)?.name || '不明',
       completed: cardCompletions[visit.id] ?? false,
     }));
   };
@@ -211,9 +295,30 @@ export function CalendarPage() {
   // FABクリックでドロワーを開く
   const handleFabClick = () => {
     setIsDrawerOpen(true);
+    setIsEditing(false); // 新規追加モードに設定
+    setEditingVisitId(null);
     const dateStr = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const nextDateStr = new Date(selectedDate.getTime() + 30 * 24 * 60 * 60 * 1000 - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     setRecordForm({ petId: '', category: 'hospital', subcategoryType: 'medication', date: dateStr, nextDate: nextDateStr, nextVaccinationDate: nextDateStr });
+  };
+
+  // 削除処理
+  const handleDeleteVisit = async () => {
+    if (!selectedCard) return;
+
+    try {
+      await deleteVisitMutation.mutateAsync({ visitId: selectedCard.id });
+      // 削除成功後、サイドバーを閉じてダイアログを閉じる
+      setIsSidebarOpen(false);
+      setSelectedCard(null);
+      setIsDeleteDialogOpen(false);
+      // クエリを無効化してデータを再取得
+      petsData?.content?.forEach(pet => {
+        queryClient.invalidateQueries({ queryKey: ['/visits', { petId: pet.id }] });
+      });
+    } catch (error) {
+      console.error('削除に失敗しました:', error);
+    }
   };
 
   // ドロワーを閉じる
@@ -240,7 +345,7 @@ export function CalendarPage() {
     setSelectedSubcategory(subcategory);
     setSelectedSubcategoryType(type);
     setCurrentStep('form');
-    setRecordForm({ petId: '', date: selectedDate.toISOString().split('T')[0] });
+    setRecordForm({ petId: '', date: new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0] });
   };
 
   // ステップ戻る
@@ -273,50 +378,15 @@ export function CalendarPage() {
         setErrorMessage('病院を選択してください');
         return;
       }
-      if (selectedSubcategoryType === 'medication' && !recordForm.medicineName) {
-        setErrorMessage('薬名を入力してください');
-        return;
-      }
-      if (selectedSubcategoryType === 'vaccine' && (!recordForm.vaccineType)) {
-        setErrorMessage('ワクチン種類を入力してください');
-        return;
-      }
-      if (selectedSubcategoryType === 'visit' && (!recordForm.diagnosis || !recordForm.weight || !recordForm.condition)) {
-        setErrorMessage('必須項目を入力してください');
-        return;
-      }
       // prescriptionが入力された場合のバリデーション
       if (selectedSubcategoryType === 'visit' && recordForm.prescriptionName && (!recordForm.prescriptionCategory || !recordForm.prescriptionQuantity || !recordForm.prescriptionUnit)) {
         setErrorMessage('処方薬の必須項目を入力してください');
-        return;
-      }
-    } else if (selectedCategory === 'supplies') {
-      if (!recordForm.itemName || !recordForm.quantity) {
-        setErrorMessage('必須項目を入力してください');
         return;
       }
     }
 
     try {
       if (selectedCategory === 'hospital') {
-        // VisitFieldsを作成
-        let visitType: VisitType = VisitType.general;
-        let reason = '';
-        let note = '';
-
-        if (selectedSubcategoryType === 'medication') {
-          reason = `${recordForm.category} - ${recordForm.medicineName}`;
-          note = recordForm.nextDate ? `次回: ${recordForm.nextDate}` : '';
-        } else if (selectedSubcategoryType === 'vaccine') {
-          visitType = VisitType.checkup;
-          reason = `ワクチン接種 - ${recordForm.vaccineType}`;
-          note = `Lot No: ${recordForm.lotNo || ''}, 次回: ${recordForm.nextVaccinationDate || ''}`;
-        } else if (selectedSubcategoryType === 'visit') {
-          visitType = VisitType.checkup;
-          reason = recordForm.diagnosis;
-          note = `病院: ${recordForm.clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
-        }
-
         // clinicId から clinicName を取得
         let clinicName = '';
         if (recordForm.clinicId && clinicsData?.content) {
@@ -324,19 +394,28 @@ export function CalendarPage() {
           clinicName = clinic?.name || '';
         }
 
-        // note を再構築
-        if (recordForm.subcategoryType === 'medication') {
-          note = recordForm.nextDate ? `次回: ${recordForm.nextDate}` : '';
-        } else if (recordForm.subcategoryType === 'vaccine') {
-          note = `Lot No: ${recordForm.lotNo || ''}, 次回: ${recordForm.nextVaccinationDate || ''}`;
-        } else if (recordForm.subcategoryType === 'visit') {
+        // VisitFieldsを作成
+        let visitType: VisitType = VisitType.general;
+        let reason = '';
+        let note = '';
+
+        if (selectedSubcategoryType === 'medication') {
+          reason = `${recordForm.category} - ${recordForm.medicineName}`;
+          note = `区分: ${recordForm.categoryField || ''}${recordForm.nextDate ? `, 次回: ${recordForm.nextDate}` : ''}`;
+        } else if (selectedSubcategoryType === 'vaccine') {
+          visitType = VisitType.checkup;
+          reason = `ワクチン接種 - ${recordForm.vaccineType}`;
+          note = `Lot No: ${recordForm.lotNo || ''}${recordForm.nextVaccinationDate ? `, 次回: ${recordForm.nextVaccinationDate}` : ''}`;
+        } else if (selectedSubcategoryType === 'visit') {
+          visitType = VisitType.checkup;
+          reason = recordForm.diagnosis;
           note = `病院: ${clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
         }
 
         const visitFields: VisitFields = {
           petId: recordForm.petId,
-          clinicId: recordForm.subcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || null), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
-          visitedOn: `${selectedDate.toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
+          clinicId: recordForm.subcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || ''), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
+          visitedOn: `${new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
           visitType,
           reason,
           note,
@@ -389,7 +468,9 @@ export function CalendarPage() {
         // リマインダー作成（今後の実装）
 
         // クエリを無効化
-        queryClient.invalidateQueries({ queryKey: ['/visits'] });
+        petsData?.content?.forEach(pet => {
+          queryClient.invalidateQueries({ queryKey: ['/visits', { petId: pet.id }] });
+        });
 
       } else if (selectedCategory === 'supplies') {
         // Item作成
@@ -530,14 +611,18 @@ export function CalendarPage() {
                 return (
                   <div
                     key={index}
-                    onClick={() => setSelectedDate(date)}
-                    className={`relative text-center py-3 px-2 text-sm cursor-pointer hover:bg-gray-700 rounded ${
+                    className={`relative text-center py-3 px-2 text-sm rounded cursor-pointer ${
                       isSelectedDate(date) ? 'bg-gray-700' : ''
                     } ${
                       isCurrentPeriod(date) ? 'text-white' : 'text-gray-500'
                     }`}
+                    onClick={() => setSelectedDate(date)}
                   >
-                    {date.getDate()}
+                    <div className="flex justify-center items-center">
+                      <span>
+                        {date.getDate()}
+                      </span>
+                    </div>
                     {/* カードドット */}
                     {displayedCards.length > 0 && (
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
@@ -652,67 +737,87 @@ export function CalendarPage() {
                 </Box>
                 <Box>
                   {!isSidebarEditing && (
-                    <IconButton onClick={() => {
-                      // 編集モードを開始
-                      const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
-                      if (visit) {
-                        setIsEditing(true);
-                        setEditingVisitId(visit.id);
-                        // recordFormに既存データをセット
-                        const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0];
-                        setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
-                        let formData: any = {
-                          petId: visit.petId,
-                          date: dateStr,
-                          category: 'hospital',
-                        };
+                    <>
+                      <IconButton onClick={() => {
+                        // 編集モードを開始
+                        const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
+                        if (visit) {
+                          setIsEditing(true);
+                          setEditingVisitId(visit.id);
+                          // recordFormに既存データをセット
+                          const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0]; // これはUTCなのでそのまま使う
+                          setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
+  let formData: any = {
+    petId: visit.petId,
+    date: dateStr,
+    category: 'hospital',
+    subcategoryType: '',
+    clinicId: visit.clinicId || '',
+    medicineName: '',
+    vaccineType: '',
+    diagnosis: '',
+    clinicName: '',
+    weight: '',
+    condition: '',
+    doctorNote: '',
+    lotNo: '',
+    nextDate: '',
+    nextVaccinationDate: '',
+  };
 
-                        // visit.reasonからカテゴリを判定し、データを復元
-                        if (visit.reason && visit.reason.includes('ワクチン接種')) {
-                          formData.subcategoryType = 'vaccine';
-                          formData.vaccineType = visit.reason.replace('ワクチン接種 - ', '');
-                          // noteからLot Noと次回接種日を抽出
-                          if (visit.note) {
-                            const noteParts = visit.note.split(', ');
-                            formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
-                            const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
-                            if (nextDatePart) {
-                              formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                          // visit.reasonからカテゴリを判定し、データを復元
+                          if (visit.reason && visit.reason.includes('ワクチン接種')) {
+                            formData.subcategoryType = 'vaccine';
+                            formData.vaccineType = visit.reason?.replace('ワクチン接種 - ', '') || '';
+                            // noteからLot Noと次回接種日を抽出
+                            if (visit.note) {
+                              const noteParts = visit.note.split(', ');
+                              formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
+                              const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                              if (nextDatePart) {
+                                formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                              }
                             }
-                          }
-                        } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
-                          formData.subcategoryType = 'visit';
-                          formData.diagnosis = visit.reason || '';
-                          // noteから病院、体重、体調、指示を抽出
-                          if (visit.note) {
-                            const noteParts = visit.note.split(', ');
-                            formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
-                            formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
-                            formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
-                            formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
-                          }
-                          // clinicIdをclinicNameから逆引き
-                          if (formData.clinicName && clinicsData?.content) {
-                            const clinic = clinicsData.content.find(c => c.name === formData.clinicName);
-                            if (clinic) {
-                              formData.clinicId = clinic.id;
+                          } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
+                            formData.subcategoryType = 'visit';
+                            formData.diagnosis = visit.reason || '';
+                            // noteから病院、体重、体調、指示を抽出
+                            if (visit.note) {
+                              const noteParts = visit.note.split(', ');
+                              formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
+                              formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
+                              formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
+                              formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
                             }
-                          }
-                        } else {
-                          formData.subcategoryType = 'medication';
-                          formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
-                          // noteから区分と次回日を抽出
-                          if (visit.note && visit.note.startsWith('次回: ')) {
-                            formData.nextDate = visit.note.replace('次回: ', '');
-                          }
+                          } else {
+                            formData.subcategoryType = 'medication';
+                            formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
+                            // noteから区分と次回日を抽出
+                            if (visit.note) {
+                              const noteParts = visit.note.split(', ');
+                              formData.categoryField = noteParts.find(p => p.startsWith('区分: '))?.replace('区分: ', '') || '';
+                              const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                              if (nextDatePart) {
+                                formData.nextDate = nextDatePart.replace('次回: ', '');
+                              }
+                            }
+  }
+
+  // 'undefined' 文字列を空文字に置換
+  Object.keys(formData).forEach(key => {
+    if (formData[key] === 'undefined') formData[key] = '';
+  });
+
+  setRecordForm(formData);
+  setIsSidebarEditing(true);
                         }
-
-                        setRecordForm(formData);
-                        setIsSidebarEditing(true);
-                      }
-                    }}>
-                      <Edit />
-                    </IconButton>
+                      }}>
+                        <Edit />
+                      </IconButton>
+                      <IconButton onClick={() => setIsDeleteDialogOpen(true)}>
+                        <Delete />
+                      </IconButton>
+                    </>
                   )}
                   <IconButton onClick={() => {
                     setIsSidebarOpen(false);
@@ -726,12 +831,25 @@ export function CalendarPage() {
 
               {isSidebarEditing ? (
                 <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {/* 日付選択 */}
+                  <TextField
+                    fullWidth
+                    label="日付*"
+                    type="date"
+                    value={recordForm.date || ''}
+                    onChange={(e) => {
+                      setRecordForm({ ...recordForm, date: e.target.value });
+                      setSelectedDate(new Date(e.target.value)); // 日付変更時にselectedDateを更新
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+
                   {/* 大カテゴリー選択 */}
                   <FormControl fullWidth>
-                    <InputLabel>カテゴリー</InputLabel>
+                    <InputLabel>カテゴリー*</InputLabel>
                     <Select
                       value={recordForm.category || 'hospital'}
-                      label="カテゴリー"
+                      label="カテゴリー*"
                       onChange={(e) => {
                         const category = e.target.value as 'hospital' | 'supplies';
                         setRecordForm({ ...recordForm, category, subcategoryType: category === 'hospital' ? 'medication' : 'food' });
@@ -742,26 +860,29 @@ export function CalendarPage() {
                     </Select>
                   </FormControl>
 
-                  {/* 日付選択 */}
-                  <TextField
-                    fullWidth
-                    label="日付"
-                    type="date"
-                    value={recordForm.date || ''}
-                    onChange={(e) => {
-                      setRecordForm({ ...recordForm, date: e.target.value });
-                      setSelectedDate(new Date(e.target.value)); // 日付変更時にselectedDateを更新
-                    }}
-                    InputLabelProps={{ shrink: true }}
-                  />
+                  {/* 病院選択（hospitalカテゴリの場合のみ） */}
+                  {recordForm.category === 'hospital' && (
+                    <FormControl fullWidth>
+                      <InputLabel>病院名*</InputLabel>
+                      <Select
+                        value={recordForm.clinicId || ''}
+                        label="病院名*"
+                        onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
+                      >
+                        {clinicsData?.content?.map(clinic => (
+                          <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
 
                   {/* 小カテゴリー選択 */}
                   {recordForm.category === 'hospital' && (
                     <FormControl fullWidth>
-                      <InputLabel>項目</InputLabel>
+                      <InputLabel>項目*</InputLabel>
                       <Select
                         value={recordForm.subcategoryType || 'medication'}
-                        label="項目"
+                        label="項目*"
                         onChange={(e) => {
                           const subcategoryType = e.target.value;
                           setRecordForm({ ...recordForm, subcategoryType });
@@ -780,10 +901,10 @@ export function CalendarPage() {
 
                   {recordForm.category === 'supplies' && (
                     <FormControl fullWidth>
-                      <InputLabel>項目</InputLabel>
+                      <InputLabel>項目*</InputLabel>
                       <Select
                         value={recordForm.subcategoryType || 'food'}
-                        label="項目"
+                        label="項目*"
                         onChange={(e) => {
                           const subcategoryType = e.target.value;
                           setRecordForm({ ...recordForm, subcategoryType });
@@ -804,13 +925,13 @@ export function CalendarPage() {
 
                   {/* ペット選択 */}
                   <FormControl fullWidth>
-                    <InputLabel>ペット</InputLabel>
+                    <InputLabel>ペット*</InputLabel>
                     <Select
                       value={recordForm.petId || ''}
-                      label="ペット"
+                      label="ペット*"
                       onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
                     >
-                      {petsData?.content?.map(pet => (
+                      {petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => (
                         <MenuItem key={pet.id} value={pet.id}>{pet.name}</MenuItem>
                       ))}
                     </Select>
@@ -875,18 +996,6 @@ export function CalendarPage() {
 
                   {recordForm.category === 'hospital' && recordForm.subcategoryType === 'visit' && (
                     <>
-                      <FormControl fullWidth>
-                        <InputLabel>病院</InputLabel>
-                        <Select
-                          value={recordForm.clinicId || ''}
-                          label="病院"
-                          onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
-                        >
-                          {clinicsData?.content?.map(clinic => (
-                            <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
                       <TextField
                         fullWidth
                         label="診断内容"
@@ -1018,7 +1127,7 @@ export function CalendarPage() {
                 selectedCard && (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                      {selectedCard.time} - {selectedCard.medicine}
+                      {selectedCard.time} - {formatTitle(selectedCard.medicine)}
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1046,9 +1155,9 @@ export function CalendarPage() {
                               追加情報
                             </Typography>
                             <Typography>訪問日時: {visit.visitedOn}</Typography>
-                            <Typography>訪問タイプ: {visit.visitType}</Typography>
-                            <Typography>理由: {visit.reason}</Typography>
-                            {visit.note && <Typography>メモ: {visit.note}</Typography>}
+                            <Typography>訪問タイプ: {getVisitTypeDisplayName(visit.visitType)}</Typography>
+                            <Typography>理由: {getReasonDisplayName(visit.reason)}</Typography>
+                            {visit.note && formatNote(visit.note) && <Typography>メモ: {formatNote(visit.note)}</Typography>}
                           </Box>
                         );
                       }
@@ -1081,12 +1190,22 @@ export function CalendarPage() {
               )}
 
               <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* 日付選択 */}
+                <TextField
+                  fullWidth
+                  label="日付*"
+                  type="date"
+                  value={recordForm.date || ''}
+                  onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+
                 {/* 大カテゴリー選択 */}
                 <FormControl fullWidth>
-                  <InputLabel>カテゴリー</InputLabel>
+                  <InputLabel>カテゴリー*</InputLabel>
                   <Select
                     value={recordForm.category || 'hospital'}
-                    label="カテゴリー"
+                    label="カテゴリー*"
                     onChange={(e) => {
                       const category = e.target.value as 'hospital' | 'supplies';
                       setRecordForm({ ...recordForm, category, subcategoryType: category === 'hospital' ? 'medication' : 'food' });
@@ -1097,23 +1216,29 @@ export function CalendarPage() {
                   </Select>
                 </FormControl>
 
-                {/* 日付選択 */}
-                <TextField
-                  fullWidth
-                  label="日付"
-                  type="date"
-                  value={recordForm.date || ''}
-                  onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                />
+                {/* 病院選択（hospitalカテゴリの場合のみ） */}
+                {recordForm.category === 'hospital' && (
+                  <FormControl fullWidth>
+                    <InputLabel>病院名*</InputLabel>
+                    <Select
+                      value={recordForm.clinicId || ''}
+                      label="病院名*"
+                      onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
+                    >
+                      {clinicsData?.content?.map(clinic => (
+                        <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
 
                 {/* 小カテゴリー選択 */}
                 {recordForm.category === 'hospital' && (
                   <FormControl fullWidth>
-                    <InputLabel>項目</InputLabel>
+                    <InputLabel>項目*</InputLabel>
                     <Select
                       value={recordForm.subcategoryType || 'medication'}
-                      label="項目"
+                      label="項目*"
                       onChange={(e) => {
                         const subcategoryType = e.target.value;
                         setRecordForm({ ...recordForm, subcategoryType });
@@ -1132,10 +1257,10 @@ export function CalendarPage() {
 
                 {recordForm.category === 'supplies' && (
                   <FormControl fullWidth>
-                    <InputLabel>項目</InputLabel>
+                    <InputLabel>項目*</InputLabel>
                     <Select
                       value={recordForm.subcategoryType || 'food'}
-                      label="項目"
+                      label="項目*"
                       onChange={(e) => {
                         const subcategoryType = e.target.value;
                         setRecordForm({ ...recordForm, subcategoryType });
@@ -1154,19 +1279,19 @@ export function CalendarPage() {
                   </FormControl>
                 )}
 
-                {/* ペット選択 */}
-                <FormControl fullWidth>
-                  <InputLabel>ペット</InputLabel>
-                  <Select
-                    value={recordForm.petId || ''}
-                    label="ペット"
-                    onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
-                  >
-                    {petsData?.content?.map(pet => (
-                      <MenuItem key={pet.id} value={pet.id}>{pet.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                  {/* ペット選択 */}
+                  <FormControl fullWidth>
+                    <InputLabel>ペット*</InputLabel>
+                    <Select
+                      value={recordForm.petId || ''}
+                      label="ペット*"
+                      onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
+                    >
+                      {petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => (
+                        <MenuItem key={pet.id} value={pet.id}>{pet.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
                 {/* 専用フィールド */}
                 {recordForm.category === 'hospital' && recordForm.subcategoryType === 'medication' && (
@@ -1227,44 +1352,32 @@ export function CalendarPage() {
 
                 {recordForm.category === 'hospital' && recordForm.subcategoryType === 'visit' && (
                   <>
-                    <FormControl fullWidth>
-                      <InputLabel>病院</InputLabel>
-                      <Select
-                        value={recordForm.clinicId || ''}
-                        label="病院"
-                        onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
-                      >
-                        {clinicsData?.content?.map(clinic => (
-                          <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      fullWidth
-                      label="診断内容"
-                      value={recordForm.diagnosis || ''}
-                      onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
-                    />
-                    <TextField
-                      fullWidth
-                      label="体重 (kg)"
-                      type="number"
-                      inputProps={{ step: "0.1" }}
-                      value={recordForm.weight || ''}
-                      onChange={(e) => setRecordForm({ ...recordForm, weight: e.target.value })}
-                    />
-                    <FormControl fullWidth>
-                      <InputLabel>体調ステータス</InputLabel>
-                      <Select
-                        value={recordForm.condition || ''}
-                        label="体調ステータス"
-                        onChange={(e) => setRecordForm({ ...recordForm, condition: e.target.value })}
-                      >
-                        <MenuItem value="元気">元気</MenuItem>
-                        <MenuItem value="普通">普通</MenuItem>
-                        <MenuItem value="不調">不調</MenuItem>
-                      </Select>
-                    </FormControl>
+                  <TextField
+                    fullWidth
+                    label="診断内容"
+                    value={recordForm.diagnosis || ''}
+                    onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
+                  />
+                  <TextField
+                    fullWidth
+                    label="体重 (kg)"
+                    type="number"
+                    inputProps={{ step: "0.1" }}
+                    value={recordForm.weight || ''}
+                    onChange={(e) => setRecordForm({ ...recordForm, weight: e.target.value })}
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel>体調ステータス</InputLabel>
+                    <Select
+                      value={recordForm.condition || ''}
+                      label="体調ステータス"
+                      onChange={(e) => setRecordForm({ ...recordForm, condition: e.target.value })}
+                    >
+                      <MenuItem value="元気">元気</MenuItem>
+                      <MenuItem value="普通">普通</MenuItem>
+                      <MenuItem value="不調">不調</MenuItem>
+                    </Select>
+                  </FormControl>
                     <TextField
                       fullWidth
                       label="医師からの指示メモ"
@@ -1370,6 +1483,37 @@ export function CalendarPage() {
               </Box>
             </Box>
           </Drawer>
+
+          {/* 削除確認ダイアログ */}
+          <Dialog
+            open={isDeleteDialogOpen}
+            onClose={() => setIsDeleteDialogOpen(false)}
+            sx={{
+              '& .MuiDialog-paper': {
+                backgroundColor: '#1e1e1e',
+                color: 'white',
+              },
+            }}
+          >
+            <DialogTitle>記録を削除しますか？</DialogTitle>
+            <DialogContent>
+              <Typography>
+                この操作は取り消すことができません。記録を削除してもよろしいですか？
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setIsDeleteDialogOpen(false)} color="inherit">
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleDeleteVisit}
+                color="error"
+                disabled={deleteVisitMutation.isPending}
+              >
+                {deleteVisitMutation.isPending ? '削除中...' : '削除'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </div>
       }
     />

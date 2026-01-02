@@ -30,6 +30,7 @@ export * from "./itemPageAllOf";
 export * from "./jwtResponse";
 export * from "./listClinicsParams";
 export * from "./listItemsParams";
+export * from "./listPetsByUserParams";
 export * from "./listPetsParams";
 export * from "./listPrescriptionsParams";
 export * from "./listUserItemsParams";
