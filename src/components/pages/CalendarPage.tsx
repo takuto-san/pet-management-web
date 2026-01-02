@@ -8,7 +8,7 @@ import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { useState } from "react";
-import { useListPets } from "@/api/generated/pet/pet";
+import { useListPetsByUser } from "@/api/generated/pet/pet";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
 import { listVisits } from "@/api/generated/visit/visit";
 import { Info, Pets, Check, CalendarToday, Add, Close, Edit, Delete } from '@mui/icons-material';
@@ -79,14 +79,11 @@ export function CalendarPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // API: ユーザーのペットを取得
-  const { data: petsData } = useListPets();
-
-  // ユーザーのペットIDを取得
-  const userPetIds = petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => pet.id) || [];
+  const { data: petsData } = useListPetsByUser(currentUser?.id);
 
   // 各ペットIDに対してvisitsを取得
   const visitsQueries = useQueries({
-    queries: userPetIds.map(petId => ({
+    queries: (petsData?.content?.map(pet => pet.id) || []).map(petId => ({
       queryKey: ['/visits', { petId }],
       queryFn: () => listVisits({ petId }),
     })),
@@ -246,8 +243,8 @@ export function CalendarPage() {
       setSelectedCard(null);
       setIsDeleteDialogOpen(false);
       // クエリを無効化してデータを再取得
-      userPetIds.forEach(petId => {
-        queryClient.invalidateQueries({ queryKey: ['/visits', { petId }] });
+      petsData?.content?.forEach(pet => {
+        queryClient.invalidateQueries({ queryKey: ['/visits', { petId: pet.id }] });
       });
     } catch (error) {
       console.error('削除に失敗しました:', error);
@@ -401,8 +398,8 @@ export function CalendarPage() {
         // リマインダー作成（今後の実装）
 
         // クエリを無効化
-        userPetIds.forEach(petId => {
-          queryClient.invalidateQueries({ queryKey: ['/visits', { petId }] });
+        petsData?.content?.forEach(pet => {
+          queryClient.invalidateQueries({ queryKey: ['/visits', { petId: pet.id }] });
         });
 
       } else if (selectedCategory === 'supplies') {
