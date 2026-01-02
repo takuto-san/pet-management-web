@@ -215,6 +215,8 @@ export function CalendarPage() {
   // FABクリックでドロワーを開く
   const handleFabClick = () => {
     setIsDrawerOpen(true);
+    setIsEditing(false); // 新規追加モードに設定
+    setEditingVisitId(null);
     const dateStr = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const nextDateStr = new Date(selectedDate.getTime() + 30 * 24 * 60 * 60 * 1000 - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     setRecordForm({ petId: '', category: 'hospital', subcategoryType: 'medication', date: dateStr, nextDate: nextDateStr, nextVaccinationDate: nextDateStr });
