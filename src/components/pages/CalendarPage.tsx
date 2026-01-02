@@ -273,26 +273,9 @@ export function CalendarPage() {
         setErrorMessage('病院を選択してください');
         return;
       }
-      if (selectedSubcategoryType === 'medication' && !recordForm.medicineName) {
-        setErrorMessage('薬名を入力してください');
-        return;
-      }
-      if (selectedSubcategoryType === 'vaccine' && (!recordForm.vaccineType)) {
-        setErrorMessage('ワクチン種類を入力してください');
-        return;
-      }
-      if (selectedSubcategoryType === 'visit' && (!recordForm.diagnosis || !recordForm.weight || !recordForm.condition)) {
-        setErrorMessage('必須項目を入力してください');
-        return;
-      }
       // prescriptionが入力された場合のバリデーション
       if (selectedSubcategoryType === 'visit' && recordForm.prescriptionName && (!recordForm.prescriptionCategory || !recordForm.prescriptionQuantity || !recordForm.prescriptionUnit)) {
         setErrorMessage('処方薬の必須項目を入力してください');
-        return;
-      }
-    } else if (selectedCategory === 'supplies') {
-      if (!recordForm.itemName || !recordForm.quantity) {
-        setErrorMessage('必須項目を入力してください');
         return;
       }
     }
@@ -335,7 +318,7 @@ export function CalendarPage() {
 
         const visitFields: VisitFields = {
           petId: recordForm.petId,
-          clinicId: recordForm.subcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || null), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
+          clinicId: recordForm.subcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || ''), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
           visitedOn: `${selectedDate.toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
           visitType,
           reason,
@@ -726,6 +709,19 @@ export function CalendarPage() {
 
               {isSidebarEditing ? (
                 <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {/* 日付選択 */}
+                  <TextField
+                    fullWidth
+                    label="日付"
+                    type="date"
+                    value={recordForm.date || ''}
+                    onChange={(e) => {
+                      setRecordForm({ ...recordForm, date: e.target.value });
+                      setSelectedDate(new Date(e.target.value)); // 日付変更時にselectedDateを更新
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+
                   {/* 大カテゴリー選択 */}
                   <FormControl fullWidth>
                     <InputLabel>カテゴリー</InputLabel>
@@ -742,18 +738,21 @@ export function CalendarPage() {
                     </Select>
                   </FormControl>
 
-                  {/* 日付選択 */}
-                  <TextField
-                    fullWidth
-                    label="日付"
-                    type="date"
-                    value={recordForm.date || ''}
-                    onChange={(e) => {
-                      setRecordForm({ ...recordForm, date: e.target.value });
-                      setSelectedDate(new Date(e.target.value)); // 日付変更時にselectedDateを更新
-                    }}
-                    InputLabelProps={{ shrink: true }}
-                  />
+                  {/* 病院選択（hospitalカテゴリの場合のみ） */}
+                  {recordForm.category === 'hospital' && (
+                    <FormControl fullWidth>
+                      <InputLabel>病院名</InputLabel>
+                      <Select
+                        value={recordForm.clinicId || ''}
+                        label="病院名"
+                        onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
+                      >
+                        {clinicsData?.content?.map(clinic => (
+                          <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
 
                   {/* 小カテゴリー選択 */}
                   {recordForm.category === 'hospital' && (
@@ -810,7 +809,7 @@ export function CalendarPage() {
                       label="ペット"
                       onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
                     >
-                      {petsData?.content?.map(pet => (
+                      {petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => (
                         <MenuItem key={pet.id} value={pet.id}>{pet.name}</MenuItem>
                       ))}
                     </Select>
@@ -875,18 +874,6 @@ export function CalendarPage() {
 
                   {recordForm.category === 'hospital' && recordForm.subcategoryType === 'visit' && (
                     <>
-                      <FormControl fullWidth>
-                        <InputLabel>病院</InputLabel>
-                        <Select
-                          value={recordForm.clinicId || ''}
-                          label="病院"
-                          onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
-                        >
-                          {clinicsData?.content?.map(clinic => (
-                            <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
                       <TextField
                         fullWidth
                         label="診断内容"
@@ -1081,12 +1068,22 @@ export function CalendarPage() {
               )}
 
               <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* 日付選択 */}
+                <TextField
+                  fullWidth
+                  label="日付*"
+                  type="date"
+                  value={recordForm.date || ''}
+                  onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+
                 {/* 大カテゴリー選択 */}
                 <FormControl fullWidth>
-                  <InputLabel>カテゴリー</InputLabel>
+                  <InputLabel>カテゴリー*</InputLabel>
                   <Select
                     value={recordForm.category || 'hospital'}
-                    label="カテゴリー"
+                    label="カテゴリー*"
                     onChange={(e) => {
                       const category = e.target.value as 'hospital' | 'supplies';
                       setRecordForm({ ...recordForm, category, subcategoryType: category === 'hospital' ? 'medication' : 'food' });
@@ -1097,23 +1094,29 @@ export function CalendarPage() {
                   </Select>
                 </FormControl>
 
-                {/* 日付選択 */}
-                <TextField
-                  fullWidth
-                  label="日付"
-                  type="date"
-                  value={recordForm.date || ''}
-                  onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                />
+                {/* 病院選択（hospitalカテゴリの場合のみ） */}
+                {recordForm.category === 'hospital' && (
+                  <FormControl fullWidth>
+                    <InputLabel>病院名*</InputLabel>
+                    <Select
+                      value={recordForm.clinicId || ''}
+                      label="病院名*"
+                      onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
+                    >
+                      {clinicsData?.content?.map(clinic => (
+                        <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
 
                 {/* 小カテゴリー選択 */}
                 {recordForm.category === 'hospital' && (
                   <FormControl fullWidth>
-                    <InputLabel>項目</InputLabel>
+                    <InputLabel>項目*</InputLabel>
                     <Select
                       value={recordForm.subcategoryType || 'medication'}
-                      label="項目"
+                      label="項目*"
                       onChange={(e) => {
                         const subcategoryType = e.target.value;
                         setRecordForm({ ...recordForm, subcategoryType });
@@ -1132,10 +1135,10 @@ export function CalendarPage() {
 
                 {recordForm.category === 'supplies' && (
                   <FormControl fullWidth>
-                    <InputLabel>項目</InputLabel>
+                    <InputLabel>項目*</InputLabel>
                     <Select
                       value={recordForm.subcategoryType || 'food'}
-                      label="項目"
+                      label="項目*"
                       onChange={(e) => {
                         const subcategoryType = e.target.value;
                         setRecordForm({ ...recordForm, subcategoryType });
@@ -1154,19 +1157,19 @@ export function CalendarPage() {
                   </FormControl>
                 )}
 
-                {/* ペット選択 */}
-                <FormControl fullWidth>
-                  <InputLabel>ペット</InputLabel>
-                  <Select
-                    value={recordForm.petId || ''}
-                    label="ペット"
-                    onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
-                  >
-                    {petsData?.content?.map(pet => (
-                      <MenuItem key={pet.id} value={pet.id}>{pet.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                  {/* ペット選択 */}
+                  <FormControl fullWidth>
+                    <InputLabel>ペット</InputLabel>
+                    <Select
+                      value={recordForm.petId || ''}
+                      label="ペット"
+                      onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
+                    >
+                      {petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => (
+                        <MenuItem key={pet.id} value={pet.id}>{pet.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
                 {/* 専用フィールド */}
                 {recordForm.category === 'hospital' && recordForm.subcategoryType === 'medication' && (
@@ -1227,44 +1230,32 @@ export function CalendarPage() {
 
                 {recordForm.category === 'hospital' && recordForm.subcategoryType === 'visit' && (
                   <>
-                    <FormControl fullWidth>
-                      <InputLabel>病院</InputLabel>
-                      <Select
-                        value={recordForm.clinicId || ''}
-                        label="病院"
-                        onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
-                      >
-                        {clinicsData?.content?.map(clinic => (
-                          <MenuItem key={clinic.id} value={clinic.id}>{clinic.name}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      fullWidth
-                      label="診断内容"
-                      value={recordForm.diagnosis || ''}
-                      onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
-                    />
-                    <TextField
-                      fullWidth
-                      label="体重 (kg)"
-                      type="number"
-                      inputProps={{ step: "0.1" }}
-                      value={recordForm.weight || ''}
-                      onChange={(e) => setRecordForm({ ...recordForm, weight: e.target.value })}
-                    />
-                    <FormControl fullWidth>
-                      <InputLabel>体調ステータス</InputLabel>
-                      <Select
-                        value={recordForm.condition || ''}
-                        label="体調ステータス"
-                        onChange={(e) => setRecordForm({ ...recordForm, condition: e.target.value })}
-                      >
-                        <MenuItem value="元気">元気</MenuItem>
-                        <MenuItem value="普通">普通</MenuItem>
-                        <MenuItem value="不調">不調</MenuItem>
-                      </Select>
-                    </FormControl>
+                  <TextField
+                    fullWidth
+                    label="診断内容"
+                    value={recordForm.diagnosis || ''}
+                    onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
+                  />
+                  <TextField
+                    fullWidth
+                    label="体重 (kg)"
+                    type="number"
+                    inputProps={{ step: "0.1" }}
+                    value={recordForm.weight || ''}
+                    onChange={(e) => setRecordForm({ ...recordForm, weight: e.target.value })}
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel>体調ステータス</InputLabel>
+                    <Select
+                      value={recordForm.condition || ''}
+                      label="体調ステータス"
+                      onChange={(e) => setRecordForm({ ...recordForm, condition: e.target.value })}
+                    >
+                      <MenuItem value="元気">元気</MenuItem>
+                      <MenuItem value="普通">普通</MenuItem>
+                      <MenuItem value="不調">不調</MenuItem>
+                    </Select>
+                  </FormControl>
                     <TextField
                       fullWidth
                       label="医師からの指示メモ"
