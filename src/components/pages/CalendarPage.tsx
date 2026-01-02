@@ -11,12 +11,12 @@ import { useState } from "react";
 import { useListPets } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
-import { Info, Pets, Check, CalendarToday, Add, Close, Edit } from '@mui/icons-material';
-import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import { Info, Pets, Check, CalendarToday, Add, Close, Edit, Delete } from '@mui/icons-material';
+import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useAddVisit, useUpdateVisit } from "@/api/generated/visit/visit";
+import { useAddVisit, useUpdateVisit, useDeleteVisit } from "@/api/generated/visit/visit";
 import { useAddVisitPrescription } from "@/api/generated/visit-prescription/visit-prescription";
 import { useAddItem } from "@/api/generated/item/item";
 import { useAddPrescription } from "@/api/generated/prescription/prescription";
@@ -75,6 +75,9 @@ export function CalendarPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingVisitId, setEditingVisitId] = useState<string | null>(null);
 
+  // 削除確認ダイアログ用の状態
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   // API: ユーザーのペットを取得
   const { data: petsData } = useListPets();
 
@@ -94,6 +97,7 @@ export function CalendarPage() {
   const queryClient = useQueryClient();
   const addVisitMutation = useAddVisit();
   const updateVisitMutation = useUpdateVisit();
+  const deleteVisitMutation = useDeleteVisit();
   const addVisitPrescriptionMutation = useAddVisitPrescription();
   const addItemMutation = useAddItem();
   const addPrescriptionMutation = useAddPrescription();
@@ -214,6 +218,23 @@ export function CalendarPage() {
     const dateStr = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const nextDateStr = new Date(selectedDate.getTime() + 30 * 24 * 60 * 60 * 1000 - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     setRecordForm({ petId: '', category: 'hospital', subcategoryType: 'medication', date: dateStr, nextDate: nextDateStr, nextVaccinationDate: nextDateStr });
+  };
+
+  // 削除処理
+  const handleDeleteVisit = async () => {
+    if (!selectedCard) return;
+
+    try {
+      await deleteVisitMutation.mutateAsync({ visitId: selectedCard.id });
+      // 削除成功後、サイドバーを閉じてダイアログを閉じる
+      setIsSidebarOpen(false);
+      setSelectedCard(null);
+      setIsDeleteDialogOpen(false);
+      // クエリを無効化してデータを再取得
+      queryClient.invalidateQueries({ queryKey: ['/visits'] });
+    } catch (error) {
+      console.error('削除に失敗しました:', error);
+    }
   };
 
   // ドロワーを閉じる
@@ -513,14 +534,28 @@ export function CalendarPage() {
                 return (
                   <div
                     key={index}
-                    onClick={() => setSelectedDate(date)}
-                    className={`relative text-center py-3 px-2 text-sm cursor-pointer hover:bg-gray-700 rounded ${
+                    className={`relative text-center py-3 px-2 text-sm rounded ${
                       isSelectedDate(date) ? 'bg-gray-700' : ''
                     } ${
                       isCurrentPeriod(date) ? 'text-white' : 'text-gray-500'
                     }`}
                   >
-                    {date.getDate()}
+                    <div className="flex justify-between items-center">
+                      <span className="cursor-pointer" onClick={() => setSelectedDate(date)}>
+                        {date.getDate()}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDate(date);
+                          handleFabClick();
+                        }}
+                        className="text-green-500 hover:text-green-400 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                        title="記録を追加"
+                      >
+                        <Add className="w-4 h-4" />
+                      </button>
+                    </div>
                     {/* カードドット */}
                     {displayedCards.length > 0 && (
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
@@ -635,67 +670,72 @@ export function CalendarPage() {
                 </Box>
                 <Box>
                   {!isSidebarEditing && (
-                    <IconButton onClick={() => {
-                      // 編集モードを開始
-                      const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
-                      if (visit) {
-                        setIsEditing(true);
-                        setEditingVisitId(visit.id);
-                        // recordFormに既存データをセット
-                        const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0];
-                        setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
-                        let formData: any = {
-                          petId: visit.petId,
-                          date: dateStr,
-                          category: 'hospital',
-                        };
+                    <>
+                      <IconButton onClick={() => {
+                        // 編集モードを開始
+                        const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
+                        if (visit) {
+                          setIsEditing(true);
+                          setEditingVisitId(visit.id);
+                          // recordFormに既存データをセット
+                          const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0];
+                          setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
+                          let formData: any = {
+                            petId: visit.petId,
+                            date: dateStr,
+                            category: 'hospital',
+                          };
 
-                        // visit.reasonからカテゴリを判定し、データを復元
-                        if (visit.reason && visit.reason.includes('ワクチン接種')) {
-                          formData.subcategoryType = 'vaccine';
-                          formData.vaccineType = visit.reason.replace('ワクチン接種 - ', '');
-                          // noteからLot Noと次回接種日を抽出
-                          if (visit.note) {
-                            const noteParts = visit.note.split(', ');
-                            formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
-                            const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
-                            if (nextDatePart) {
-                              formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                          // visit.reasonからカテゴリを判定し、データを復元
+                          if (visit.reason && visit.reason.includes('ワクチン接種')) {
+                            formData.subcategoryType = 'vaccine';
+                            formData.vaccineType = visit.reason.replace('ワクチン接種 - ', '');
+                            // noteからLot Noと次回接種日を抽出
+                            if (visit.note) {
+                              const noteParts = visit.note.split(', ');
+                              formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
+                              const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                              if (nextDatePart) {
+                                formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                              }
+                            }
+                          } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
+                            formData.subcategoryType = 'visit';
+                            formData.diagnosis = visit.reason || '';
+                            // noteから病院、体重、体調、指示を抽出
+                            if (visit.note) {
+                              const noteParts = visit.note.split(', ');
+                              formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
+                              formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
+                              formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
+                              formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
+                            }
+                            // clinicIdをclinicNameから逆引き
+                            if (formData.clinicName && clinicsData?.content) {
+                              const clinic = clinicsData.content.find(c => c.name === formData.clinicName);
+                              if (clinic) {
+                                formData.clinicId = clinic.id;
+                              }
+                            }
+                          } else {
+                            formData.subcategoryType = 'medication';
+                            formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
+                            // noteから区分と次回日を抽出
+                            if (visit.note && visit.note.startsWith('次回: ')) {
+                              formData.nextDate = visit.note.replace('次回: ', '');
                             }
                           }
-                        } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
-                          formData.subcategoryType = 'visit';
-                          formData.diagnosis = visit.reason || '';
-                          // noteから病院、体重、体調、指示を抽出
-                          if (visit.note) {
-                            const noteParts = visit.note.split(', ');
-                            formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
-                            formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
-                            formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
-                            formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
-                          }
-                          // clinicIdをclinicNameから逆引き
-                          if (formData.clinicName && clinicsData?.content) {
-                            const clinic = clinicsData.content.find(c => c.name === formData.clinicName);
-                            if (clinic) {
-                              formData.clinicId = clinic.id;
-                            }
-                          }
-                        } else {
-                          formData.subcategoryType = 'medication';
-                          formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
-                          // noteから区分と次回日を抽出
-                          if (visit.note && visit.note.startsWith('次回: ')) {
-                            formData.nextDate = visit.note.replace('次回: ', '');
-                          }
+
+                          setRecordForm(formData);
+                          setIsSidebarEditing(true);
                         }
-
-                        setRecordForm(formData);
-                        setIsSidebarEditing(true);
-                      }
-                    }}>
-                      <Edit />
-                    </IconButton>
+                      }}>
+                        <Edit />
+                      </IconButton>
+                      <IconButton onClick={() => setIsDeleteDialogOpen(true)}>
+                        <Delete />
+                      </IconButton>
+                    </>
                   )}
                   <IconButton onClick={() => {
                     setIsSidebarOpen(false);
@@ -712,7 +752,7 @@ export function CalendarPage() {
                   {/* 日付選択 */}
                   <TextField
                     fullWidth
-                    label="日付"
+                    label="日付*"
                     type="date"
                     value={recordForm.date || ''}
                     onChange={(e) => {
@@ -724,10 +764,10 @@ export function CalendarPage() {
 
                   {/* 大カテゴリー選択 */}
                   <FormControl fullWidth>
-                    <InputLabel>カテゴリー</InputLabel>
+                    <InputLabel>カテゴリー*</InputLabel>
                     <Select
                       value={recordForm.category || 'hospital'}
-                      label="カテゴリー"
+                      label="カテゴリー*"
                       onChange={(e) => {
                         const category = e.target.value as 'hospital' | 'supplies';
                         setRecordForm({ ...recordForm, category, subcategoryType: category === 'hospital' ? 'medication' : 'food' });
@@ -741,10 +781,10 @@ export function CalendarPage() {
                   {/* 病院選択（hospitalカテゴリの場合のみ） */}
                   {recordForm.category === 'hospital' && (
                     <FormControl fullWidth>
-                      <InputLabel>病院名</InputLabel>
+                      <InputLabel>病院名*</InputLabel>
                       <Select
                         value={recordForm.clinicId || ''}
-                        label="病院名"
+                        label="病院名*"
                         onChange={(e) => setRecordForm({ ...recordForm, clinicId: e.target.value })}
                       >
                         {clinicsData?.content?.map(clinic => (
@@ -757,10 +797,10 @@ export function CalendarPage() {
                   {/* 小カテゴリー選択 */}
                   {recordForm.category === 'hospital' && (
                     <FormControl fullWidth>
-                      <InputLabel>項目</InputLabel>
+                      <InputLabel>項目*</InputLabel>
                       <Select
                         value={recordForm.subcategoryType || 'medication'}
-                        label="項目"
+                        label="項目*"
                         onChange={(e) => {
                           const subcategoryType = e.target.value;
                           setRecordForm({ ...recordForm, subcategoryType });
@@ -779,10 +819,10 @@ export function CalendarPage() {
 
                   {recordForm.category === 'supplies' && (
                     <FormControl fullWidth>
-                      <InputLabel>項目</InputLabel>
+                      <InputLabel>項目*</InputLabel>
                       <Select
                         value={recordForm.subcategoryType || 'food'}
-                        label="項目"
+                        label="項目*"
                         onChange={(e) => {
                           const subcategoryType = e.target.value;
                           setRecordForm({ ...recordForm, subcategoryType });
@@ -803,10 +843,10 @@ export function CalendarPage() {
 
                   {/* ペット選択 */}
                   <FormControl fullWidth>
-                    <InputLabel>ペット</InputLabel>
+                    <InputLabel>ペット*</InputLabel>
                     <Select
                       value={recordForm.petId || ''}
-                      label="ペット"
+                      label="ペット*"
                       onChange={(e) => setRecordForm({ ...recordForm, petId: e.target.value })}
                     >
                       {petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => (
@@ -1361,6 +1401,37 @@ export function CalendarPage() {
               </Box>
             </Box>
           </Drawer>
+
+          {/* 削除確認ダイアログ */}
+          <Dialog
+            open={isDeleteDialogOpen}
+            onClose={() => setIsDeleteDialogOpen(false)}
+            sx={{
+              '& .MuiDialog-paper': {
+                backgroundColor: '#1e1e1e',
+                color: 'white',
+              },
+            }}
+          >
+            <DialogTitle>記録を削除しますか？</DialogTitle>
+            <DialogContent>
+              <Typography>
+                この操作は取り消すことができません。記録を削除してもよろしいですか？
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setIsDeleteDialogOpen(false)} color="inherit">
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleDeleteVisit}
+                color="error"
+                disabled={deleteVisitMutation.isPending}
+              >
+                {deleteVisitMutation.isPending ? '削除中...' : '削除'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </div>
       }
     />
