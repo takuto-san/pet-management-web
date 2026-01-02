@@ -455,17 +455,68 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
 }
 
 // メインコンテンツ
-function MainContent({ selectedPage }: {
+function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, onEditingPageTitleChange, onEditingPageTitleValueChange, onPageTitleClick, onPageTitleChange }: {
   selectedPage: Page | null;
+  editingPageTitle: boolean;
+  editingPageTitleValue: string;
+  onEditingPageTitleChange: (editing: boolean) => void;
+  onEditingPageTitleValueChange: (value: string) => void;
+  onPageTitleClick: () => void;
+  onPageTitleChange: (newTitle: string) => void;
 }) {
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
       <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
         <Box sx={{ p: 3, userSelect: "none" }}>
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "text.primary" }}>
-            {selectedPage.title}
-          </Typography>
+          {editingPageTitle ? (
+            <TextField
+              autoFocus
+              fullWidth
+              variant="standard"
+              value={editingPageTitleValue}
+              onChange={(e) => onEditingPageTitleValueChange(e.target.value)}
+              onBlur={() => {
+                onEditingPageTitleChange(false);
+                onPageTitleChange(editingPageTitleValue);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onEditingPageTitleChange(false);
+                  onPageTitleChange(editingPageTitleValue);
+                } else if (e.key === "Escape") {
+                  onEditingPageTitleChange(false);
+                }
+              }}
+              onFocus={(e) => e.target.select()}
+              InputProps={{
+                disableUnderline: true,
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  fontSize: "2rem",
+                  fontWeight: "bold",
+                  color: "text.primary",
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: "bold",
+                color: "text.primary",
+                cursor: "pointer",
+                "&:hover": {
+                  bgcolor: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: 1,
+                },
+              }}
+              onClick={onPageTitleClick}
+            >
+              {selectedPage.title}
+            </Typography>
+          )}
         </Box>
         <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
           <TextField
@@ -630,6 +681,8 @@ export function NotePage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editingPageTitle, setEditingPageTitle] = useState<boolean>(false);
+  const [editingPageTitleValue, setEditingPageTitleValue] = useState<string>("");
   const [editingNoteName, setEditingNoteName] = useState<string>("");
   const [editingSectionName, setEditingSectionName] = useState<string>("");
   const [editingPageName, setEditingPageName] = useState<string>("");
@@ -1016,6 +1069,28 @@ export function NotePage() {
         main={
           <MainContent
             selectedPage={selectedPage}
+            editingPageTitle={editingPageTitle}
+            editingPageTitleValue={editingPageTitleValue}
+            onEditingPageTitleChange={setEditingPageTitle}
+            onEditingPageTitleValueChange={setEditingPageTitleValue}
+            onPageTitleClick={() => {
+              if (selectedPage) {
+                setEditingPageTitleValue(selectedPage.title);
+                setEditingPageTitle(true);
+              }
+            }}
+            onPageTitleChange={(newTitle) => {
+              if (selectedPage && spaceId) {
+                const updateData: DocumentUpdateFields = {
+                  title: newTitle,
+                };
+                updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                  onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                  },
+                });
+              }
+            }}
           />
         }
       />
