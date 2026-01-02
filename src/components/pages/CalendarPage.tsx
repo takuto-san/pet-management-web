@@ -9,8 +9,8 @@ import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { useState } from "react";
 import { useListPets } from "@/api/generated/pet/pet";
-import { useListVisits } from "@/api/generated/visit/visit";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
+import { listVisits } from "@/api/generated/visit/visit";
 import { Info, Pets, Check, CalendarToday, Add, Close, Edit, Delete } from '@mui/icons-material';
 import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
@@ -21,7 +21,7 @@ import { useAddVisitPrescription } from "@/api/generated/visit-prescription/visi
 import { useAddItem } from "@/api/generated/item/item";
 import { useAddPrescription } from "@/api/generated/prescription/prescription";
 import { useListClinics } from "@/api/generated/clinic/clinic";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQueries } from "@tanstack/react-query";
 import { VisitFields, VisitType, ItemCategory, PrescriptionFields, PrescriptionCategory, VisitPrescriptionFields } from "@/types/api";
 
 interface RecordForm {
@@ -81,8 +81,21 @@ export function CalendarPage() {
   // API: ユーザーのペットを取得
   const { data: petsData } = useListPets();
 
-  // API: 全visitsを取得（実際にはユーザーのものにフィルタ）
-  const { data: visitsData } = useListVisits();
+  // ユーザーのペットIDを取得
+  const userPetIds = petsData?.content?.filter(pet => pet.userId === currentUser?.id).map(pet => pet.id) || [];
+
+  // 各ペットIDに対してvisitsを取得
+  const visitsQueries = useQueries({
+    queries: userPetIds.map(petId => ({
+      queryKey: ['/visits', { petId }],
+      queryFn: () => listVisits({ petId }),
+    })),
+  });
+
+  // 結果をマージ
+  const visitsData = {
+    content: visitsQueries.flatMap(query => query.data?.content || []),
+  };
 
   // API: クリニックを取得
   const { data: clinicsData } = useListClinics();
@@ -104,10 +117,10 @@ export function CalendarPage() {
 
   // カードデータを日付ごとにグループ化（実際のvisitsデータから生成）
   const getCardsForDate = (date: Date) => {
-    if (!visitsData?.content) return [];
+    if (!visitsData?.content || !petsData?.content) return [];
 
     // 選択された日付のvisitsをフィルタ
-    const targetDateStr = date.toISOString().split('T')[0];
+    const targetDateStr = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const dayVisits = visitsData.content.filter(visit =>
       visit.visitedOn && visit.visitedOn.startsWith(targetDateStr)
     );
@@ -115,10 +128,10 @@ export function CalendarPage() {
     // visitsをカード形式に変換
     return dayVisits.map(visit => ({
       id: visit.id,
-      time: '08:00', // 仮の時間（実際にはvisit.visitedOnから取得可能）
+      time: visit.visitedOn ? new Date(visit.visitedOn).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '08:00',
       medicine: visit.reason || '診察',
       dosage: visit.note || '',
-      petName: petsData?.content?.find(pet => pet.id === visit.petId)?.name || '不明',
+      petName: petsData.content.find(pet => pet.id === visit.petId)?.name || '不明',
       completed: cardCompletions[visit.id] ?? false,
     }));
   };
@@ -233,7 +246,9 @@ export function CalendarPage() {
       setSelectedCard(null);
       setIsDeleteDialogOpen(false);
       // クエリを無効化してデータを再取得
-      queryClient.invalidateQueries({ queryKey: ['/visits'] });
+      userPetIds.forEach(petId => {
+        queryClient.invalidateQueries({ queryKey: ['/visits', { petId }] });
+      });
     } catch (error) {
       console.error('削除に失敗しました:', error);
     }
@@ -263,7 +278,7 @@ export function CalendarPage() {
     setSelectedSubcategory(subcategory);
     setSelectedSubcategoryType(type);
     setCurrentStep('form');
-    setRecordForm({ petId: '', date: selectedDate.toISOString().split('T')[0] });
+    setRecordForm({ petId: '', date: new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0] });
   };
 
   // ステップ戻る
@@ -305,24 +320,6 @@ export function CalendarPage() {
 
     try {
       if (selectedCategory === 'hospital') {
-        // VisitFieldsを作成
-        let visitType: VisitType = VisitType.general;
-        let reason = '';
-        let note = '';
-
-        if (selectedSubcategoryType === 'medication') {
-          reason = `${recordForm.category} - ${recordForm.medicineName}`;
-          note = recordForm.nextDate ? `次回: ${recordForm.nextDate}` : '';
-        } else if (selectedSubcategoryType === 'vaccine') {
-          visitType = VisitType.checkup;
-          reason = `ワクチン接種 - ${recordForm.vaccineType}`;
-          note = `Lot No: ${recordForm.lotNo || ''}, 次回: ${recordForm.nextVaccinationDate || ''}`;
-        } else if (selectedSubcategoryType === 'visit') {
-          visitType = VisitType.checkup;
-          reason = recordForm.diagnosis;
-          note = `病院: ${recordForm.clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
-        }
-
         // clinicId から clinicName を取得
         let clinicName = '';
         if (recordForm.clinicId && clinicsData?.content) {
@@ -330,19 +327,28 @@ export function CalendarPage() {
           clinicName = clinic?.name || '';
         }
 
-        // note を再構築
-        if (recordForm.subcategoryType === 'medication') {
-          note = recordForm.nextDate ? `次回: ${recordForm.nextDate}` : '';
-        } else if (recordForm.subcategoryType === 'vaccine') {
-          note = `Lot No: ${recordForm.lotNo || ''}, 次回: ${recordForm.nextVaccinationDate || ''}`;
-        } else if (recordForm.subcategoryType === 'visit') {
+        // VisitFieldsを作成
+        let visitType: VisitType = VisitType.general;
+        let reason = '';
+        let note = '';
+
+        if (selectedSubcategoryType === 'medication') {
+          reason = `${recordForm.category} - ${recordForm.medicineName}`;
+          note = `区分: ${recordForm.categoryField || ''}${recordForm.nextDate ? `, 次回: ${recordForm.nextDate}` : ''}`;
+        } else if (selectedSubcategoryType === 'vaccine') {
+          visitType = VisitType.checkup;
+          reason = `ワクチン接種 - ${recordForm.vaccineType}`;
+          note = `Lot No: ${recordForm.lotNo || ''}${recordForm.nextVaccinationDate ? `, 次回: ${recordForm.nextVaccinationDate}` : ''}`;
+        } else if (selectedSubcategoryType === 'visit') {
+          visitType = VisitType.checkup;
+          reason = recordForm.diagnosis;
           note = `病院: ${clinicName}, 体重: ${recordForm.weight}kg, 体調: ${recordForm.condition}, 指示: ${recordForm.doctorNote || ''}`;
         }
 
         const visitFields: VisitFields = {
           petId: recordForm.petId,
           clinicId: recordForm.subcategoryType === 'visit' ? recordForm.clinicId : (clinicsData?.content?.[0]?.id || ''), // 診察の場合は選択されたclinicId、それ以外は最初のclinicId
-          visitedOn: `${selectedDate.toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
+          visitedOn: `${new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0]}T12:00:00`, // デフォルト時間
           visitType,
           reason,
           note,
@@ -395,7 +401,9 @@ export function CalendarPage() {
         // リマインダー作成（今後の実装）
 
         // クエリを無効化
-        queryClient.invalidateQueries({ queryKey: ['/visits'] });
+        userPetIds.forEach(petId => {
+          queryClient.invalidateQueries({ queryKey: ['/visits', { petId }] });
+        });
 
       } else if (selectedCategory === 'supplies') {
         // Item作成
@@ -536,27 +544,17 @@ export function CalendarPage() {
                 return (
                   <div
                     key={index}
-                    className={`relative text-center py-3 px-2 text-sm rounded ${
+                    className={`relative text-center py-3 px-2 text-sm rounded cursor-pointer ${
                       isSelectedDate(date) ? 'bg-gray-700' : ''
                     } ${
                       isCurrentPeriod(date) ? 'text-white' : 'text-gray-500'
                     }`}
+                    onClick={() => setSelectedDate(date)}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="cursor-pointer" onClick={() => setSelectedDate(date)}>
+                    <div className="flex justify-center items-center">
+                      <span>
                         {date.getDate()}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedDate(date);
-                          handleFabClick();
-                        }}
-                        className="text-green-500 hover:text-green-400 opacity-0 hover:opacity-100 transition-opacity duration-200"
-                        title="記録を追加"
-                      >
-                        <Add className="w-4 h-4" />
-                      </button>
                     </div>
                     {/* カードドット */}
                     {displayedCards.length > 0 && (
@@ -680,7 +678,7 @@ export function CalendarPage() {
                           setIsEditing(true);
                           setEditingVisitId(visit.id);
                           // recordFormに既存データをセット
-                          const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0];
+                          const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0]; // これはUTCなのでそのまま使う
                           setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
                           let formData: any = {
                             petId: visit.petId,
@@ -723,8 +721,13 @@ export function CalendarPage() {
                             formData.subcategoryType = 'medication';
                             formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
                             // noteから区分と次回日を抽出
-                            if (visit.note && visit.note.startsWith('次回: ')) {
-                              formData.nextDate = visit.note.replace('次回: ', '');
+                            if (visit.note) {
+                              const noteParts = visit.note.split(', ');
+                              formData.categoryField = noteParts.find(p => p.startsWith('区分: '))?.replace('区分: ', '') || '';
+                              const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                              if (nextDatePart) {
+                                formData.nextDate = nextDatePart.replace('次回: ', '');
+                              }
                             }
                           }
 

@@ -22,6 +22,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ListPetsByUserParams,
   ListPetsParams,
   Pet,
   PetFields,
@@ -32,6 +33,163 @@ import type {
 import { customInstance } from "../../mutator/custom-instance";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Lists pets for a specific user with pagination
+ */
+export const listPetsByUser = (
+  userId: string,
+  params?: ListPetsByUserParams,
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<PetPage>(
+    { url: `/users/${userId}/pets`, method: "GET", params, signal },
+    options,
+  );
+};
+
+export const getListPetsByUserQueryKey = (
+  userId?: string,
+  params?: ListPetsByUserParams,
+) => {
+  return [`/users/${userId}/pets`, ...(params ? [params] : [])] as const;
+};
+
+export const getListPetsByUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPetsByUser>>,
+  TError = ProblemDetail,
+>(
+  userId: string,
+  params?: ListPetsByUserParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listPetsByUser>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customInstance>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListPetsByUserQueryKey(userId, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPetsByUser>>> = ({
+    signal,
+  }) => listPetsByUser(userId, params, requestOptions, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPetsByUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListPetsByUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPetsByUser>>
+>;
+export type ListPetsByUserQueryError = ProblemDetail;
+
+export function useListPetsByUser<
+  TData = Awaited<ReturnType<typeof listPetsByUser>>,
+  TError = ProblemDetail,
+>(
+  userId: string,
+  params: undefined | ListPetsByUserParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listPetsByUser>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPetsByUser>>,
+          TError,
+          Awaited<ReturnType<typeof listPetsByUser>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customInstance>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListPetsByUser<
+  TData = Awaited<ReturnType<typeof listPetsByUser>>,
+  TError = ProblemDetail,
+>(
+  userId: string,
+  params?: ListPetsByUserParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listPetsByUser>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPetsByUser>>,
+          TError,
+          Awaited<ReturnType<typeof listPetsByUser>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customInstance>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListPetsByUser<
+  TData = Awaited<ReturnType<typeof listPetsByUser>>,
+  TError = ProblemDetail,
+>(
+  userId: string,
+  params?: ListPetsByUserParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listPetsByUser>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customInstance>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary Lists pets for a specific user with pagination
+ */
+
+export function useListPetsByUser<
+  TData = Awaited<ReturnType<typeof listPetsByUser>>,
+  TError = ProblemDetail,
+>(
+  userId: string,
+  params?: ListPetsByUserParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listPetsByUser>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customInstance>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getListPetsByUserQueryOptions(userId, params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 /**
  * @summary Lists all pets with pagination
