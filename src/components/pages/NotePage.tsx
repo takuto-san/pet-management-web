@@ -455,7 +455,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
 }
 
 // メインコンテンツ
-function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, onEditingPageTitleChange, onEditingPageTitleValueChange, onPageTitleClick, onPageTitleChange }: {
+function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, onEditingPageTitleChange, onEditingPageTitleValueChange, onPageTitleClick, onPageTitleChange, editingPageContent, onEditingPageContentChange, onPageContentChange }: {
   selectedPage: Page | null;
   editingPageTitle: boolean;
   editingPageTitleValue: string;
@@ -463,6 +463,9 @@ function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, on
   onEditingPageTitleValueChange: (value: string) => void;
   onPageTitleClick: () => void;
   onPageTitleChange: (newTitle: string) => void;
+  editingPageContent: string;
+  onEditingPageContentChange: (content: string) => void;
+  onPageContentChange: (content: string) => void;
 }) {
   // ページ選択時：エディタ
   if (selectedPage) {
@@ -524,10 +527,9 @@ function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, on
             multiline
             variant="standard"
             placeholder="ここにページの内容を入力してください..."
-            value={selectedPage.content}
-            onChange={(e) => {
-              // TODO: コンテンツ更新ハンドラーを実装
-            }}
+            value={editingPageContent}
+            onChange={(e) => onEditingPageContentChange(e.target.value)}
+            onBlur={() => onPageContentChange(editingPageContent)}
             InputProps={{
               disableUnderline: true,
             }}
@@ -597,6 +599,23 @@ function convertDocumentsToNotes(documents: Document[]): Note[] {
     note.sections = sections[note.id] || [];
     note.sections.forEach(section => {
       section.pages = pages[section.id] || [];
+    });
+  });
+
+  // 作成順にソート
+  notes.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  notes.forEach(note => {
+    note.sections.sort((a, b) => {
+      const aDoc = documents.find(d => d.id === a.id);
+      const bDoc = documents.find(d => d.id === b.id);
+      return (new Date(aDoc?.createdAt || 0)).getTime() - (new Date(bDoc?.createdAt || 0)).getTime();
+    });
+    note.sections.forEach(section => {
+      section.pages.sort((a, b) => {
+        const aDoc = documents.find(d => d.id === a.id);
+        const bDoc = documents.find(d => d.id === b.id);
+        return (new Date(aDoc?.createdAt || 0)).getTime() - (new Date(bDoc?.createdAt || 0)).getTime();
+      });
     });
   });
 
@@ -692,6 +711,7 @@ export function NotePage() {
   const [editingNoteName, setEditingNoteName] = useState<string>("");
   const [editingSectionName, setEditingSectionName] = useState<string>("");
   const [editingPageName, setEditingPageName] = useState<string>("");
+  const [editingPageContent, setEditingPageContent] = useState<string>("");
 
   const handleAddPage = (sectionId: string) => {
     setAddPageSectionId(sectionId);
@@ -707,6 +727,7 @@ export function NotePage() {
   useEffect(() => {
     if (selectedPage) {
       document.title = selectedPage.title;
+      setEditingPageContent(selectedPage.content);
     } else {
       document.title = "PetManagemnt | ペット管理サイト";
     }
@@ -1021,6 +1042,9 @@ export function NotePage() {
         setAddSectionName("");
         setAddSectionNoteId("");
       },
+      onError: () => {
+        setIsAddSectionDialogOpen(true); // エラー時はダイアログを再開
+      },
     });
   };
 
@@ -1040,6 +1064,9 @@ export function NotePage() {
         queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
         setAddPageName("");
         setAddPageSectionId("");
+      },
+      onError: () => {
+        setIsAddPageDialogOpen(true); // エラー時はダイアログを再開
       },
     });
   };
@@ -1117,6 +1144,22 @@ export function NotePage() {
                 updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
                   onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                  },
+                });
+              }
+            }}
+            editingPageContent={editingPageContent}
+            onEditingPageContentChange={setEditingPageContent}
+            onPageContentChange={(content) => {
+              if (selectedPage && spaceId) {
+                const updateData: DocumentUpdateFields = {
+                  body: { content },
+                };
+                updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                  onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                    // 保存成功後にローカル状態を更新
+                    setEditingPageContent(content);
                   },
                 });
               }
