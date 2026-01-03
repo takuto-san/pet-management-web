@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
@@ -467,6 +469,26 @@ function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, on
   onEditingPageContentChange: (content: string) => void;
   onPageContentChange: (content: string) => void;
 }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+    ],
+    content: editingPageContent,
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      onEditingPageContentChange(html);
+      onPageContentChange(html);
+    },
+  });
+
+  // ページが変更されたときにエディタの内容を更新
+  useEffect(() => {
+    if (editor && selectedPage) {
+      editor.commands.setContent(editingPageContent);
+    }
+  }, [editor, selectedPage, editingPageContent]);
+
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
@@ -522,24 +544,20 @@ function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, on
           )}
         </Box>
         <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
-          <TextField
-            fullWidth
-            multiline
-            variant="standard"
-            placeholder="ここにページの内容を入力してください..."
-            value={editingPageContent}
-            onChange={(e) => onEditingPageContentChange(e.target.value)}
-            onBlur={() => onPageContentChange(editingPageContent)}
-            InputProps={{
-              disableUnderline: true,
-            }}
-            sx={{
-              "& .MuiInputBase-input": {
-                fontSize: "1rem",
-                lineHeight: 1.5,
-              },
-            }}
-          />
+          {editor ? (
+            <EditorContent
+              editor={editor}
+              style={{
+                minHeight: '400px',
+                color: 'white',
+                padding: '10px',
+                borderRadius: '4px',
+                outline: 'none',
+              }}
+            />
+          ) : (
+            <Typography>エディタを読み込み中...</Typography>
+          )}
         </Box>
       </Box>
     );
