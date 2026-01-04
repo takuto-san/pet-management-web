@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass } from "@blocknote/core";
-import { BlockNoteViewRaw } from "@blocknote/react";
-import "@blocknote/react/style.css";
+import { BlockNoteView } from "@blocknote/shadcn";
+import "@blocknote/shadcn/style.css";
 
 // ページの型定義
 interface Page {
@@ -201,27 +201,21 @@ export function BlockNoteEditor({
     }
   };
 
-  // 初期ブロックデータを計算
-  const initialBlocks = useMemo(() => {
-    return htmlToBlocks(editingPageContent);
-  }, [editingPageContent]);
-
-  // エディタの変更ハンドラ
-  const handleEditorChange = () => {
-    const blocks = editor.document;
-    const html = blocksToHtml(blocks);
-    onEditingPageContentChange(html);
-    onPageContentChange(html);
-  };
-
   // BlockNote エディタインスタンス
-  const editor = useMemo(() => {
-    return BlockNoteEditorClass.create();
+  const [editor, setEditor] = useState<BlockNoteEditorClass | null>(null);
+
+  // エディタ初期化
+  useEffect(() => {
+    const newEditor = BlockNoteEditorClass.create();
+    setEditor(newEditor);
   }, []);
 
   // エディタの変更を監視
   useEffect(() => {
+    if (!editor) return;
+
     const handleChange = () => {
+      if (!editor) return;
       const blocks = editor.document;
       const html = blocksToHtml(blocks);
       onEditingPageContentChange(html);
@@ -274,14 +268,15 @@ export function BlockNoteEditor({
           </h1>
         )}
         <div className="blocknote-editor" data-theme="dark">
-          <BlockNoteViewRaw
-            editor={editor}
-            className="text-zinc-100"
-            sideMenu={false}
-            slashMenu={false}
-            emojiPicker={false}
-            formattingToolbar={false}
-          />
+          {editor ? (
+            <BlockNoteView
+              editor={editor}
+              theme="dark"
+              className="text-zinc-100"
+            />
+          ) : (
+            <div className="text-zinc-100">Loading editor...</div>
+          )}
         </div>
       </div>
     );
