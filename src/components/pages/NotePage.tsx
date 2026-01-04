@@ -11,7 +11,8 @@ import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { useListSpaces, useAddSpace, getListSpacesQueryKey } from "@/api/generated/space/space";
-import { useListDocuments, useAddDocument, useUpdateDocument, useDeleteDocument, getListDocumentsQueryKey, listDocuments } from "@/api/generated/document/document";
+import { useListDocuments, useUpdateDocument, useDeleteDocument, getListDocumentsQueryKey, listDocuments, addDocument, updateDocument, deleteDocument } from "@/api/generated/document/document";
+import { useMutation } from "@tanstack/react-query";
 import type { Document, DocumentFields, DocumentUpdateFields } from "@/types/api";
 import { Template, noteTemplates } from "@/types/noteTemplates";
 import {
@@ -685,9 +686,46 @@ export function NotePage() {
   const documents = useMemo(() => {
     return documentsQueries.flatMap(query => query.data || []);
   }, [JSON.stringify(documentsQueries.map(q => q.data))]);
-  const addDocumentMutation = useAddDocument();
-  const updateDocumentMutation = useUpdateDocument();
-  const deleteDocumentMutation = useDeleteDocument();
+  const addDocumentMutation = useMutation({
+    mutationFn: ({ spaceId, data }: { spaceId: string; data: DocumentFields }) => addDocument(spaceId, data),
+    onMutate: async (variables) => {
+      // 楽観的更新
+      const { spaceId, data } = variables;
+      const queryKey = getListDocumentsQueryKey(spaceId);
+      const previousData = queryClient.getQueryData(queryKey);
+      const optimisticDoc: Document = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        title: data.title,
+        parentDocId: data.parentDocId,
+        body: data.body,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      queryClient.setQueryData(queryKey, (old: Document[] | undefined) => {
+        return old ? [...old, optimisticDoc] : [optimisticDoc];
+      });
+      return { previousData, optimisticDoc };
+    },
+    onError: (error, variables, context) => {
+      // エラー時はロールバック
+      if (context?.previousData) {
+        const queryKey = getListDocumentsQueryKey(variables.spaceId);
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
+    },
+    onSettled: (data, error, variables) => {
+      // 完了時は再フェッチ
+      const queryKey = getListDocumentsQueryKey(variables.spaceId);
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+  const updateDocumentMutation = useMutation({
+    mutationFn: ({ spaceId, documentId, data }: { spaceId: string; documentId: string; data: DocumentUpdateFields }) => updateDocument(spaceId, documentId, data),
+  });
+  const deleteDocumentMutation = useMutation({
+    mutationFn: ({ spaceId, documentId }: { spaceId: string; documentId: string }) => deleteDocument(spaceId, documentId),
+  });
   const addSpaceMutation = useAddSpace();
   const queryClient = useQueryClient();
 
