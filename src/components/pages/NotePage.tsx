@@ -4,9 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
-import dynamic from 'next/dynamic'
-const TiptapEditor = dynamic(() => import('@/lib/editor/TiptapEditor').then(mod => ({ default: mod.TiptapEditor })), { ssr: false })
 import type { RootState } from "@/lib/stores/store";
+import { BlockNoteEditor } from "@/lib/editor/BlockNoteEditor";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
@@ -36,7 +35,6 @@ import {
 } from "@mui/material";
 import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
-// セクションの型定義
 interface Section {
   id: string;
   title: string;
@@ -44,7 +42,6 @@ interface Section {
   isExpanded: boolean;
 }
 
-// ノートの型定義
 interface Note {
   id: string;
   name: string;
@@ -52,7 +49,6 @@ interface Note {
   createdAt: Date;
 }
 
-// アイコン取得関数
 const getIcon = (icon: string) => {
   switch (icon) {
     case "health":
@@ -64,7 +60,6 @@ const getIcon = (icon: string) => {
   }
 };
 
-// ダークテーマ
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
@@ -78,7 +73,6 @@ const darkTheme = createTheme({
   },
 });
 
-// ハンバーガーバー
 function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   return (
     <Box sx={{ p: 2, display: "flex", alignItems: "center", bgcolor: "background.paper" }}>
@@ -89,7 +83,6 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   );
 }
 
-// ノート一覧（サイドバー）
 function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingNoteName, editingSectionName, onDoubleClickNote, onDoubleClickSection, onNoteNameChange, onSectionNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onDeleteNote, onDeleteSection }: {
   notes: Note[];
   selectedNoteId: string;
@@ -324,7 +317,6 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
   );
 }
 
-// ページリスト（サイドバーの横）
 function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange, onAddPage, onDeletePage }: {
   selectedSection: Section | null;
   selectedPageId: string | null;
@@ -442,13 +434,11 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
 
 
 
-// DocumentからNote構造に変換する関数
 function convertDocumentsToNotes(documents: Document[]): Note[] {
   const notes: Note[] = [];
   const sections: { [noteId: string]: Section[] } = {};
   const pages: { [sectionId: string]: { id: string; title: string; content: string }[] } = {};
 
-  // ノートを作成
   documents.filter(doc => doc.parentDocId === null).forEach(doc => {
     notes.push({
       id: doc.id,
@@ -458,7 +448,6 @@ function convertDocumentsToNotes(documents: Document[]): Note[] {
     });
   });
 
-  // セクションを作成
   documents.filter(doc => doc.parentDocId && notes.some(note => note.id === doc.parentDocId)).forEach(doc => {
     const section: Section = {
       id: doc.id,
@@ -472,7 +461,6 @@ function convertDocumentsToNotes(documents: Document[]): Note[] {
     sections[doc.parentDocId!].push(section);
   });
 
-  // ページを作成
   documents.filter(doc => doc.parentDocId && Object.keys(sections).some(noteId => sections[noteId].some(sec => sec.id === doc.parentDocId))).forEach(doc => {
     const page: { id: string; title: string; content: string } = {
       id: doc.id,
@@ -485,7 +473,6 @@ function convertDocumentsToNotes(documents: Document[]): Note[] {
     pages[doc.parentDocId!].push(page);
   });
 
-  // 構造を組み立てる
   notes.forEach(note => {
     note.sections = sections[note.id] || [];
     note.sections.forEach(section => {
@@ -493,7 +480,6 @@ function convertDocumentsToNotes(documents: Document[]): Note[] {
     });
   });
 
-  // 作成順にソート
   notes.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   notes.forEach(note => {
     note.sections.sort((a, b) => {
@@ -542,9 +528,6 @@ export function NotePage() {
   const [addSectionNoteId, setAddSectionNoteId] = useState<string>("");
   const [addPageSectionId, setAddPageSectionId] = useState<string>("");
 
-
-
-  // API hooks
   const { data: spaces } = useListSpaces();
   const spaceId = spaces?.[0]?.id;
   const spaceIds = spaces?.map(space => space.id) || [];
@@ -561,7 +544,6 @@ export function NotePage() {
   const addDocumentMutation = useMutation({
     mutationFn: ({ spaceId, data }: { spaceId: string; data: DocumentFields }) => addDocument(spaceId, data),
     onMutate: async (variables) => {
-      // 楽観的更新
       const { spaceId, data } = variables;
       const queryKey = getListDocumentsQueryKey(spaceId);
       const previousData = queryClient.getQueryData(queryKey);
@@ -580,14 +562,12 @@ export function NotePage() {
       return { previousData, optimisticDoc };
     },
     onError: (error, variables, context) => {
-      // エラー時はロールバック
       if (context?.previousData) {
         const queryKey = getListDocumentsQueryKey(variables.spaceId);
         queryClient.setQueryData(queryKey, context.previousData);
       }
     },
     onSettled: (data, error, variables) => {
-      // 完了時は再フェッチ
       const queryKey = getListDocumentsQueryKey(variables.spaceId);
       queryClient.invalidateQueries({ queryKey });
     },
@@ -601,9 +581,6 @@ export function NotePage() {
   const addSpaceMutation = useAddSpace();
   const queryClient = useQueryClient();
 
-
-
-  // ノートデータをAPIから変換
   const notes = useMemo(() => convertDocumentsToNotes(documents), [documents]);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>("");
@@ -647,9 +624,9 @@ export function NotePage() {
     setIsAddPageDialogOpen(true);
   };
 
-  const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
-  const selectedSection = selectedNote?.sections.find((s) => s.id === selectedSectionId) || null;
-  const selectedPage = selectedSection?.pages.find((p) => p.id === selectedPageId) || null;
+  const selectedNote = useMemo(() => notes.find((n) => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
+  const selectedSection = useMemo(() => selectedNote?.sections.find((s) => s.id === selectedSectionId) || null, [selectedNote, selectedSectionId]);
+  const selectedPage = useMemo(() => selectedPageId === 'new' ? { id: 'new', title: '', content: '' } : selectedSection?.pages.find((p) => p.id === selectedPageId) || null, [selectedPageId, selectedSection]);
 
   // ページが選択されたらタイトルを変更
   useEffect(() => {
@@ -680,7 +657,7 @@ export function NotePage() {
   const handleSelectSection = (noteId: string, sectionId: string) => {
     setSelectedNoteId(noteId);
     setSelectedSectionId(sectionId);
-    setSelectedPageId(null);
+    setSelectedPageId('new');
   };
 
   const handleSelectPage = (noteId: string, sectionId: string, pageId: string) => {
@@ -1051,47 +1028,65 @@ export function NotePage() {
             />
           ) : null
         }
-        main={<TiptapEditor
-          selectedPage={selectedPage}
-          editingPageTitle={editingPageTitle}
-          editingPageTitleValue={editingPageTitleValue}
-          onEditingPageTitleChange={setEditingPageTitle}
-          onEditingPageTitleValueChange={setEditingPageTitleValue}
-          onPageTitleClick={() => {
-            if (selectedPage) {
-              setEditingPageTitleValue(selectedPage.title);
-              setEditingPageTitle(true);
-            }
-          }}
-          onPageTitleChange={(newTitle: string) => {
-            if (selectedPage && spaceId) {
-              const updateData: DocumentUpdateFields = {
-                title: newTitle,
-              };
-              updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                onSuccess: () => {
-                  queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                },
-              });
-            }
-          }}
-          editingPageContent={editingPageContent}
-          onEditingPageContentChange={setEditingPageContent}
-          onPageContentChange={(content: string) => {
-            if (selectedPage && spaceId) {
-              const updateData: DocumentUpdateFields = {
-                body: { content },
-              };
-              updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                onSuccess: () => {
-                  queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                  // 保存成功後にローカル状態を更新
-                  setEditingPageContent(content);
-                },
-              });
-            }
-          }}
-        />}
+        main={
+          <BlockNoteEditor
+            key={selectedPage?.id}
+            selectedPage={selectedPage}
+            editingPageTitle={editingPageTitle}
+            editingPageTitleValue={editingPageTitleValue}
+            onEditingPageTitleChange={setEditingPageTitle}
+            onEditingPageTitleValueChange={setEditingPageTitleValue}
+            onPageTitleClick={() => {
+              if (selectedPage) {
+                setEditingPageTitleValue(selectedPage.title);
+                setEditingPageTitle(true);
+              }
+            }}
+            onPageTitleChange={(newTitle: string) => {
+              if (selectedPage && spaceId) {
+                if (selectedPageId === 'new') {
+                  const newDoc: DocumentFields = {
+                    title: newTitle,
+                    parentDocId: selectedSectionId || undefined,
+                    body: { content: editingPageContent },
+                  };
+                  addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+                    onSuccess: (newPage) => {
+                      setSelectedPageId(newPage.id);
+                      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                    },
+                  });
+                } else {
+                  const updateData: DocumentUpdateFields = {
+                    title: newTitle,
+                  };
+                  updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                    onSuccess: () => {
+                      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                    },
+                  });
+                }
+              }
+            }}
+            editingPageContent={editingPageContent}
+            onEditingPageContentChange={setEditingPageContent}
+            onPageContentChange={(content: string) => {
+              if (selectedPageId === 'new') return;
+              if (selectedPage && spaceId) {
+                const updateData: DocumentUpdateFields = {
+                  body: { content },
+                };
+                updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                  onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                    // 保存成功後にローカル状態を更新
+                    setEditingPageContent(content);
+                  },
+                });
+              }
+            }}
+          />
+        }
       />
       {/* テンプレートモード選択ダイアログ */}
       <Dialog open={isTemplateModeDialogOpen} onClose={() => setIsTemplateModeDialogOpen(false)} maxWidth="sm" fullWidth>

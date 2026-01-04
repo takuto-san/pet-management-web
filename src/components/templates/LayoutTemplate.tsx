@@ -17,7 +17,7 @@ export function LayoutTemplate({ header, hamburgerBar, sidebar, pageList, main, 
       <div className="flex flex-grow">
         {sidebar && <aside className="w-64 pb-16">{sidebar}</aside>}
         {pageList && <aside className="w-64 pb-16">{pageList}</aside>}
-        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} pb-16`}>
+        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} pb-16 bg-[#191919]`}>
           {main}
         </main>
       </div>
