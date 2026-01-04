@@ -233,6 +233,8 @@ export function BlockNoteEditor({
             editor={editor}
             className="text-zinc-100"
             sideMenu={false}
+            slashMenu={false}
+            emojiPicker={false}
           />
         </div>
       </div>
