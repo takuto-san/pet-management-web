@@ -1036,11 +1036,11 @@ export function NotePage() {
         main={
           selectedSection && !selectedPage ? (
             // セクションが選択されているがページが選択されていない場合
-            <div className="h-full bg-gray-900 flex items-center justify-center">
-              <div className="text-white text-center">
+            <div className="h-full bg-background flex items-center justify-center">
+              <div className="text-foreground text-center">
                 <h2 className="text-2xl font-bold mb-4">{selectedSection.title}</h2>
                 <p className="text-lg mb-2">ページを選択してください</p>
-                <p className="text-sm text-gray-400">このセクションからページを選択すると、エディタが表示されます</p>
+                <p className="text-sm text-muted-foreground">このセクションからページを選択すると、エディタが表示されます</p>
               </div>
             </div>
           ) : (

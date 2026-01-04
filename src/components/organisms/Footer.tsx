@@ -25,7 +25,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
+    <footer className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
       <nav className="flex">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
@@ -35,11 +35,11 @@ export function Footer() {
               onClick={() => router.push(item.href)}
               className={`flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors ${
                 isActive
-                  ? "text-blue-400 bg-gray-800"
-                  : "text-gray-300 hover:text-blue-400 hover:bg-gray-800"
+                  ? "text-primary bg-accent"
+                  : "text-muted-foreground hover:text-primary hover:bg-accent"
               }`}
             >
-              <item.icon className="w-6 h-6 mb-1" sx={{ color: isActive ? "#60a5fa" : "#d1d5db" }} />
+              <item.icon className="w-6 h-6 mb-1" />
               {item.name}
             </button>
           );
