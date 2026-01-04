@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import type { RootState } from "@/lib/stores/store";
-import { BlockNoteEditor } from "@/lib/editor/BlockNoteEditor";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
@@ -34,6 +34,11 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon } from "@mui/icons-material";
+
+const BlockNoteEditor = dynamic(() => import("@/lib/editor/BlockNoteEditor").then(mod => mod.BlockNoteEditor), {
+  ssr: false,
+  loading: () => <p>Loading...</p>,
+});
 
 interface Section {
   id: string;
@@ -1031,11 +1036,11 @@ export function NotePage() {
         main={
           selectedSection && !selectedPage ? (
             // セクションが選択されているがページが選択されていない場合
-            <div className="h-full bg-gray-900 flex items-center justify-center">
-              <div className="text-white text-center">
+            <div className="h-full bg-background flex items-center justify-center">
+              <div className="text-foreground text-center">
                 <h2 className="text-2xl font-bold mb-4">{selectedSection.title}</h2>
                 <p className="text-lg mb-2">ページを選択してください</p>
-                <p className="text-sm text-gray-400">このセクションからページを選択すると、エディタが表示されます</p>
+                <p className="text-sm text-muted-foreground">このセクションからページを選択すると、エディタが表示されます</p>
               </div>
             </div>
           ) : (

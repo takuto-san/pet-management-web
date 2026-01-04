@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass } from "@blocknote/core";
-import { BlockNoteViewRaw } from "@blocknote/react";
-import "@blocknote/react/style.css";
+import { BlockNoteView } from "@blocknote/shadcn";
+import "@blocknote/core/fonts/inter.css";
+import "@blocknote/shadcn/style.css";
+import { Command } from "@/components/ui/command";
+import * as Popover from "@/components/ui/popover";
 
 // ページの型定義
 interface Page {
@@ -201,27 +204,21 @@ export function BlockNoteEditor({
     }
   };
 
-  // 初期ブロックデータを計算
-  const initialBlocks = useMemo(() => {
-    return htmlToBlocks(editingPageContent);
-  }, [editingPageContent]);
-
-  // エディタの変更ハンドラ
-  const handleEditorChange = () => {
-    const blocks = editor.document;
-    const html = blocksToHtml(blocks);
-    onEditingPageContentChange(html);
-    onPageContentChange(html);
-  };
-
   // BlockNote エディタインスタンス
-  const editor = useMemo(() => {
-    return BlockNoteEditorClass.create();
+  const [editor, setEditor] = useState<BlockNoteEditorClass | null>(null);
+
+  // エディタ初期化
+  useEffect(() => {
+    const newEditor = BlockNoteEditorClass.create();
+    setEditor(newEditor);
   }, []);
 
   // エディタの変更を監視
   useEffect(() => {
+    if (!editor) return;
+
     const handleChange = () => {
+      if (!editor) return;
       const blocks = editor.document;
       const html = blocksToHtml(blocks);
       onEditingPageContentChange(html);
@@ -246,7 +243,7 @@ export function BlockNoteEditor({
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
-      <div className="mx-auto max-w-3xl w-full px-12 pt-24 bg-[#191919] min-h-[80vh]">
+      <div className="mx-auto max-w-3xl w-full px-12 pt-24 bg-background min-h-[80vh]">
         {editingPageTitle ? (
           <input
             type="text"
@@ -262,26 +259,28 @@ export function BlockNoteEditor({
                 onEditingPageTitleChange(false);
               }
             }}
-            className="text-5xl font-bold text-zinc-100 mb-8 bg-transparent border-none outline-none w-full"
+            className="text-5xl font-bold text-foreground mb-8 bg-transparent border-none outline-none w-full"
             autoFocus
           />
         ) : (
           <h1
-            className="text-5xl font-bold text-zinc-100 mb-8 cursor-pointer"
+            className="text-5xl font-bold text-foreground mb-8 cursor-pointer"
             onClick={onPageTitleClick}
           >
             {selectedPage.title || "無題"}
           </h1>
         )}
-        <div className="blocknote-editor" data-theme="dark">
-          <BlockNoteViewRaw
-            editor={editor}
-            className="text-zinc-100"
-            sideMenu={false}
-            slashMenu={false}
-            emojiPicker={false}
-            formattingToolbar={false}
-          />
+        <div className="blocknote-editor">
+          {editor ? (
+            <BlockNoteView
+              editor={editor}
+              shadCNComponents={{
+                Popover,
+              }}
+            />
+          ) : (
+            <div className="text-foreground">Loading editor...</div>
+          )}
         </div>
       </div>
     );
@@ -289,10 +288,10 @@ export function BlockNoteEditor({
 
   // 何も選択されていない場合
   return (
-    <div className="h-full bg-gray-900 flex items-center justify-center">
-      <div className="text-white text-center">
+    <div className="h-full bg-background flex items-center justify-center">
+      <div className="text-foreground text-center">
         <p className="text-lg mb-2">ページを選択してください</p>
-        <p className="text-sm text-gray-400">ノートからページを選択すると、ここにエディタが表示されます</p>
+        <p className="text-sm text-muted-foreground">ノートからページを選択すると、ここにエディタが表示されます</p>
       </div>
     </div>
   );
