@@ -626,7 +626,7 @@ export function NotePage() {
 
   const selectedNote = useMemo(() => notes.find((n) => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
   const selectedSection = useMemo(() => selectedNote?.sections.find((s) => s.id === selectedSectionId) || null, [selectedNote, selectedSectionId]);
-  const selectedPage = useMemo(() => selectedPageId === 'new' ? { id: 'new', title: '', content: '' } : selectedSection?.pages.find((p) => p.id === selectedPageId) || null, [selectedPageId, selectedSection]);
+  const selectedPage = useMemo(() => selectedSection?.pages.find((p) => p.id === selectedPageId) || null, [selectedPageId, selectedSection]);
 
   // ページが選択されたらタイトルを変更
   useEffect(() => {
@@ -657,7 +657,7 @@ export function NotePage() {
   const handleSelectSection = (noteId: string, sectionId: string) => {
     setSelectedNoteId(noteId);
     setSelectedSectionId(sectionId);
-    setSelectedPageId('new');
+    setSelectedPageId(null);
   };
 
   const handleSelectPage = (noteId: string, sectionId: string, pageId: string) => {
@@ -1029,34 +1029,31 @@ export function NotePage() {
           ) : null
         }
         main={
-          <BlockNoteEditor
-            key={selectedPage?.id}
-            selectedPage={selectedPage}
-            editingPageTitle={editingPageTitle}
-            editingPageTitleValue={editingPageTitleValue}
-            onEditingPageTitleChange={setEditingPageTitle}
-            onEditingPageTitleValueChange={setEditingPageTitleValue}
-            onPageTitleClick={() => {
-              if (selectedPage) {
-                setEditingPageTitleValue(selectedPage.title);
-                setEditingPageTitle(true);
-              }
-            }}
-            onPageTitleChange={(newTitle: string) => {
-              if (selectedPage && spaceId) {
-                if (selectedPageId === 'new') {
-                  const newDoc: DocumentFields = {
-                    title: newTitle,
-                    parentDocId: selectedSectionId || undefined,
-                    body: { content: editingPageContent },
-                  };
-                  addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-                    onSuccess: (newPage) => {
-                      setSelectedPageId(newPage.id);
-                      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                    },
-                  });
-                } else {
+          selectedSection && !selectedPage ? (
+            // セクションが選択されているがページが選択されていない場合
+            <div className="h-full bg-gray-900 flex items-center justify-center">
+              <div className="text-white text-center">
+                <h2 className="text-2xl font-bold mb-4">{selectedSection.title}</h2>
+                <p className="text-lg mb-2">ページを選択してください</p>
+                <p className="text-sm text-gray-400">このセクションからページを選択すると、エディタが表示されます</p>
+              </div>
+            </div>
+          ) : (
+            <BlockNoteEditor
+              key={selectedPage?.id}
+              selectedPage={selectedPage}
+              editingPageTitle={editingPageTitle}
+              editingPageTitleValue={editingPageTitleValue}
+              onEditingPageTitleChange={setEditingPageTitle}
+              onEditingPageTitleValueChange={setEditingPageTitleValue}
+              onPageTitleClick={() => {
+                if (selectedPage) {
+                  setEditingPageTitleValue(selectedPage.title);
+                  setEditingPageTitle(true);
+                }
+              }}
+              onPageTitleChange={(newTitle: string) => {
+                if (selectedPage && spaceId) {
                   const updateData: DocumentUpdateFields = {
                     title: newTitle,
                   };
@@ -1066,26 +1063,25 @@ export function NotePage() {
                     },
                   });
                 }
-              }
-            }}
-            editingPageContent={editingPageContent}
-            onEditingPageContentChange={setEditingPageContent}
-            onPageContentChange={(content: string) => {
-              if (selectedPageId === 'new') return;
-              if (selectedPage && spaceId) {
-                const updateData: DocumentUpdateFields = {
-                  body: { content },
-                };
-                updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                  onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                    // 保存成功後にローカル状態を更新
-                    setEditingPageContent(content);
-                  },
-                });
-              }
-            }}
-          />
+              }}
+              editingPageContent={editingPageContent}
+              onEditingPageContentChange={setEditingPageContent}
+              onPageContentChange={(content: string) => {
+                if (selectedPage && spaceId) {
+                  const updateData: DocumentUpdateFields = {
+                    body: { content },
+                  };
+                  updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                    onSuccess: () => {
+                      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                      // 保存成功後にローカル状態を更新
+                      setEditingPageContent(content);
+                    },
+                  });
+                }
+              }}
+            />
+          )
         }
       />
       {/* テンプレートモード選択ダイアログ */}

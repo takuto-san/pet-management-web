@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass, SideMenuExtension } from "@blocknote/core";
+import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass } from "@blocknote/core";
 import { BlockNoteViewRaw } from "@blocknote/react";
 import "@blocknote/react/style.css";
 
@@ -216,18 +216,63 @@ export function BlockNoteEditor({
 
   // BlockNote エディタインスタンス
   const editor = useMemo(() => {
-    return BlockNoteEditorClass.create({
-      initialContent: initialBlocks,
-    });
-  }, [initialBlocks]);
+    return BlockNoteEditorClass.create();
+  }, []);
+
+  // エディタの変更を監視
+  useEffect(() => {
+    const handleChange = () => {
+      const blocks = editor.document;
+      const html = blocksToHtml(blocks);
+      onEditingPageContentChange(html);
+      onPageContentChange(html);
+    };
+
+    editor.onChange(handleChange);
+
+    return () => {
+      // クリーンアップ
+    };
+  }, [editor, onEditingPageContentChange, onPageContentChange]);
+
+  // コンテンツ更新
+  useEffect(() => {
+    if (editor && editingPageContent !== undefined) {
+      const blocks = htmlToBlocks(editingPageContent);
+      editor.replaceBlocks(editor.document, blocks);
+    }
+  }, [editor, editingPageContent]);
 
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
       <div className="mx-auto max-w-3xl w-full px-12 pt-24 bg-[#191919] min-h-[80vh]">
-        <h1 className="text-5xl font-bold text-zinc-100 mb-8">
-          日々の健康状態
-        </h1>
+        {editingPageTitle ? (
+          <input
+            type="text"
+            value={editingPageTitleValue}
+            onChange={(e) => onEditingPageTitleValueChange(e.target.value)}
+            onBlur={() => {
+              onPageTitleChange(editingPageTitleValue);
+              onEditingPageTitleChange(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onPageTitleChange(editingPageTitleValue);
+                onEditingPageTitleChange(false);
+              }
+            }}
+            className="text-5xl font-bold text-zinc-100 mb-8 bg-transparent border-none outline-none w-full"
+            autoFocus
+          />
+        ) : (
+          <h1
+            className="text-5xl font-bold text-zinc-100 mb-8 cursor-pointer"
+            onClick={onPageTitleClick}
+          >
+            {selectedPage.title || "無題"}
+          </h1>
+        )}
         <div className="blocknote-editor" data-theme="dark">
           <BlockNoteViewRaw
             editor={editor}
@@ -235,6 +280,7 @@ export function BlockNoteEditor({
             sideMenu={false}
             slashMenu={false}
             emojiPicker={false}
+            formattingToolbar={false}
           />
         </div>
       </div>
