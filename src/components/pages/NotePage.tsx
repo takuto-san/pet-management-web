@@ -140,10 +140,10 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                         px: 1,
                         userSelect: "none",
                         "&.Mui-selected": {
-                          bgcolor: "grey.700",
+                          bgcolor: "grey.800",
                           borderRadius: 1,
                           "&:hover": {
-                            bgcolor: "grey.600",
+                            bgcolor: "grey.700",
                           },
                         },
                       }}
@@ -226,11 +226,11 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                 py: 0.5,
                                 userSelect: "none",
                                 "&.Mui-selected": {
-                                  bgcolor: "grey.700",
+                                  bgcolor: "grey.800",
                                   borderRadius: 1,
                                   px: 1,
                                   "&:hover": {
-                                    bgcolor: "grey.600",
+                                    bgcolor: "grey.700",
                                   },
                                 },
                               }}
@@ -379,11 +379,11 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                   py: 0.5,
                   userSelect: "none",
                   "&.Mui-selected": {
-                    bgcolor: "grey.700",
+                    bgcolor: "grey.800",
                     borderRadius: 1,
                     px: 1,
                     "&:hover": {
-                      bgcolor: "grey.600",
+                      bgcolor: "grey.700",
                     },
                   },
                 }}

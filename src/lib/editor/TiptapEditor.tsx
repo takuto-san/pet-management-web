@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import { FloatingMenu } from '@tiptap/extension-floating-menu'
+import { BubbleMenu } from '@tiptap/extension-bubble-menu'
 
 // ページの型定義
 interface Page {
@@ -42,6 +44,18 @@ export function TiptapEditor({
       StarterKit,
       Placeholder.configure({
         placeholder: "'/' でコマンドを入力...",
+      }),
+      FloatingMenu.configure({
+        shouldShow: ({ state, editor }) => {
+          const { $from } = state.selection;
+          const currentLineText = $from.parent.textContent;
+          return currentLineText === '/';
+        },
+      }),
+      BubbleMenu.configure({
+        shouldShow: ({ editor, state }) => {
+          return !editor.isActive('image') && !state.selection.empty;
+        },
       }),
     ],
     content: editingPageContent,
@@ -98,7 +112,7 @@ export function TiptapEditor({
           </div>
         </div>
         <div className="flex-1 px-6 pb-6">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto relative">
             {editor ? (
               <EditorContent
                 editor={editor}
