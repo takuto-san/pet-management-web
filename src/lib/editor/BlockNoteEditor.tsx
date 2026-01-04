@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { PartialBlock } from "@blocknote/core";
-import { BlockNoteView } from "@blocknote/react";
+import { useEffect, useMemo } from "react";
+import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass, SideMenuExtension } from "@blocknote/core";
+import { BlockNoteViewRaw } from "@blocknote/react";
 import "@blocknote/react/style.css";
 
 // ページの型定義
@@ -207,11 +207,19 @@ export function BlockNoteEditor({
   }, [editingPageContent]);
 
   // エディタの変更ハンドラ
-  const handleEditorChange = (content: PartialBlock[]) => {
-    const html = blocksToHtml(content);
+  const handleEditorChange = () => {
+    const blocks = editor.document;
+    const html = blocksToHtml(blocks);
     onEditingPageContentChange(html);
     onPageContentChange(html);
   };
+
+  // BlockNote エディタインスタンス
+  const editor = useMemo(() => {
+    return BlockNoteEditorClass.create({
+      initialContent: initialBlocks,
+    });
+  }, [initialBlocks]);
 
   // ページ選択時：エディタ
   if (selectedPage) {
@@ -221,10 +229,10 @@ export function BlockNoteEditor({
           日々の健康状態
         </h1>
         <div className="blocknote-editor" data-theme="dark">
-          <BlockNoteView
-            initialContent={initialBlocks}
-            onContentChange={handleEditorChange}
+          <BlockNoteViewRaw
+            editor={editor}
             className="text-zinc-100"
+            sideMenu={false}
           />
         </div>
       </div>
