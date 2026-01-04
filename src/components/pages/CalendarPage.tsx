@@ -12,8 +12,22 @@ import { useListPetsByUser } from "@/api/generated/pet/pet";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
 import { listVisits } from "@/api/generated/visit/visit";
 import { Info, Pets, Check, CalendarToday, Add, Close, Edit, Delete } from '@mui/icons-material';
-import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions, ThemeProvider, createTheme } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
+
+// ダークテーマ
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    background: {
+      default: "#121212",
+      paper: "#1e1e1e",
+    },
+    primary: {
+      main: "#90caf9",
+    },
+  },
+});
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useAddVisit, useUpdateVisit, useDeleteVisit } from "@/api/generated/visit/visit";
@@ -509,10 +523,11 @@ export function CalendarPage() {
   };
 
   return (
-    <LayoutTemplate
-      header={<Header />}
-      footer={<Footer />}
-      main={
+    <ThemeProvider theme={darkTheme}>
+      <LayoutTemplate
+        header={<Header />}
+        footer={<Footer />}
+        main={
         <div className="p-4 relative">
           <h1 className="text-xl font-bold mb-4">カレンダー</h1>
 
@@ -842,10 +857,50 @@ export function CalendarPage() {
                       setSelectedDate(new Date(e.target.value)); // 日付変更時にselectedDateを更新
                     }}
                     InputLabelProps={{ shrink: true }}
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                      '& .MuiInputBase-input::placeholder': {
+                        color: '#BBBBBB',
+                      },
+                    }}
                   />
 
                   {/* 大カテゴリー選択 */}
-                  <FormControl fullWidth>
+                  <FormControl fullWidth
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                    }}
+                  >
                     <InputLabel>カテゴリー*</InputLabel>
                     <Select
                       value={recordForm.category || 'hospital'}
@@ -957,6 +1012,27 @@ export function CalendarPage() {
                         label="薬名"
                         value={recordForm.medicineName || ''}
                         onChange={(e) => setRecordForm({ ...recordForm, medicineName: e.target.value })}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            backgroundColor: '#2D2D2D',
+                            color: '#FFFFFF',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#555555',
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#777777',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#90caf9',
+                            },
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: '#BBBBBB',
+                          },
+                          '& .MuiInputBase-input::placeholder': {
+                            color: '#BBBBBB',
+                          },
+                        }}
                       />
                       <TextField
                         fullWidth
@@ -1174,11 +1250,17 @@ export function CalendarPage() {
             anchor="bottom"
             open={isDrawerOpen}
             onClose={handleDrawerClose}
+            sx={{
+              '& .MuiDrawer-paper': {
+                backgroundColor: '#1e1e1e',
+                color: 'white',
+              },
+            }}
           >
             <Box sx={{ p: 3, minHeight: '50vh' }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">{isEditing ? '記録を編集' : '記録を追加'}</Typography>
-                <IconButton onClick={handleDrawerClose}>
+                <IconButton onClick={handleDrawerClose} sx={{ color: 'white' }}>
                   <Close />
                 </IconButton>
               </Box>
@@ -1198,10 +1280,50 @@ export function CalendarPage() {
                   value={recordForm.date || ''}
                   onChange={(e) => setRecordForm({ ...recordForm, date: e.target.value })}
                   InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      backgroundColor: '#2D2D2D',
+                      color: '#FFFFFF',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#555555',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#777777',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#90caf9',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#BBBBBB',
+                    },
+                    '& .MuiInputBase-input::placeholder': {
+                      color: '#BBBBBB',
+                    },
+                  }}
                 />
 
                 {/* 大カテゴリー選択 */}
-                <FormControl fullWidth>
+                <FormControl fullWidth
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      backgroundColor: '#2D2D2D',
+                      color: '#FFFFFF',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#555555',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#777777',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#90caf9',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#BBBBBB',
+                    },
+                  }}
+                >
                   <InputLabel>カテゴリー*</InputLabel>
                   <Select
                     value={recordForm.category || 'hospital'}
@@ -1218,7 +1340,26 @@ export function CalendarPage() {
 
                 {/* 病院選択（hospitalカテゴリの場合のみ） */}
                 {recordForm.category === 'hospital' && (
-                  <FormControl fullWidth>
+                  <FormControl fullWidth
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                    }}
+                  >
                     <InputLabel>病院名*</InputLabel>
                     <Select
                       value={recordForm.clinicId || ''}
@@ -1234,7 +1375,26 @@ export function CalendarPage() {
 
                 {/* 小カテゴリー選択 */}
                 {recordForm.category === 'hospital' && (
-                  <FormControl fullWidth>
+                  <FormControl fullWidth
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                    }}
+                  >
                     <InputLabel>項目*</InputLabel>
                     <Select
                       value={recordForm.subcategoryType || 'medication'}
@@ -1256,7 +1416,26 @@ export function CalendarPage() {
                 )}
 
                 {recordForm.category === 'supplies' && (
-                  <FormControl fullWidth>
+                  <FormControl fullWidth
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                    }}
+                  >
                     <InputLabel>項目*</InputLabel>
                     <Select
                       value={recordForm.subcategoryType || 'food'}
@@ -1280,7 +1459,26 @@ export function CalendarPage() {
                 )}
 
                   {/* ペット選択 */}
-                  <FormControl fullWidth>
+                  <FormControl fullWidth
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                    }}
+                  >
                     <InputLabel>ペット*</InputLabel>
                     <Select
                       value={recordForm.petId || ''}
@@ -1296,7 +1494,26 @@ export function CalendarPage() {
                 {/* 専用フィールド */}
                 {recordForm.category === 'hospital' && recordForm.subcategoryType === 'medication' && (
                   <>
-                    <FormControl fullWidth>
+                    <FormControl fullWidth
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                      }}
+                    >
                       <InputLabel>区分</InputLabel>
                       <Select
                         value={recordForm.categoryField || ''}
@@ -1313,6 +1530,27 @@ export function CalendarPage() {
                       label="薬名"
                       value={recordForm.medicineName || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, medicineName: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1321,6 +1559,27 @@ export function CalendarPage() {
                       value={recordForm.nextDate || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, nextDate: e.target.value })}
                       InputLabelProps={{ shrink: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                   </>
                 )}
@@ -1332,12 +1591,54 @@ export function CalendarPage() {
                       label="ワクチン種類"
                       value={recordForm.vaccineType || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, vaccineType: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
                       label="Lot No"
                       value={recordForm.lotNo || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, lotNo: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1346,6 +1647,27 @@ export function CalendarPage() {
                       value={recordForm.nextVaccinationDate || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, nextVaccinationDate: e.target.value })}
                       InputLabelProps={{ shrink: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                   </>
                 )}
@@ -1357,6 +1679,27 @@ export function CalendarPage() {
                     label="診断内容"
                     value={recordForm.diagnosis || ''}
                     onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                      '& .MuiInputBase-input::placeholder': {
+                        color: '#BBBBBB',
+                      },
+                    }}
                   />
                   <TextField
                     fullWidth
@@ -1365,8 +1708,48 @@ export function CalendarPage() {
                     inputProps={{ step: "0.1" }}
                     value={recordForm.weight || ''}
                     onChange={(e) => setRecordForm({ ...recordForm, weight: e.target.value })}
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                      '& .MuiInputBase-input::placeholder': {
+                        color: '#BBBBBB',
+                      },
+                    }}
                   />
-                  <FormControl fullWidth>
+                  <FormControl fullWidth
+                    sx={{
+                      '& .MuiInputBase-root': {
+                        backgroundColor: '#2D2D2D',
+                        color: '#FFFFFF',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#555555',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#777777',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#90caf9',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#BBBBBB',
+                      },
+                    }}
+                  >
                     <InputLabel>体調ステータス</InputLabel>
                     <Select
                       value={recordForm.condition || ''}
@@ -1385,6 +1768,27 @@ export function CalendarPage() {
                       rows={3}
                       value={recordForm.doctorNote || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, doctorNote: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     {/* 処方薬の追加 */}
                     <Typography variant="body1" sx={{ mt: 2, mb: 1 }}>処方薬（任意）</Typography>
@@ -1393,8 +1797,48 @@ export function CalendarPage() {
                       label="薬名"
                       value={recordForm.prescriptionName || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, prescriptionName: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
-                    <FormControl fullWidth>
+                    <FormControl fullWidth
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                      }}
+                    >
                       <InputLabel>薬のカテゴリ</InputLabel>
                       <Select
                         value={recordForm.prescriptionCategory || ''}
@@ -1412,6 +1856,27 @@ export function CalendarPage() {
                       label="投与量"
                       value={recordForm.prescriptionQuantity || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, prescriptionQuantity: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1419,6 +1884,27 @@ export function CalendarPage() {
                       value={recordForm.prescriptionUnit || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, prescriptionUnit: e.target.value })}
                       placeholder="錠, ml, etc."
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1426,6 +1912,27 @@ export function CalendarPage() {
                       type="number"
                       value={recordForm.prescriptionDays || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, prescriptionDays: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1434,6 +1941,27 @@ export function CalendarPage() {
                       rows={2}
                       value={recordForm.prescriptionInstructions || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, prescriptionInstructions: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                   </>
                 )}
@@ -1447,12 +1975,54 @@ export function CalendarPage() {
                       label="品名"
                       value={recordForm.itemName || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, itemName: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
                       label="数量"
                       value={recordForm.quantity || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, quantity: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1461,6 +2031,27 @@ export function CalendarPage() {
                       value={recordForm.purchaseDate || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, purchaseDate: e.target.value })}
                       InputLabelProps={{ shrink: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                     <TextField
                       fullWidth
@@ -1469,6 +2060,27 @@ export function CalendarPage() {
                       rows={3}
                       value={recordForm.memo || ''}
                       onChange={(e) => setRecordForm({ ...recordForm, memo: e.target.value })}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          backgroundColor: '#2D2D2D',
+                          color: '#FFFFFF',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#555555',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#777777',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#90caf9',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: '#BBBBBB',
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: '#BBBBBB',
+                        },
+                      }}
                     />
                   </>
                 )}
@@ -1517,5 +2129,6 @@ export function CalendarPage() {
         </div>
       }
     />
+    </ThemeProvider>
   );
 }
