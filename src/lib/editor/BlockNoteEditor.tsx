@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass } from "@blocknote/core";
 import { BlockNoteViewRaw } from "@blocknote/react";
 import "@blocknote/react/style.css";
@@ -37,6 +37,13 @@ export function BlockNoteEditor({
   onEditingPageContentChange,
   onPageContentChange,
 }: BlockNoteEditorProps) {
+
+  // State for cover and icon
+  const [showCoverHover, setShowCoverHover] = useState(false);
+  const [showIconHover, setShowIconHover] = useState(false);
+  const [hasCover, setHasCover] = useState(false);
+  const [hasIcon, setHasIcon] = useState(false);
+  const [pageIcon, setPageIcon] = useState("📄");
 
   // HTMLをBlockNoteブロックに変換する関数
   const htmlToBlocks = (html: string): PartialBlock[] => {
@@ -246,42 +253,114 @@ export function BlockNoteEditor({
   // ページ選択時：エディタ
   if (selectedPage) {
     return (
-      <div className="mx-auto max-w-3xl w-full px-12 pt-24 bg-[#191919] min-h-[80vh]">
-        {editingPageTitle ? (
-          <input
-            type="text"
-            value={editingPageTitleValue}
-            onChange={(e) => onEditingPageTitleValueChange(e.target.value)}
-            onBlur={() => {
-              onPageTitleChange(editingPageTitleValue);
-              onEditingPageTitleChange(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
+      <div className="bg-[#191919] min-h-[calc(100vh-200px)]">
+        {/* Breadcrumb Navigation */}
+        <div className="px-12 pt-4 pb-2 text-sm text-zinc-500">
+          <span className="hover:text-zinc-300 cursor-pointer">ワークスペース</span>
+          <span className="mx-2">/</span>
+          <span className="hover:text-zinc-300 cursor-pointer">ノート</span>
+          <span className="mx-2">/</span>
+          <span className="text-zinc-400">{selectedPage.title || "無題"}</span>
+        </div>
+
+        {/* Cover Image Section */}
+        <div 
+          className="relative h-[200px] bg-gradient-to-br from-zinc-800 to-zinc-900 group"
+          onMouseEnter={() => setShowCoverHover(true)}
+          onMouseLeave={() => setShowCoverHover(false)}
+        >
+          {!hasCover && showCoverHover && (
+            <button
+              onClick={() => setHasCover(true)}
+              className="absolute bottom-4 right-4 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-sm rounded-md transition-colors"
+            >
+              カバーを追加
+            </button>
+          )}
+          {hasCover && showCoverHover && (
+            <button
+              onClick={() => setHasCover(false)}
+              className="absolute bottom-4 right-4 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-sm rounded-md transition-colors"
+            >
+              カバーを削除
+            </button>
+          )}
+        </div>
+
+        {/* Page Icon and Content Container */}
+        <div 
+          className="mx-auto max-w-4xl w-full px-12 cursor-text relative"
+          onClick={(e) => {
+            // Only focus if clicking on the container itself, not on existing blocks
+            if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('blocknote-editor')) {
+              editor.focus();
+            }
+          }}
+        >
+          {/* Page Icon */}
+          <div 
+            className="relative -mt-8 group"
+            onMouseEnter={() => setShowIconHover(true)}
+            onMouseLeave={() => setShowIconHover(false)}
+          >
+            {hasIcon ? (
+              <div className="text-6xl mb-4 inline-block cursor-pointer hover:opacity-80 transition-opacity">
+                {pageIcon}
+              </div>
+            ) : (
+              showIconHover && (
+                <button
+                  onClick={() => {
+                    setHasIcon(true);
+                    setPageIcon("📄");
+                  }}
+                  className="px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 text-sm rounded-md transition-colors mb-4"
+                >
+                  アイコンを追加
+                </button>
+              )
+            )}
+          </div>
+
+          {/* Title */}
+          {editingPageTitle ? (
+            <input
+              type="text"
+              value={editingPageTitleValue}
+              onChange={(e) => onEditingPageTitleValueChange(e.target.value)}
+              onBlur={() => {
                 onPageTitleChange(editingPageTitleValue);
                 onEditingPageTitleChange(false);
-              }
-            }}
-            className="text-5xl font-bold text-zinc-100 mb-8 bg-transparent border-none outline-none w-full"
-            autoFocus
-          />
-        ) : (
-          <h1
-            className="text-5xl font-bold text-zinc-100 mb-8 cursor-pointer"
-            onClick={onPageTitleClick}
-          >
-            {selectedPage.title || "無題"}
-          </h1>
-        )}
-        <div className="blocknote-editor" data-theme="dark">
-          <BlockNoteViewRaw
-            editor={editor}
-            className="text-zinc-100"
-            sideMenu={false}
-            slashMenu={false}
-            emojiPicker={false}
-            formattingToolbar={false}
-          />
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onPageTitleChange(editingPageTitleValue);
+                  onEditingPageTitleChange(false);
+                }
+              }}
+              className="text-5xl font-bold text-zinc-100 mb-2 bg-transparent border-none outline-none w-full"
+              autoFocus
+            />
+          ) : (
+            <h1
+              className="text-5xl font-bold text-zinc-100 mb-2 cursor-pointer hover:bg-zinc-800/30 rounded px-1 -ml-1 transition-colors"
+              onClick={onPageTitleClick}
+            >
+              {selectedPage.title || "無題"}
+            </h1>
+          )}
+
+          {/* Editor Content with margin-top */}
+          <div className="blocknote-editor leading-relaxed mt-8" data-theme="dark">
+            <BlockNoteViewRaw
+              editor={editor}
+              className="text-zinc-100"
+              sideMenu={true}
+              slashMenu={true}
+              emojiPicker={true}
+              formattingToolbar={true}
+            />
+          </div>
         </div>
       </div>
     );
