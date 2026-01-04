@@ -186,7 +186,7 @@ export function BlockNoteEditor({
             html += `<p>${block.content}</p>`;
             break;
           case 'heading':
-            const level = (block.props as any)?.level || 1;
+            const level = (block.props as { level?: number })?.level || 1;
             html += `<h${level}>${block.content}</h${level}>`;
             break;
           case 'bulletListItem':
@@ -292,7 +292,8 @@ export function BlockNoteEditor({
           className="mx-auto max-w-4xl w-full px-12 cursor-text relative"
           onClick={(e) => {
             // Only focus if clicking on the container itself, not on existing blocks
-            if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('blocknote-editor')) {
+            const target = e.target;
+            if (target === e.currentTarget || (target instanceof HTMLElement && target.classList.contains('blocknote-editor'))) {
               editor.focus();
             }
           }}
