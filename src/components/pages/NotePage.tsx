@@ -181,42 +181,25 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                             }}
                           />
                         ) : (
-                          <ListItemText 
-                            primary={note.name} 
-                            sx={{ 
-                              fontWeight: isSelected ? 600 : 400 
-                            }} 
-                          />
+                          <ListItemText primary={note.name} />
                         )}
                       </Box>
-                      <Box className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      {isSelected && (
                         <IconButton
                           size="small"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onAddSection(note.id);
+                            onDeleteNote(note.id);
                           }}
-                          title="セクションを追加"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <CreateIcon fontSize="small" />
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
-                        {isSelected && (
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteNote(note.id);
-                            }}
-                            title="削除"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </Box>
+                      )}
                     </ListItemButton>
                   </ListItem>
                   {isExpanded && (
-                    <List sx={{ pl: 2 }}>
+                    <List sx={{ pl: 4 }}>
                       {note.sections.map((section) => {
                         const isSectionSelected = selectedSectionId === section.id;
                         return (
@@ -234,19 +217,14 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                 display: "flex",
                                 alignItems: "center",
                                 py: 0.5,
-                                pl: 2,
                                 userSelect: "none",
                                 "&.Mui-selected": {
                                   bgcolor: "grey.800",
                                   borderRadius: 1,
-                                  fontWeight: 600,
+                                  px: 1,
                                   "&:hover": {
                                     bgcolor: "grey.700",
                                   },
-                                },
-                                "&:hover": {
-                                  bgcolor: "grey.900",
-                                  borderRadius: 1,
                                 },
                               }}
                             >
@@ -276,13 +254,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                     }}
                                   />
                                 ) : (
-                                  <ListItemText 
-                                    primary={section.title} 
-                                    sx={{ 
-                                      fontSize: "0.9rem",
-                                      fontWeight: isSectionSelected ? 600 : 400,
-                                    }} 
-                                  />
+                                  <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
                                 )}
                               </Box>
                               {isSectionSelected && (
@@ -293,7 +265,6 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                     onDeleteSection(note.id, section.id);
                                   }}
                                   className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                  title="削除"
                                 >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -307,7 +278,6 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                           onClick={() => onAddSection(note.id)}
                           sx={{
                             py: 0.5,
-                            pl: 2,
                             display: "flex",
                             alignItems: "center",
                           }}
@@ -404,14 +374,9 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                     bgcolor: "grey.800",
                     borderRadius: 1,
                     px: 1,
-                    fontWeight: 600,
                     "&:hover": {
                       bgcolor: "grey.700",
                     },
-                  },
-                  "&:hover": {
-                    bgcolor: "grey.900",
-                    borderRadius: 1,
                   },
                 }}
               >
@@ -441,13 +406,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                       }}
                     />
                   ) : (
-                    <ListItemText 
-                      primary={page.title} 
-                      sx={{ 
-                        fontSize: "0.9rem",
-                        fontWeight: isPageSelected ? 600 : 400,
-                      }} 
-                    />
+                    <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
                   )}
                 </Box>
                 {isPageSelected && (
@@ -458,7 +417,6 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                       onDeletePage(selectedNoteId, selectedSection.id, page.id);
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="削除"
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
