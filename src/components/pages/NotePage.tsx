@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
+import dynamic from 'next/dynamic'
+const TiptapEditor = dynamic(() => import('@/lib/editor/TiptapEditor').then(mod => ({ default: mod.TiptapEditor })), { ssr: false })
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
@@ -36,18 +36,11 @@ import {
 } from "@mui/material";
 import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
-// ページの型定義
-interface Page {
-  id: string;
-  title: string;
-  content: string;
-}
-
 // セクションの型定義
 interface Section {
   id: string;
   title: string;
-  pages: Page[];
+  pages: { id: string; title: string; content: string }[];
   isExpanded: boolean;
 }
 
@@ -140,6 +133,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                         e.stopPropagation();
                         onDoubleClickNote(note.id);
                       }}
+                      className="group"
                       sx={{
                         display: "flex",
                         alignItems: "center",
@@ -204,12 +198,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                             e.stopPropagation();
                             onDeleteNote(note.id);
                           }}
-                          sx={{
-                            opacity: 0.7,
-                            "&:hover": {
-                              opacity: 1,
-                            },
-                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -230,6 +219,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                 e.stopPropagation();
                                 onDoubleClickSection(note.id, section.id);
                               }}
+                              className="group"
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
@@ -281,12 +271,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                                     e.stopPropagation();
                                     onDeleteSection(note.id, section.id);
                                   }}
-                                  sx={{
-                                    opacity: 0.7,
-                                    "&:hover": {
-                                      opacity: 1,
-                                    },
-                                  }}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -389,6 +374,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                   e.stopPropagation();
                   onDoubleClickPage(selectedNoteId, selectedSection.id, page.id);
                 }}
+                className="group"
                 sx={{
                   py: 0.5,
                   userSelect: "none",
@@ -438,12 +424,7 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
                       e.stopPropagation();
                       onDeletePage(selectedNoteId, selectedSection.id, page.id);
                     }}
-                    sx={{
-                      opacity: 0.7,
-                      "&:hover": {
-                        opacity: 1,
-                      },
-                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
@@ -457,124 +438,15 @@ function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteI
   );
 }
 
-// メインコンテンツ
-function MainContent({ selectedPage, editingPageTitle, editingPageTitleValue, onEditingPageTitleChange, onEditingPageTitleValueChange, onPageTitleClick, onPageTitleChange, editingPageContent, onEditingPageContentChange, onPageContentChange }: {
-  selectedPage: Page | null;
-  editingPageTitle: boolean;
-  editingPageTitleValue: string;
-  onEditingPageTitleChange: (editing: boolean) => void;
-  onEditingPageTitleValueChange: (value: string) => void;
-  onPageTitleClick: () => void;
-  onPageTitleChange: (newTitle: string) => void;
-  editingPageContent: string;
-  onEditingPageContentChange: (content: string) => void;
-  onPageContentChange: (content: string) => void;
-}) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-    ],
-    content: editingPageContent,
-    immediatelyRender: false,
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      onEditingPageContentChange(html);
-      onPageContentChange(html);
-    },
-  });
 
-  // ページが変更されたときにエディタの内容を更新
-  useEffect(() => {
-    if (editor && selectedPage) {
-      editor.commands.setContent(editingPageContent);
-    }
-  }, [editor, selectedPage, editingPageContent]);
 
-  // ページ選択時：エディタ
-  if (selectedPage) {
-    return (
-      <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ p: 3, userSelect: "none" }}>
-          {editingPageTitle ? (
-            <TextField
-              autoFocus
-              fullWidth
-              variant="standard"
-              value={editingPageTitleValue}
-              onChange={(e) => onEditingPageTitleValueChange(e.target.value)}
-              onBlur={() => {
-                onEditingPageTitleChange(false);
-                onPageTitleChange(editingPageTitleValue);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  onEditingPageTitleChange(false);
-                  onPageTitleChange(editingPageTitleValue);
-                } else if (e.key === "Escape") {
-                  onEditingPageTitleChange(false);
-                }
-              }}
-              onFocus={(e) => e.target.select()}
-              InputProps={{
-                disableUnderline: true,
-              }}
-              sx={{
-                "& .MuiInputBase-input": {
-                  fontSize: "2rem",
-                  fontWeight: "bold",
-                  color: "text.primary",
-                },
-              }}
-            />
-          ) : (
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: "bold",
-                color: "text.primary",
-                cursor: "pointer",
-                "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: 1,
-                },
-              }}
-              onClick={onPageTitleClick}
-            >
-              {selectedPage.title}
-            </Typography>
-          )}
-        </Box>
-        <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
-          {editor ? (
-            <EditorContent
-              editor={editor}
-              style={{
-                minHeight: '400px',
-                color: 'white',
-                padding: '10px',
-                borderRadius: '4px',
-                outline: 'none',
-              }}
-            />
-          ) : (
-            <Typography>エディタを読み込み中...</Typography>
-          )}
-        </Box>
-      </Box>
-    );
-  }
 
-  // 何も選択されていない場合
-  return (
-    <Box sx={{ height: "100%", bgcolor: "background.paper" }} />
-  );
-}
 
 // DocumentからNote構造に変換する関数
 function convertDocumentsToNotes(documents: Document[]): Note[] {
   const notes: Note[] = [];
   const sections: { [noteId: string]: Section[] } = {};
-  const pages: { [sectionId: string]: Page[] } = {};
+  const pages: { [sectionId: string]: { id: string; title: string; content: string }[] } = {};
 
   // ノートを作成
   documents.filter(doc => doc.parentDocId === null).forEach(doc => {
@@ -602,7 +474,7 @@ function convertDocumentsToNotes(documents: Document[]): Note[] {
 
   // ページを作成
   documents.filter(doc => doc.parentDocId && Object.keys(sections).some(noteId => sections[noteId].some(sec => sec.id === doc.parentDocId))).forEach(doc => {
-    const page: Page = {
+    const page: { id: string; title: string; content: string } = {
       id: doc.id,
       title: doc.title,
       content: (doc.body?.content as string) || "",
@@ -1179,49 +1051,47 @@ export function NotePage() {
             />
           ) : null
         }
-        main={
-          <MainContent
-            selectedPage={selectedPage}
-            editingPageTitle={editingPageTitle}
-            editingPageTitleValue={editingPageTitleValue}
-            onEditingPageTitleChange={setEditingPageTitle}
-            onEditingPageTitleValueChange={setEditingPageTitleValue}
-            onPageTitleClick={() => {
-              if (selectedPage) {
-                setEditingPageTitleValue(selectedPage.title);
-                setEditingPageTitle(true);
-              }
-            }}
-            onPageTitleChange={(newTitle) => {
-              if (selectedPage && spaceId) {
-                const updateData: DocumentUpdateFields = {
-                  title: newTitle,
-                };
-                updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                  onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                  },
-                });
-              }
-            }}
-            editingPageContent={editingPageContent}
-            onEditingPageContentChange={setEditingPageContent}
-            onPageContentChange={(content) => {
-              if (selectedPage && spaceId) {
-                const updateData: DocumentUpdateFields = {
-                  body: { content },
-                };
-                updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                  onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                    // 保存成功後にローカル状態を更新
-                    setEditingPageContent(content);
-                  },
-                });
-              }
-            }}
-          />
-        }
+        main={<TiptapEditor
+          selectedPage={selectedPage}
+          editingPageTitle={editingPageTitle}
+          editingPageTitleValue={editingPageTitleValue}
+          onEditingPageTitleChange={setEditingPageTitle}
+          onEditingPageTitleValueChange={setEditingPageTitleValue}
+          onPageTitleClick={() => {
+            if (selectedPage) {
+              setEditingPageTitleValue(selectedPage.title);
+              setEditingPageTitle(true);
+            }
+          }}
+          onPageTitleChange={(newTitle: string) => {
+            if (selectedPage && spaceId) {
+              const updateData: DocumentUpdateFields = {
+                title: newTitle,
+              };
+              updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                onSuccess: () => {
+                  queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                },
+              });
+            }
+          }}
+          editingPageContent={editingPageContent}
+          onEditingPageContentChange={setEditingPageContent}
+          onPageContentChange={(content: string) => {
+            if (selectedPage && spaceId) {
+              const updateData: DocumentUpdateFields = {
+                body: { content },
+              };
+              updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+                onSuccess: () => {
+                  queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+                  // 保存成功後にローカル状態を更新
+                  setEditingPageContent(content);
+                },
+              });
+            }
+          }}
+        />}
       />
       {/* テンプレートモード選択ダイアログ */}
       <Dialog open={isTemplateModeDialogOpen} onClose={() => setIsTemplateModeDialogOpen(false)} maxWidth="sm" fullWidth>
