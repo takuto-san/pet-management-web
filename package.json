@@ -12,6 +12,8 @@
     "generate:api": "orval --config ./orval.config.ts"
   },
   "dependencies": {
+    "@blocknote/core": "^0.45.0",
+    "@blocknote/react": "^0.45.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.6",
