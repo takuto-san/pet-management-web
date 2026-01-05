@@ -5,6 +5,8 @@ import { PartialBlock, BlockNoteEditor as BlockNoteEditorClass } from "@blocknot
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/shadcn/style.css";
+import { Command } from "@/components/ui/command";
+import * as Popover from "@/components/ui/popover";
 
 // ページの型定義
 interface Page {
@@ -272,6 +274,9 @@ export function BlockNoteEditor({
           {editor ? (
             <BlockNoteView
               editor={editor}
+              shadCNComponents={{
+                Popover,
+              }}
             />
           ) : (
             <div className="text-foreground">Loading editor...</div>
