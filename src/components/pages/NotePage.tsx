@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
@@ -623,6 +623,9 @@ export function NotePage() {
   const [editingPageName, setEditingPageName] = useState<string>("");
   const [editingPageContent, setEditingPageContent] = useState<string>("");
 
+  // Debounce timer for auto-save
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleAddPage = (sectionId: string) => {
     setAddPageSectionId(sectionId);
     setAddPageName("");
@@ -632,6 +635,64 @@ export function NotePage() {
   const selectedNote = useMemo(() => notes.find((n) => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
   const selectedSection = useMemo(() => selectedNote?.sections.find((s) => s.id === selectedSectionId) || null, [selectedNote, selectedSectionId]);
   const selectedPage = useMemo(() => selectedSection?.pages.find((p) => p.id === selectedPageId) || null, [selectedPageId, selectedSection]);
+
+  // Memoized callback for content change (local state update only)
+  const handleEditingPageContentChange = useCallback((content: string) => {
+    setEditingPageContent(content);
+  }, []);
+
+  // Memoized and debounced callback for saving content
+  const handlePageContentChange = useCallback((content: string) => {
+    if (!selectedPage || !spaceId) return;
+
+    // Clear existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Debounce save operation (wait 1 second after typing stops)
+    saveTimerRef.current = setTimeout(() => {
+      const updateData: DocumentUpdateFields = {
+        body: { content },
+      };
+      updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        },
+      });
+    }, 1000);
+  }, [selectedPage, spaceId, updateDocumentMutation, queryClient]);
+
+  // Memoized callback for page title click
+  const handlePageTitleClick = useCallback(() => {
+    if (selectedPage) {
+      setEditingPageTitleValue(selectedPage.title);
+      setEditingPageTitle(true);
+    }
+  }, [selectedPage]);
+
+  // Memoized callback for page title change
+  const handlePageTitleChange = useCallback((newTitle: string) => {
+    if (selectedPage && spaceId) {
+      const updateData: DocumentUpdateFields = {
+        title: newTitle,
+      };
+      updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        },
+      });
+    }
+  }, [selectedPage, spaceId, updateDocumentMutation, queryClient]);
+
+  // Cleanup save timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, []);
 
   // ページが選択されたらタイトルを変更
   useEffect(() => {
@@ -1051,40 +1112,11 @@ export function NotePage() {
               editingPageTitleValue={editingPageTitleValue}
               onEditingPageTitleChange={setEditingPageTitle}
               onEditingPageTitleValueChange={setEditingPageTitleValue}
-              onPageTitleClick={() => {
-                if (selectedPage) {
-                  setEditingPageTitleValue(selectedPage.title);
-                  setEditingPageTitle(true);
-                }
-              }}
-              onPageTitleChange={(newTitle: string) => {
-                if (selectedPage && spaceId) {
-                  const updateData: DocumentUpdateFields = {
-                    title: newTitle,
-                  };
-                  updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                    onSuccess: () => {
-                      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                    },
-                  });
-                }
-              }}
+              onPageTitleClick={handlePageTitleClick}
+              onPageTitleChange={handlePageTitleChange}
               editingPageContent={editingPageContent}
-              onEditingPageContentChange={setEditingPageContent}
-              onPageContentChange={(content: string) => {
-                if (selectedPage && spaceId) {
-                  const updateData: DocumentUpdateFields = {
-                    body: { content },
-                  };
-                  updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
-                    onSuccess: () => {
-                      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-                      // 保存成功後にローカル状態を更新
-                      setEditingPageContent(content);
-                    },
-                  });
-                }
-              }}
+              onEditingPageContentChange={handleEditingPageContentChange}
+              onPageContentChange={handlePageContentChange}
             />
           )
         }
