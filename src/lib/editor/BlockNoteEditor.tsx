@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { BlockNoteEditor as BlockNoteEditorClass } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/core/fonts/inter.css";
@@ -41,6 +41,10 @@ export function BlockNoteEditor({
 
   // BlockNote エディタインスタンス
   const [editor, setEditor] = useState<BlockNoteEditorClass | null>(null);
+  
+  // Track if the user is actively typing (to prevent content sync feedback loop)
+  const isUserTypingRef = useRef(false);
+  const contentSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // エディタ初期化
   useEffect(() => {
@@ -48,29 +52,50 @@ export function BlockNoteEditor({
     setEditor(newEditor);
   }, []);
 
+  // Memoize the change handler to prevent recreation
+  const handleEditorChange = useCallback(() => {
+    if (!editor) return;
+    
+    // Mark that user is actively typing
+    isUserTypingRef.current = true;
+    
+    // Clear existing timeout
+    if (contentSyncTimeoutRef.current) {
+      clearTimeout(contentSyncTimeoutRef.current);
+    }
+    
+    const blocks = editor.document;
+    // エディタのビルトインブロック->HTML変換を使用
+    const html = editor.blocksToHTMLLossy(blocks);
+    onEditingPageContentChange(html);
+    onPageContentChange(html);
+    
+    // Reset typing flag after a short delay (allows IME composition to complete)
+    contentSyncTimeoutRef.current = setTimeout(() => {
+      isUserTypingRef.current = false;
+    }, 500);
+  }, [editor, onEditingPageContentChange, onPageContentChange]);
+
   // エディタの変更を監視
   useEffect(() => {
     if (!editor) return;
 
-    const handleChange = () => {
-      if (!editor) return;
-      const blocks = editor.document;
-      // エディタのビルトインブロック->HTML変換を使用
-      const html = editor.blocksToHTMLLossy(blocks);
-      onEditingPageContentChange(html);
-      onPageContentChange(html);
-    };
-
-    editor.onChange(handleChange);
+    editor.onChange(handleEditorChange);
 
     return () => {
-      // クリーンアップ
+      // Clean up timeout on unmount
+      if (contentSyncTimeoutRef.current) {
+        clearTimeout(contentSyncTimeoutRef.current);
+      }
     };
-  }, [editor, onEditingPageContentChange, onPageContentChange]);
+  }, [editor, handleEditorChange]);
 
-  // コンテンツ更新
+  // コンテンツ更新 - only when not actively typing
   useEffect(() => {
     if (!editor || editingPageContent === undefined) return;
+    
+    // Skip content sync if user is actively typing (prevents IME interruption)
+    if (isUserTypingRef.current) return;
     
     try {
       // エディタのビルトインHTML->ブロック変換を使用
