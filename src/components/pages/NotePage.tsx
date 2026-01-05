@@ -645,6 +645,10 @@ export function NotePage() {
   const handlePageContentChange = useCallback((content: string) => {
     if (!selectedPage || !spaceId) return;
 
+    // Capture current IDs to avoid closure issues
+    const currentPageId = selectedPage.id;
+    const currentSpaceId = spaceId;
+
     // Clear existing timer
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -655,9 +659,9 @@ export function NotePage() {
       const updateData: DocumentUpdateFields = {
         body: { content },
       };
-      updateDocumentMutation.mutate({ spaceId, documentId: selectedPage.id, data: updateData }, {
+      updateDocumentMutation.mutate({ spaceId: currentSpaceId, documentId: currentPageId, data: updateData }, {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+          queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(currentSpaceId) });
         },
       });
     }, 1000);

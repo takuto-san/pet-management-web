@@ -50,11 +50,6 @@ export function BlockNoteEditor({
   useEffect(() => {
     const newEditor = BlockNoteEditorClass.create();
     setEditor(newEditor);
-    
-    return () => {
-      // Clean up editor instance on unmount
-      newEditor._tiptapEditor.destroy();
-    };
   }, []);
 
   // Memoize the change handler to prevent recreation
