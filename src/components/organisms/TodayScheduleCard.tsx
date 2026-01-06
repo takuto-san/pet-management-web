@@ -22,19 +22,12 @@ export function TodayScheduleCard({ tasks, onToggleTask }: TodayScheduleCardProp
               key={task.id}
               className="flex items-center space-x-3 p-3 hover:bg-gray-700 rounded-lg border border-gray-600 transition-colors duration-200"
             >
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => onToggleTask?.(task.id)}
-                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                {task.completed && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                  </div>
-                )}
-              </div>
+              <input
+                type="checkbox"
+                checked={task.completed}
+                onChange={() => onToggleTask?.(task.id)}
+                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+              />
               <div className="flex-1">
                 <p className={`text-sm font-medium ${task.completed ? "line-through text-gray-500" : "text-white"}`}>
                   {task.name}

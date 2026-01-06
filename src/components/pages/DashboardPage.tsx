@@ -127,25 +127,27 @@ export function DashboardPage() {
   });
 
   // 結果をマージ
-  const visitsData = {
-    content: visitsQueries.flatMap(query => query.data?.content || []),
-  };
+  const visits = useMemo(() => {
+    return visitsQueries.flatMap(query => query.data?.content || []);
+  }, [petsData?.content]);
 
-  const visits = visitsData?.content || [];
+  const [todayTasks, setTodayTasks] = useState<Task[]>([]);
 
-  const todayTasks: Task[] = useMemo(() => {
+  useEffect(() => {
     const today = new Date();
     const targetDateStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const todayVisits = visits.filter(visit =>
       visit.visitedOn && visit.visitedOn.startsWith(targetDateStr)
     );
 
-    return todayVisits.map(visit => ({
+    const tasks = todayVisits.map(visit => ({
       id: visit.id,
       name: formatTitle(visit.reason),
       time: visit.visitedOn ? new Date(visit.visitedOn).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '08:00',
       completed: false, // 仮に未完了とする
     }));
+
+    setTodayTasks(tasks);
   }, [visits]);
 
   const monthlyEvents: MonthlyEvent[] = useMemo(() => {
@@ -180,6 +182,11 @@ export function DashboardPage() {
   }, [visits]);
 
   const toggleTask = (id: string) => {
+    setTodayTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
   };
 
   if (isLoadingUser || (currentUser && isPetsLoading)) {
