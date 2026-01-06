@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { BlockNoteEditor as BlockNoteEditorClass } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
+import { Box } from "@mui/material";
+import { InsertDriveFile as InsertDriveFileIcon, Description as DescriptionIcon } from "@mui/icons-material";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/shadcn/style.css";
 
@@ -125,8 +127,11 @@ export function BlockNoteEditor({
 
   // ページ選択時：エディタ
   if (selectedPage) {
+    const isContentEmpty = !selectedPage.content || selectedPage.content.trim() === '';
+    const Icon = isContentEmpty ? InsertDriveFileIcon : DescriptionIcon;
+
     return (
-      <div className="mx-auto max-w-3xl w-full px-12 pt-24 bg-background min-h-[80vh]">
+      <Box sx={{ mx: "auto", maxWidth: "3xl", width: "100%", px: 12, pt: 4, bgcolor: "background.paper", minHeight: "80vh" }}>
         {editingPageTitle ? (
           <input
             type="text"
@@ -147,9 +152,10 @@ export function BlockNoteEditor({
           />
         ) : (
           <h1
-            className="text-5xl font-bold text-foreground mb-8 cursor-pointer"
+            className="text-5xl font-bold text-foreground mb-8 cursor-pointer flex items-center"
             onClick={onPageTitleClick}
           >
+            <Icon sx={{ mr: 2, fontSize: "2.5rem" }} />
             {selectedPage.title || "無題"}
           </h1>
         )}
@@ -162,7 +168,7 @@ export function BlockNoteEditor({
             <div className="text-foreground">Loading editor...</div>
           )}
         </div>
-      </div>
+      </Box>
     );
   }
 

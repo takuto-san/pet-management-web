@@ -33,7 +33,7 @@ import {
   ListItemIcon,
   InputAdornment,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
 
 const BlockNoteEditor = dynamic(() => import("@/lib/editor/BlockNoteEditor").then(mod => mod.BlockNoteEditor), {
   ssr: false,
@@ -78,39 +78,43 @@ const darkTheme = createTheme({
   },
 });
 
-function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
-  return (
-    <Box sx={{ p: 2, display: "flex", alignItems: "center", bgcolor: "background.paper" }}>
-      <IconButton onClick={onToggleSidebar}>
-        <MenuIcon />
-      </IconButton>
-    </Box>
-  );
-}
 
-function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, onSelectNote, onSelectSection, onToggleExpand, onAddSection, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingNoteName, editingSectionName, onDoubleClickNote, onDoubleClickSection, onNoteNameChange, onSectionNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onDeleteNote, onDeleteSection }: {
+
+function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, expandedSectionIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, onAddSection, onAddPage, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingPageId, editingNoteName, editingSectionName, editingPageName, onDoubleClickNote, onDoubleClickSection, onDoubleClickPage, onNoteNameChange, onSectionNameChange, onPageNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onEditingPageNameChange, onDeleteNote, onDeleteSection, onDeletePage, selectedPage }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
+  selectedPageId: string | null;
   expandedNoteIds: string[];
+  expandedSectionIds: string[];
   onSelectNote: (id: string) => void;
   onSelectSection: (noteId: string, sectionId: string) => void;
+  onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
   onToggleExpand: (id: string) => void;
+  onToggleSection: (sectionId: string) => void;
   onAddSection: (noteId: string) => void;
+  onAddPage: (sectionId: string) => void;
   onAddNote: () => void;
   isSidebarOpen: boolean;
   editingNoteId: string | null;
   editingSectionId: string | null;
+  editingPageId: string | null;
   editingNoteName: string;
   editingSectionName: string;
+  editingPageName: string;
   onDoubleClickNote: (id: string) => void;
   onDoubleClickSection: (noteId: string, sectionId: string) => void;
+  onDoubleClickPage: (noteId: string, sectionId: string, pageId: string) => void;
   onNoteNameChange: (noteId: string, newName: string) => void;
   onSectionNameChange: (noteId: string, sectionId: string, newTitle: string) => void;
+  onPageNameChange: (noteId: string, sectionId: string, pageId: string, newTitle: string) => void;
   onEditingNoteNameChange: (name: string) => void;
   onEditingSectionNameChange: (name: string) => void;
+  onEditingPageNameChange: (name: string) => void;
   onDeleteNote: (noteId: string) => void;
   onDeleteSection: (noteId: string, sectionId: string) => void;
+  onDeletePage: (noteId: string, sectionId: string, pageId: string) => void;
+  selectedPage: { id: string; title: string; content: string } | null;
 }) {
   return (
     <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
@@ -207,75 +211,185 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
                     <List sx={{ pl: 4 }}>
                       {note.sections.map((section) => {
                         const isSectionSelected = selectedSectionId === section.id;
+                        const isSectionExpanded = expandedSectionIds.includes(section.id);
                         return (
-                          <ListItem key={section.id} disablePadding>
-                            <ListItemButton
-                              selected={isSectionSelected}
-                              onClick={() => onSelectSection(note.id, section.id)}
-                              onDoubleClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onDoubleClickSection(note.id, section.id);
-                              }}
-                              className="group"
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                py: 0.5,
-                                userSelect: "none",
-                                "&.Mui-selected": {
-                                  bgcolor: "grey.800",
-                                  borderRadius: 1,
-                                  px: 1,
-                                  "&:hover": {
-                                    bgcolor: "grey.700",
+                          <Box key={section.id}>
+                            <ListItem disablePadding>
+                              <ListItemButton
+                                selected={isSectionSelected}
+                                onClick={() => onSelectSection(note.id, section.id)}
+                                onDoubleClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onDoubleClickSection(note.id, section.id);
+                                }}
+                                className="group"
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  py: 0.5,
+                                  userSelect: "none",
+                                  "&.Mui-selected": {
+                                    bgcolor: "grey.800",
+                                    borderRadius: 1,
+                                    px: 1,
+                                    "&:hover": {
+                                      bgcolor: "grey.700",
+                                    },
                                   },
-                                },
-                              }}
-                            >
-                              <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-                                {editingSectionId === section.id ? (
-                                  <TextField
-                                    autoFocus
-                                    value={editingSectionName}
-                                    onChange={(e) => onEditingSectionNameChange(e.target.value)}
-                                    onBlur={() => onSectionNameChange(note.id, section.id, editingSectionName)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        onSectionNameChange(note.id, section.id, editingSectionName);
-                                      }
-                                    }}
-                                    onFocus={(e) => e.target.select()}
-                                    fullWidth
-                                    variant="standard"
-                                    InputProps={{
-                                      disableUnderline: true,
-                                    }}
+                                }}
+                              >
+                                <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                                  <ChevronRightIcon
                                     sx={{
-                                      "& .MuiInputBase-input": {
-                                        color: "text.primary",
-                                        fontSize: "0.9rem",
-                                      },
+                                      transform: isSectionExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                                      transition: "transform 0.2s",
+                                      mr: 1,
+                                      cursor: "pointer",
+                                      fontSize: "1.2rem",
+                                      color: "text.secondary",
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onToggleSection(section.id);
                                     }}
                                   />
-                                ) : (
-                                  <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                                  {editingSectionId === section.id ? (
+                                    <TextField
+                                      autoFocus
+                                      value={editingSectionName}
+                                      onChange={(e) => onEditingSectionNameChange(e.target.value)}
+                                      onBlur={() => onSectionNameChange(note.id, section.id, editingSectionName)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          onSectionNameChange(note.id, section.id, editingSectionName);
+                                        }
+                                      }}
+                                      onFocus={(e) => e.target.select()}
+                                      fullWidth
+                                      variant="standard"
+                                      InputProps={{
+                                        disableUnderline: true,
+                                      }}
+                                      sx={{
+                                        "& .MuiInputBase-input": {
+                                          color: "text.primary",
+                                          fontSize: "0.9rem",
+                                        },
+                                      }}
+                                    />
+                                  ) : (
+                                    <ListItemText primary={section.title} sx={{ fontSize: "0.9rem" }} />
+                                  )}
+                                </Box>
+                                {isSectionSelected && (
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteSection(note.id, section.id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
                                 )}
-                              </Box>
-                              {isSectionSelected && (
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteSection(note.id, section.id);
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              )}
-                            </ListItemButton>
-                          </ListItem>
+                              </ListItemButton>
+                            </ListItem>
+                            {isSectionExpanded && (
+                              <List sx={{ pl: 4 }}>
+                                {section.pages.map((page) => {
+                                  const isPageSelected = selectedPageId === page.id;
+                                  const isContentEmpty = !page.content || page.content.trim() === '';
+                                  const Icon = isContentEmpty ? InsertDriveFileIcon : DescriptionIcon;
+                                  return (
+                                      <ListItem key={page.id} disablePadding>
+                                        <ListItemButton
+                                          selected={isPageSelected}
+                                          onClick={() => onSelectPage(note.id, section.id, page.id)}
+                                          onDoubleClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onDoubleClickPage(note.id, section.id, page.id);
+                                          }}
+                                          className="group"
+                                          sx={{
+                                            py: 0.25,
+                                            userSelect: "none",
+                                            "&.Mui-selected": {
+                                              bgcolor: "grey.800",
+                                              borderRadius: 1,
+                                              px: 1,
+                                              "&:hover": {
+                                                bgcolor: "grey.700",
+                                              },
+                                            },
+                                          }}
+                                        >
+                                          <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                                            <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
+                                              <Icon sx={{ fontSize: "0.8rem" }} />
+                                            </ListItemIcon>
+                                            {editingPageId === page.id ? (
+                                              <TextField
+                                                autoFocus
+                                                value={editingPageName}
+                                                onChange={(e) => onEditingPageNameChange(e.target.value)}
+                                                onBlur={() => onPageNameChange(note.id, section.id, page.id, editingPageName)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter") {
+                                                    onPageNameChange(note.id, section.id, page.id, editingPageName);
+                                                  }
+                                                }}
+                                                onFocus={(e) => e.target.select()}
+                                                fullWidth
+                                                variant="standard"
+                                                InputProps={{
+                                                  disableUnderline: true,
+                                                }}
+                                                sx={{
+                                                  "& .MuiInputBase-input": {
+                                                    color: "text.primary",
+                                                    fontSize: "0.8rem",
+                                                  },
+                                                }}
+                                              />
+                                            ) : (
+                                              <ListItemText primary={page.title} sx={{ fontSize: "0.8rem" }} />
+                                            )}
+                                          </Box>
+                                          {isPageSelected && (
+                                            <IconButton
+                                              size="small"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeletePage(note.id, section.id, page.id);
+                                              }}
+                                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                        </ListItemButton>
+                                      </ListItem>
+                                  );
+                                })}
+                                <ListItem disablePadding>
+                                  <ListItemButton
+                                    onClick={() => onAddPage(section.id)}
+                                    sx={{
+                                      py: 0.5,
+                                      display: "flex",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <CreateIcon sx={{ mr: 1, fontSize: "0.8rem", color: "text.secondary" }} />
+                                    <ListItemText primary="ページを追加" sx={{ fontSize: "0.8rem", color: "text.secondary" }} />
+                                  </ListItemButton>
+                                </ListItem>
+                              </List>
+                            )}
+                          </Box>
                         );
                       })}
                       <ListItem disablePadding>
@@ -297,7 +411,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
               );
             })}
           </List>
-          <Box sx={{ p: 1, borderTop: 1, borderColor: "divider" }}>
+          <Box sx={{ p: 1 }}>
             <Button
               startIcon={<CreateIcon />}
               fullWidth
@@ -318,119 +432,6 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, expandedNoteIds, o
           </Box>
         </Box>
       )}
-    </Box>
-  );
-}
-
-function PageList({ selectedSection, selectedPageId, onSelectPage, selectedNoteId, editingPageId, editingPageName, onDoubleClickPage, onPageNameChange, onEditingPageNameChange, onAddPage, onDeletePage }: {
-  selectedSection: Section | null;
-  selectedPageId: string | null;
-  onSelectPage: (noteId: string, sectionId: string, pageId: string) => void;
-  selectedNoteId: string;
-  editingPageId: string | null;
-  editingPageName: string;
-  onDoubleClickPage: (noteId: string, sectionId: string, pageId: string) => void;
-  onPageNameChange: (noteId: string, sectionId: string, pageId: string, newTitle: string) => void;
-  onEditingPageNameChange: (name: string) => void;
-  onAddPage: (sectionId: string) => void;
-  onDeletePage: (noteId: string, sectionId: string, pageId: string) => void;
-}) {
-  if (!selectedSection) return null;
-
-  return (
-    <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ p: 1 }}>
-        <Button
-          startIcon={<CreateIcon />}
-          fullWidth
-          variant="outlined"
-          onClick={() => onAddPage(selectedSection.id)}
-          sx={{
-            justifyContent: "flex-start",
-            textTransform: "none",
-            color: "text.primary",
-            borderColor: "divider",
-            "&:hover": {
-              borderColor: "text.secondary",
-            },
-          }}
-        >
-          ページを追加
-        </Button>
-      </Box>
-      <List sx={{ flexGrow: 1, overflow: "auto", p: 1 }}>
-        {selectedSection.pages.map((page) => {
-          const isPageSelected = selectedPageId === page.id;
-          return (
-            <ListItem key={page.id} disablePadding>
-              <ListItemButton
-                selected={isPageSelected}
-                onClick={() => onSelectPage(selectedNoteId, selectedSection.id, page.id)}
-                onDoubleClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDoubleClickPage(selectedNoteId, selectedSection.id, page.id);
-                }}
-                className="group"
-                sx={{
-                  py: 0.5,
-                  userSelect: "none",
-                  "&.Mui-selected": {
-                    bgcolor: "grey.800",
-                    borderRadius: 1,
-                    px: 1,
-                    "&:hover": {
-                      bgcolor: "grey.700",
-                    },
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-                  {editingPageId === page.id ? (
-                    <TextField
-                      autoFocus
-                      value={editingPageName}
-                      onChange={(e) => onEditingPageNameChange(e.target.value)}
-                      onBlur={() => onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          onPageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName);
-                        }
-                      }}
-                      onFocus={(e) => e.target.select()}
-                      fullWidth
-                      variant="standard"
-                      InputProps={{
-                        disableUnderline: true,
-                      }}
-                      sx={{
-                        "& .MuiInputBase-input": {
-                          color: "text.primary",
-                          fontSize: "0.9rem",
-                        },
-                      }}
-                    />
-                  ) : (
-                    <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
-                  )}
-                </Box>
-                {isPageSelected && (
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeletePage(selectedNoteId, selectedSection.id, page.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
     </Box>
   );
 }
@@ -526,12 +527,7 @@ export function NotePage() {
   const [createSpaceName, setCreateSpaceName] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'note' | 'section' | 'page'; id: string; name: string } | null>(null);
-  const [isAddSectionDialogOpen, setIsAddSectionDialogOpen] = useState(false);
-  const [addSectionName, setAddSectionName] = useState("");
-  const [isAddPageDialogOpen, setIsAddPageDialogOpen] = useState(false);
-  const [addPageName, setAddPageName] = useState("");
-  const [addSectionNoteId, setAddSectionNoteId] = useState<string>("");
-  const [addPageSectionId, setAddPageSectionId] = useState<string>("");
+
 
   const { data: spaces } = useListSpaces();
   const spaceId = spaces?.[0]?.id;
@@ -627,9 +623,27 @@ export function NotePage() {
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAddPage = (sectionId: string) => {
-    setAddPageSectionId(sectionId);
-    setAddPageName("");
-    setIsAddPageDialogOpen(true);
+    if (!spaceId) return;
+
+    const newDoc: DocumentFields = {
+      title: "新しいページ",
+      parentDocId: sectionId,
+      body: { content: "" },
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: (newPage) => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        // 新しく作成したページを選択して編集モードにする
+        const note = notes.find(n => n.sections.some(s => s.id === sectionId));
+        if (note) {
+          setSelectedNoteId(note.id);
+          setSelectedSectionId(sectionId);
+          setSelectedPageId(newPage.id);
+          setEditingPageId(newPage.id);
+          setEditingPageName("新しいページ");
+        }
+      },
+    });
   };
 
   const selectedNote = useMemo(() => notes.find((n) => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
@@ -708,15 +722,7 @@ export function NotePage() {
     }
   }, [selectedPage]);
 
-  const handleToggleSidebar = () => {
-    const newIsSidebarOpen = !isSidebarOpen;
-    setIsSidebarOpen(newIsSidebarOpen);
-    // サイドバーを閉じる場合、タブ内のコンテンツも全て閉じる
-    if (!newIsSidebarOpen) {
-      setSelectedSectionId(null);
-      setSelectedPageId(null);
-    }
-  };
+
 
   const handleSelectNote = (id: string) => {
     setSelectedNoteId(id);
@@ -753,9 +759,25 @@ export function NotePage() {
   };
 
   const handleAddSection = (noteId: string) => {
-    setAddSectionNoteId(noteId);
-    setAddSectionName("");
-    setIsAddSectionDialogOpen(true);
+    if (!spaceId) return;
+
+    const newDoc: DocumentFields = {
+      title: "新しいセクション",
+      parentDocId: noteId,
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: (newSection) => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        // 新しく作成したセクションを選択して編集モードにする
+        setSelectedNoteId(noteId);
+        setSelectedSectionId(newSection.id);
+        setSelectedPageId(null);
+        setEditingSectionId(newSection.id);
+        setEditingSectionName("新しいセクション");
+        // セクションが作成されたら自動的に展開する
+        setExpandedSectionIds((prev) => [...prev, newSection.id]);
+      },
+    });
   };
 
   const handleAddNote = () => {
@@ -1001,50 +1023,7 @@ export function NotePage() {
     }
   };
 
-  const handleCreateSection = () => {
-    if (!addSectionName.trim() || !spaceId) {
-      setIsAddSectionDialogOpen(false);
-      return;
-    }
-    setIsAddSectionDialogOpen(false);
-    const newDoc: DocumentFields = {
-      title: addSectionName,
-      parentDocId: addSectionNoteId,
-    };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-        setAddSectionName("");
-        setAddSectionNoteId("");
-      },
-      onError: () => {
-        setIsAddSectionDialogOpen(true); // エラー時はダイアログを再開
-      },
-    });
-  };
 
-  const handleCreatePage = () => {
-    if (!addPageName.trim() || !spaceId) {
-      setIsAddPageDialogOpen(false);
-      return;
-    }
-    setIsAddPageDialogOpen(false);
-    const newDoc: DocumentFields = {
-      title: addPageName,
-      parentDocId: addPageSectionId,
-      body: { content: "" },
-    };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-        setAddPageName("");
-        setAddPageSectionId("");
-      },
-      onError: () => {
-        setIsAddPageDialogOpen(true); // エラー時はダイアログを再開
-      },
-    });
-  };
 
 
 
@@ -1052,7 +1031,6 @@ export function NotePage() {
     <ThemeProvider theme={darkTheme}>
       <LayoutTemplate
         header={<Header />}
-        hamburgerBar={<HamburgerBar onToggleSidebar={handleToggleSidebar} />}
         footer={<Footer />}
         isSidebarOpen={isSidebarOpen}
         sidebar={
@@ -1060,55 +1038,42 @@ export function NotePage() {
             notes={notes}
             selectedNoteId={selectedNoteId}
             selectedSectionId={selectedSectionId}
+            selectedPageId={selectedPageId}
             expandedNoteIds={expandedNoteIds}
+            expandedSectionIds={expandedSectionIds}
             onSelectNote={handleSelectNote}
             onSelectSection={handleSelectSection}
+            onSelectPage={handleSelectPage}
             onToggleExpand={handleToggleExpand}
+            onToggleSection={handleToggleSection}
             onAddSection={handleAddSection}
+            onAddPage={handleAddPage}
             onAddNote={handleAddNote}
             isSidebarOpen={isSidebarOpen}
             editingNoteId={editingNoteId}
             editingSectionId={editingSectionId}
+            editingPageId={editingPageId}
             editingNoteName={editingNoteName}
             editingSectionName={editingSectionName}
+            editingPageName={editingPageName}
             onDoubleClickNote={handleDoubleClickNote}
             onDoubleClickSection={handleDoubleClickSection}
+            onDoubleClickPage={handleDoubleClickPage}
             onNoteNameChange={handleNoteNameChange}
             onSectionNameChange={handleSectionNameChange}
+            onPageNameChange={handlePageNameChange}
             onEditingNoteNameChange={setEditingNoteName}
             onEditingSectionNameChange={setEditingSectionName}
+            onEditingPageNameChange={setEditingPageName}
             onDeleteNote={handleDeleteNote}
             onDeleteSection={handleDeleteSection}
+            onDeletePage={handleDeletePage}
+            selectedPage={selectedPage}
           />
         }
-        pageList={
-          selectedSection ? (
-            <PageList
-              selectedSection={selectedSection}
-              selectedPageId={selectedPageId}
-              onSelectPage={handleSelectPage}
-              selectedNoteId={selectedNoteId}
-              editingPageId={editingPageId}
-              editingPageName={editingPageName}
-              onDoubleClickPage={handleDoubleClickPage}
-              onPageNameChange={handlePageNameChange}
-              onEditingPageNameChange={setEditingPageName}
-              onAddPage={handleAddPage}
-              onDeletePage={handleDeletePage}
-            />
-          ) : null
-        }
+        pageList={null}
         main={
-          selectedSection && !selectedPage ? (
-            // セクションが選択されているがページが選択されていない場合
-            <div className="h-full bg-background flex items-center justify-center">
-              <div className="text-foreground text-center">
-                <h2 className="text-2xl font-bold mb-4">{selectedSection.title}</h2>
-                <p className="text-lg mb-2">ページを選択してください</p>
-                <p className="text-sm text-muted-foreground">このセクションからページを選択すると、エディタが表示されます</p>
-              </div>
-            </div>
-          ) : (
+          selectedPage ? (
             <BlockNoteEditor
               key={selectedPage?.id}
               selectedPage={selectedPage}
@@ -1122,6 +1087,8 @@ export function NotePage() {
               onEditingPageContentChange={handleEditingPageContentChange}
               onPageContentChange={handlePageContentChange}
             />
+          ) : (
+            <Box sx={{ height: "100%", bgcolor: "background.paper" }}></Box>
           )
         }
       />
@@ -1236,52 +1203,7 @@ export function NotePage() {
           </Button>
         </DialogActions>
       </Dialog>
-      {/* セクション追加ダイアログ */}
-      <Dialog open={isAddSectionDialogOpen} onClose={() => setIsAddSectionDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>セクションを追加</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="セクション名"
-            value={addSectionName}
-            onChange={(e) => setAddSectionName(e.target.value)}
-            sx={{ mt: 2 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreateSection();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsAddSectionDialogOpen(false)}>キャンセル</Button>
-          <Button onClick={handleCreateSection} variant="contained">追加</Button>
-        </DialogActions>
-      </Dialog>
-      {/* ページ追加ダイアログ */}
-      <Dialog open={isAddPageDialogOpen} onClose={() => setIsAddPageDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>ページを追加</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="ページ名"
-            value={addPageName}
-            onChange={(e) => setAddPageName(e.target.value)}
-            sx={{ mt: 2 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreatePage();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsAddPageDialogOpen(false)}>キャンセル</Button>
-          <Button onClick={handleCreatePage} variant="contained">追加</Button>
-        </DialogActions>
-      </Dialog>
+
     </ThemeProvider>
   );
 }
