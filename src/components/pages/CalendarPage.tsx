@@ -12,22 +12,8 @@ import { useListPetsByUser } from "@/api/generated/pet/pet";
 import { useListVisitPrescriptions } from "@/api/generated/visit-prescription/visit-prescription";
 import { listVisits } from "@/api/generated/visit/visit";
 import { Info, Pets, Check, CalendarToday, Add, Close, Edit, Delete } from '@mui/icons-material';
-import { Fab, Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions, ThemeProvider, createTheme } from '@mui/material';
+import { Drawer, Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, IconButton, Chip, Grid, RadioGroup, FormControlLabel, Radio, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-
-// ダークテーマ
-const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-    background: {
-      default: "#121212",
-      paper: "#1e1e1e",
-    },
-    primary: {
-      main: "#90caf9",
-    },
-  },
-});
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useAddVisit, useUpdateVisit, useDeleteVisit } from "@/api/generated/visit/visit";
@@ -523,16 +509,15 @@ export function CalendarPage() {
   };
 
   return (
-    <ThemeProvider theme={darkTheme}>
-      <LayoutTemplate
-        header={<Header />}
-        footer={<Footer />}
-        main={
-        <div className="p-4 relative">
-          <h1 className="text-xl font-bold mb-4">カレンダー</h1>
+    <LayoutTemplate
+      header={<Header />}
+      footer={<Footer />}
+      main={
+      <div className="p-4 relative">
+        <h1 className="text-xl font-bold mb-4 text-foreground">カレンダー</h1>
 
-          {/* カレンダー部分 */}
-          <div className="bg-[#1e1e1e] rounded-lg shadow p-4 mb-6">
+        {/* カレンダー部分 */}
+        <div className="bg-card rounded-lg shadow p-4 mb-6 border">
 
             {/* ナビゲーション */}
             <div className="grid grid-cols-3 items-center gap-4 mb-4">
@@ -557,7 +542,7 @@ export function CalendarPage() {
                 >
                   ‹
                 </button>
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold text-foreground">
                   {viewMode === 'monthly'
                     ? `${currentMonth.getMonth() + 1}月`
                     : `${startDateWeek.getMonth() + 1}月`
@@ -575,7 +560,7 @@ export function CalendarPage() {
               <div className="justify-self-end flex items-center space-x-2">
                 <button
                   onClick={() => setViewMode('monthly')}
-                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'monthly' ? 'text-green-600' : 'text-gray-400'}`}
+                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'monthly' ? 'text-accent' : 'text-muted-foreground'}`}
                   title="月間表示"
                 >
                   <div className="relative w-4 h-4 border border-current rounded">
@@ -586,7 +571,7 @@ export function CalendarPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('weekly')}
-                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'weekly' ? 'text-green-600' : 'text-gray-400'}`}
+                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'weekly' ? 'text-accent' : 'text-muted-foreground'}`}
                   title="週間表示"
                 >
                   <div className="flex flex-col gap-px">
@@ -597,7 +582,7 @@ export function CalendarPage() {
                 </button>
                 <button
                   onClick={goToToday}
-                  className="w-6 h-6 flex items-center justify-center p-2 text-blue-400 hover:bg-gray-800 rounded"
+                  className="w-6 h-6 flex items-center justify-center p-2 text-accent hover:bg-primary/20 rounded"
                 >
                   <CalendarToday className="w-4 h-4" />
                 </button>
@@ -627,7 +612,7 @@ export function CalendarPage() {
                   <div
                     key={index}
                     className={`relative text-center py-3 px-2 text-sm rounded cursor-pointer ${
-                      isSelectedDate(date) ? 'bg-gray-700' : ''
+                      isSelectedDate(date) ? 'bg-primary/40' : ''
                     } ${
                       isCurrentPeriod(date) ? 'text-white' : 'text-gray-500'
                     }`}
@@ -660,10 +645,20 @@ export function CalendarPage() {
             </div>
           </div>
 
+          {/* タスクを追加ボタン */}
+          <div className="mb-6">
+            <button
+              onClick={handleFabClick}
+              className="w-full bg-primary/60 hover:bg-primary/80 text-primary-foreground font-medium py-3 px-4 rounded-lg border border-border transition-colors duration-200"
+            >
+              タスクを追加
+            </button>
+          </div>
+
           {/* カードリスト部分 */}
-          <div className="bg-[#1e1e1e] rounded-lg shadow p-4">
+          <div className="bg-card rounded-lg shadow p-4 border">
             {/* 日付ヘッダー */}
-            <h3 className="text-lg font-semibold mb-4 text-white">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">
               {selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
             </h3>
 
@@ -676,15 +671,15 @@ export function CalendarPage() {
                     setSelectedCard(card);
                     setIsSidebarOpen(true);
                   }}
-                  className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex justify-between items-start cursor-pointer hover:bg-gray-700"
+                  className="bg-card border border-border rounded-lg p-4 flex justify-between items-start cursor-pointer hover:bg-primary/60"
                 >
                   <div className="flex flex-col gap-2">
-                    <div className="font-bold text-white">{card.time} - {card.medicine}</div>
-                    <div className="flex items-center gap-2 text-sm text-gray-100">
+                    <div className="font-bold text-foreground">{card.time} - {card.medicine}</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Info className="w-4 h-4" />
                       {card.dosage}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-100">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Pets className="w-4 h-4" />
                       {card.petName}
                     </div>
@@ -705,20 +700,7 @@ export function CalendarPage() {
             </div>
           </div>
 
-          {/* FAB */}
-          <Fab
-            color="primary"
-            aria-label="記録を追加"
-            onClick={handleFabClick}
-            sx={{
-              position: 'fixed',
-              bottom: 80,
-              right: 16,
-              zIndex: 1000,
-            }}
-          >
-            <Add />
-          </Fab>
+
 
           {/* 詳細表示サイドバー */}
           <Drawer
@@ -1282,23 +1264,23 @@ export function CalendarPage() {
                   InputLabelProps={{ shrink: true }}
                   sx={{
                     '& .MuiInputBase-root': {
-                      backgroundColor: '#2D2D2D',
-                      color: '#FFFFFF',
+                      backgroundColor: 'hsl(var(--card))',
+                      color: 'hsl(var(--card-foreground))',
                       '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#555555',
+                        borderColor: 'hsl(var(--border))',
                       },
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#777777',
+                        borderColor: 'hsl(var(--ring))',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#90caf9',
+                        borderColor: 'hsl(var(--ring))',
                       },
                     },
                     '& .MuiInputLabel-root': {
-                      color: '#BBBBBB',
+                      color: 'hsl(var(--muted-foreground))',
                     },
                     '& .MuiInputBase-input::placeholder': {
-                      color: '#BBBBBB',
+                      color: 'hsl(var(--muted-foreground))',
                     },
                   }}
                 />
@@ -2129,6 +2111,5 @@ export function CalendarPage() {
         </div>
       }
     />
-    </ThemeProvider>
   );
 }
