@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Box } from "@mui/material";
+import { Box, Typography, Avatar, Paper, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
-import { Tabs, Tab } from "@mui/material";
+import { LogoIcon } from "@/components/molecules/LogoIcon";
 import type { RootState } from "@/lib/stores/store";
 
 interface TabPanelProps {
@@ -34,8 +34,7 @@ function TabPanel(props: TabPanelProps) {
 
 export function SettingsPage() {
   const router = useRouter();
-  const [value, setValue] = useState(0);
-
+  const [selectedSetting, setSelectedSetting] = useState('profile');
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
     isLoadingUser: state.user.isLoadingUser,
@@ -47,36 +46,138 @@ export function SettingsPage() {
     }
   }, [currentUser, isLoadingUser, router]);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
   if (isLoadingUser || !currentUser) {
     return null;
   }
+
+  const settings = [
+    { id: 'profile', label: 'プロフィール' },
+    { id: 'billing', label: '請求とお支払い' },
+    { id: 'advanced', label: '詳細設定' },
+  ];
+
+  const renderContent = () => {
+    switch (selectedSetting) {
+      case 'profile':
+        return (
+          <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'white' }}>
+              プロフィール
+            </Typography>
+            <Paper sx={{ p: 3, mt: 3, bgcolor: '#2D2631', borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, alignItems: 'center' }}>
+                <Box sx={{ flex: { xs: 1, sm: '0 0 33%' }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Avatar
+                    sx={{ width: 100, height: 100, bgcolor: '#333333', fontSize: '2rem' }}
+                  >
+                    {currentUser.firstName?.[0] || currentUser.username?.[0] || 'U'}
+                  </Avatar>
+                  <Typography variant="h6" sx={{ mt: 2, color: 'white', fontWeight: 'bold' }}>
+                    {currentUser.firstName && currentUser.lastName
+                      ? `${currentUser.firstName} ${currentUser.lastName}`
+                      : currentUser.username || 'ユーザー'}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ color: '#A0A0A0' }}>ユーザー名</Typography>
+                    <Typography variant="body1" sx={{ color: 'white' }}>
+                      {currentUser.username || '未設定'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ color: '#A0A0A0' }}>メールアドレス</Typography>
+                    <Typography variant="body1" sx={{ color: 'white' }}>
+                      {currentUser.email || '未設定'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ color: '#A0A0A0' }}>名前</Typography>
+                    <Typography variant="body1" sx={{ color: 'white' }}>
+                      {currentUser.firstName && currentUser.lastName
+                        ? `${currentUser.firstName} ${currentUser.lastName}`
+                        : '未設定'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ color: '#A0A0A0' }}>アカウント作成日</Typography>
+                    <Typography variant="body1" sx={{ color: 'white' }}>
+                      {currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('ja-JP') : '未設定'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Paper>
+          </Box>
+        );
+      case 'billing':
+        return (
+          <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'white' }}>
+              請求とお支払い
+            </Typography>
+            <Paper sx={{ p: 3, mt: 3, bgcolor: '#2D2631', borderRadius: 2 }}>
+              <Typography sx={{ color: 'white' }}>
+                請求とお支払いの設定はここに表示されます。
+              </Typography>
+            </Paper>
+          </Box>
+        );
+      case 'advanced':
+        return (
+          <Box sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'white' }}>
+              詳細設定
+            </Typography>
+            <Paper sx={{ p: 3, mt: 3, bgcolor: '#2D2631', borderRadius: 2 }}>
+              <Typography sx={{ color: 'white' }}>
+                詳細設定はここに表示されます。
+              </Typography>
+            </Paper>
+          </Box>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <LayoutTemplate
       header={<Header />}
       footer={<Footer />}
-      main={
-        <div className="p-4">
-          <h1 className="text-xl font-bold">設定</h1>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs value={value} onChange={handleChange} aria-label="setting tabs">
-              <Tab label="アカウント" id="setting-tab-0" aria-controls="setting-tabpanel-0" />
-              <Tab label="プロフィール" id="setting-tab-1" aria-controls="setting-tabpanel-1" />
-            </Tabs>
-          </Box>
-          <TabPanel value={value} index={0}>
-            <p className="text-muted-foreground mt-2">ここに設定を表示します。</p>
-          </TabPanel>
-          <TabPanel value={value} index={1}>
-            <h1 className="text-xl font-bold">プロフィール</h1>
-            <p className="text-muted-foreground mt-2">ここにプロフィール設定を表示します。</p>
-          </TabPanel>
-        </div>
+      sidebar={
+        <Box sx={{ height: "100%", bgcolor: "#2D2631", p: 2 }}>
+          <Typography variant="h6" sx={{ color: 'white', mb: 2, fontWeight: 'bold' }}>
+            設定
+          </Typography>
+          <List>
+            {settings.map((setting) => (
+              <ListItem key={setting.id} disablePadding>
+                <ListItemButton
+                  selected={selectedSetting === setting.id}
+                  onClick={() => setSelectedSetting(setting.id)}
+                  sx={{
+                    "&.Mui-selected": {
+                      bgcolor: "rgba(162, 29, 50, 0.2)",
+                      borderLeft: "4px solid #A21D32",
+                      borderRadius: 1,
+                      "&:hover": {
+                        bgcolor: "rgba(162, 29, 50, 0.3)",
+                      },
+                    },
+                    "&:hover": {
+                      color: "#D84C7A",
+                    },
+                  }}
+                >
+                  <ListItemText primary={setting.label} sx={{ color: 'white' }} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
       }
+      main={renderContent()}
     />
   );
 }
