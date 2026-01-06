@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/stores/store";
+import type { Task, MonthlyEvent } from "@/types/dashboard";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
+import { PetProfileCard } from "@/components/organisms/PetProfileCard";
+import { TodayScheduleCard } from "@/components/organisms/TodayScheduleCard";
+import { MonthlyScheduleCard } from "@/components/organisms/MonthlyScheduleCard";
+import { WeightTrendsCard } from "@/components/organisms/WeightTrendsCard";
+import { ClinicVisitsCard } from "@/components/organisms/ClinicVisitsCard";
+import { VaccinationsCard } from "@/components/organisms/VaccinationsCard";
 import { useListPets } from "@/api/generated/pet/pet";
-import AddIcon from "@mui/icons-material/Add";
-
-interface Task {
-  id: string;
-  name: string;
-  completed: boolean;
-  petName: string;
-  petType: string;
-}
+import { useListVisits } from "@/api/generated/visit/visit";
 
 export function DashboardPage() {
   const router = useRouter();
@@ -31,7 +30,7 @@ export function DashboardPage() {
     }
   }, [isLoadingUser, currentUser, router]);
 
-  const { data: petsData, isLoading, error } = useListPets(undefined, {
+  const { data: petsData, isLoading: isPetsLoading } = useListPets(undefined, {
     query: {
       enabled: !!currentUser && !isLoadingUser,
     },
@@ -41,20 +40,56 @@ export function DashboardPage() {
   const pets = currentUser ? allPets.filter(pet => pet.userId === currentUser.id) : [];
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets.length > 0 ? pets[0].id : null);
 
+  useEffect(() => {
+    if (pets.length > 0 && !selectedPetId) {
+      setSelectedPetId(pets[0].id);
+    }
+  }, [pets, selectedPetId]);
+
   const selectedPet = pets.find(pet => pet.id === selectedPetId);
 
-  const dummyTasks: Task[] = selectedPet ? [
-    { id: "1", name: "朝食を与える", completed: false, petName: selectedPet.name, petType: selectedPet.type },
-    { id: "2", name: "投薬をする", completed: true, petName: selectedPet.name, petType: selectedPet.type },
-    { id: "3", name: "散歩に行く", completed: false, petName: selectedPet.name, petType: selectedPet.type },
-    { id: "4", name: "水を替える", completed: true, petName: selectedPet.name, petType: selectedPet.type },
-  ] : [];
+  const { data: visitsData } = useListVisits(
+    selectedPet ? { petId: selectedPet.id } : undefined,
+    {
+      query: {
+        enabled: !!selectedPet,
+      },
+    }
+  );
+
+  const visits = visitsData?.content || [];
+
+  const dummyTasks: Task[] = useMemo(() => [
+    { id: "1", name: "朝食を与える", time: "08:00", completed: false },
+    { id: "2", name: "投薬をする", time: "09:00", completed: true },
+    { id: "3", name: "散歩に行く", time: "10:00", completed: false },
+  ], []);
+
+  const monthlyEvents: MonthlyEvent[] = useMemo(() => {
+    const events: MonthlyEvent[] = [];
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    visits.forEach(visit => {
+      if (visit.nextDueOn) {
+        const nextDate = new Date(visit.nextDueOn);
+        if (nextDate.getMonth() === currentMonth && nextDate.getFullYear() === currentYear) {
+          events.push({
+            date: nextDate.getDate(),
+            title: "次回診察予定",
+          });
+        }
+      }
+    });
+
+    return events;
+  }, [visits]);
 
   const toggleTask = (id: string) => {
-    // TODO: 状態管理で完了状態を更新
   };
 
-  if (isLoadingUser || (currentUser && isLoading)) {
+  if (isLoadingUser || (currentUser && isPetsLoading)) {
     return (
       <LayoutTemplate
         header={<Header />}
@@ -78,15 +113,12 @@ export function DashboardPage() {
       footer={<Footer />}
       main={
         <div className="p-4 space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">{currentUser.username} さんのタスク</h1>
-            <button className="fixed bottom-20 right-4 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors z-40">
-              <AddIcon className="w-6 h-6" />
-            </button>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold">{currentUser.username} さんのダッシュボード</h1>
           </div>
 
           {pets.length > 0 && (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto mb-6">
               <div className="flex space-x-4 pb-2">
                 {pets.map((pet) => (
                   <button
@@ -108,26 +140,21 @@ export function DashboardPage() {
             </div>
           )}
 
-          <div className="space-y-3">
-            {dummyTasks.map((task) => (
-              <div key={task.id} className="bg-white rounded-lg shadow p-4 border">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleTask(task.id)}
-                    className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">{task.name}</p>
-                    <p className="text-sm text-gray-500">{task.petName} ({task.petType})</p>
-                  </div>
-                </div>
+          {selectedPet ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <PetProfileCard pet={selectedPet} />
+                <TodayScheduleCard tasks={dummyTasks} onToggleTask={toggleTask} />
+                <MonthlyScheduleCard events={monthlyEvents} />
               </div>
-            ))}
-          </div>
 
-          {pets.length === 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <WeightTrendsCard visits={visits} />
+                <ClinicVisitsCard visits={visits} />
+                <VaccinationsCard visits={visits} />
+              </div>
+            </div>
+          ) : (
             <div className="text-center py-8">
               <p className="text-gray-500">まだペットが登録されていません。</p>
             </div>
