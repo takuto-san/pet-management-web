@@ -33,7 +33,7 @@ import {
   ListItemIcon,
   InputAdornment,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
+import { ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
 
 const BlockNoteEditor = dynamic(() => import("@/lib/editor/BlockNoteEditor").then(mod => mod.BlockNoteEditor), {
   ssr: false,
@@ -78,15 +78,7 @@ const darkTheme = createTheme({
   },
 });
 
-function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
-  return (
-    <Box sx={{ p: 2, display: "flex", alignItems: "center", bgcolor: "background.paper" }}>
-      <IconButton onClick={onToggleSidebar}>
-        <MenuIcon />
-      </IconButton>
-    </Box>
-  );
-}
+
 
 function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, expandedSectionIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, onAddSection, onAddPage, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingPageId, editingNoteName, editingSectionName, editingPageName, onDoubleClickNote, onDoubleClickSection, onDoubleClickPage, onNoteNameChange, onSectionNameChange, onPageNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onEditingPageNameChange, onDeleteNote, onDeleteSection, onDeletePage, selectedPage }: {
   notes: Note[];
@@ -730,15 +722,7 @@ export function NotePage() {
     }
   }, [selectedPage]);
 
-  const handleToggleSidebar = () => {
-    const newIsSidebarOpen = !isSidebarOpen;
-    setIsSidebarOpen(newIsSidebarOpen);
-    // サイドバーを閉じる場合、タブ内のコンテンツも全て閉じる
-    if (!newIsSidebarOpen) {
-      setSelectedSectionId(null);
-      setSelectedPageId(null);
-    }
-  };
+
 
   const handleSelectNote = (id: string) => {
     setSelectedNoteId(id);
@@ -1047,7 +1031,6 @@ export function NotePage() {
     <ThemeProvider theme={darkTheme}>
       <LayoutTemplate
         header={<Header />}
-        hamburgerBar={<HamburgerBar onToggleSidebar={handleToggleSidebar} />}
         footer={<Footer />}
         isSidebarOpen={isSidebarOpen}
         sidebar={
