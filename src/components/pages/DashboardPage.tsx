@@ -15,8 +15,6 @@ import { ClinicVisitsCard } from "@/components/organisms/ClinicVisitsCard";
 import { VaccinationsCard } from "@/components/organisms/VaccinationsCard";
 import { useListPets } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
-import { useListUserItems } from "@/api/generated/user-item/user-item";
-import { useListItems } from "@/api/generated/item/item";
 
 interface Task {
   id: string;
@@ -70,20 +68,7 @@ export function DashboardPage() {
     }
   );
 
-  const { data: userItemsData } = useListUserItems(
-    currentUser ? { userId: currentUser.id } : undefined,
-    {
-      query: {
-        enabled: !!currentUser,
-      },
-    }
-  );
-
-  const { data: itemsData } = useListItems();
-
   const visits = visitsData?.content || [];
-  const userItems = userItemsData?.content || [];
-  const items = itemsData?.content || [];
 
   const dummyTasks: Task[] = useMemo(() => [
     { id: "1", name: "朝食を与える", time: "08:00", completed: false },
@@ -177,7 +162,7 @@ export function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <WeightTrendsCard visits={visits} />
                 <ClinicVisitsCard visits={visits} />
-                <VaccinationsCard userItems={userItems} items={items} />
+                <VaccinationsCard visits={visits} />
               </div>
             </div>
           ) : (
