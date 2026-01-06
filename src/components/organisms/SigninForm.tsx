@@ -48,9 +48,9 @@ export function SigninForm() {
         if (data.refreshToken) {
           localStorage.setItem("refreshToken", data.refreshToken);
         }
-        dispatch(setsigninPending());
         // Invalidate the current user query to trigger re-fetch
         queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
+        // 成功メッセージを表示してから遷移（useEffectで処理）
       },
       onError: (err: any) => {
         const status = err?.response?.status;
@@ -63,6 +63,7 @@ export function SigninForm() {
           errorMessage = err.response.data.detail;
         }
         setError(errorMessage);
+        dispatch(setsigninPending(false));
       },
     },
   });
@@ -70,15 +71,19 @@ export function SigninForm() {
   const isLoading = isPending || signinPending;
 
   useEffect(() => {
-    if (currentUser) {
+    if (success && currentUser) {
       if (currentUser.username && currentUser.firstName && currentUser.lastName) {
-        // ログイン成功後はダッシュボードにリダイレクト
-        router.push(`/${currentUser.username}`);
+        // ログイン成功メッセージを表示してからリダイレクト
+        setTimeout(() => {
+          router.push(`/${currentUser.username}`);
+        }, 2000); // 2秒待ってから遷移
       } else {
-        router.push("/onboarding");
+        setTimeout(() => {
+          router.push("/onboarding");
+        }, 2000);
       }
     }
-  }, [currentUser, router]);
+  }, [success, currentUser, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,20 +91,24 @@ export function SigninForm() {
     setPasswordError("");
     setError("");
     setSuccess("");
+    dispatch(setsigninPending(true));
 
     if (!email) {
       setEmailError("メールアドレスを入力してください。");
+      dispatch(setsigninPending(false));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError("正しいメールアドレスを入力してください。");
+      dispatch(setsigninPending(false));
       return;
     }
 
     if (!password) {
       setPasswordError("パスワードを入力してください。");
+      dispatch(setsigninPending(false));
       return;
     }
 
@@ -151,7 +160,7 @@ export function SigninForm() {
             )}
 
             {/* Form */}
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
+            <Box sx={{ width: "100%" }}>
               <Input
                 id="email"
                 fullWidth
@@ -176,11 +185,12 @@ export function SigninForm() {
               />
 
               <Button
-                type="submit"
+                type="button"
                 fullWidth
                 variant="contained"
                 disabled={isLoading}
                 size="small"
+                onClick={handleSubmit}
                 sx={{
                   backgroundColor: '#A21D32', // 深紅色（ワインレッド）
                   color: 'white',
