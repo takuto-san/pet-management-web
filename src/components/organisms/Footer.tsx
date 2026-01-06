@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/stores/store";
 import HomeIcon from "@mui/icons-material/Home";
@@ -9,7 +10,6 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 export function Footer() {
-  const router = useRouter();
   const pathname = usePathname();
   const { currentUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
@@ -30,18 +30,18 @@ export function Footer() {
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <button
-              key={item.name}
-              onClick={() => router.push(item.href)}
-              className={`flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors ${
-                isActive
-                  ? "text-primary bg-accent"
-                  : "text-muted-foreground hover:text-primary hover:bg-accent"
-              }`}
-            >
-              <item.icon className="w-6 h-6 mb-1" />
-              {item.name}
-            </button>
+            <Link key={item.name} href={item.href} className="flex-1">
+              <button
+                className={`w-full flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors ${
+                  isActive
+                    ? "text-primary bg-accent"
+                    : "text-muted-foreground hover:text-primary hover:bg-accent"
+                }`}
+              >
+                <item.icon className="w-6 h-6 mb-1" />
+                {item.name}
+              </button>
+            </Link>
           );
         })}
       </nav>
