@@ -13,8 +13,6 @@ export function LayoutTemplate({ header, hamburgerBar, sidebar, pageList, main, 
   return (
     <div className="min-h-screen flex flex-col">
       {header && <header>{header}</header>}
-      {header && <div className="h-6 bg-[#1e1e1e]"></div>}
-      {hamburgerBar && <div className="bg-background">{hamburgerBar}</div>}
       <div className="flex flex-grow">
         {sidebar && <aside className="w-64 pb-16">{sidebar}</aside>}
         {pageList && <aside className="w-64 pb-16">{pageList}</aside>}
