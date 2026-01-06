@@ -19,44 +19,44 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
 
   return (
     <DashboardCard title="ワクチン接種記録">
-      <div className="mb-4 p-3 bg-gray-700 rounded">
-        <p className="text-sm text-white">
-          接種済み: <span className="font-bold text-green-300">{completedCount}</span>
+      <div className="mb-4 p-3 bg-card rounded">
+        <p className="text-sm text-foreground">
+          接種済み: <span className="font-bold text-primary">{completedCount}</span>
         </p>
         {upcomingVaccines.length > 0 && (
-          <p className="text-xs text-gray-300 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             次回予定: {upcomingVaccines.length}件
           </p>
         )}
       </div>
       {vaccineVisits.length === 0 && upcomingVaccines.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">ワクチン情報がありません</p>
+        <p className="text-muted-foreground text-center py-8">ワクチン情報がありません</p>
       ) : (
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {vaccineVisits.slice(0, 5).map((visit) => (
             <div
               key={visit.id}
-              className="p-3 rounded border-2 border-green-500 bg-gray-700"
+              className="p-3 rounded border-2 border-primary/80 bg-card"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-green-400">✓</span>
-                  <p className="text-sm font-semibold text-white">
+                  <span className="text-primary">✓</span>
+                  <p className="text-sm font-semibold text-foreground">
                     {visit.diagnosis || "ワクチン接種"}
                   </p>
                 </div>
-                <span className="text-xs bg-green-600 text-white px-2 py-1 rounded">
+                <span className="text-xs bg-primary/60 text-foreground px-2 py-1 rounded">
                   接種済
                 </span>
               </div>
-              <p className="text-xs text-gray-300 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 接種日: {new Date(visit.visitedOn).toLocaleDateString()}
               </p>
               {visit.note && (
-                <p className="text-xs text-gray-400 mt-1">{visit.note}</p>
+                <p className="text-xs text-muted-foreground mt-1">{visit.note}</p>
               )}
               {visit.nextDueOn && (
-                <p className="text-xs text-blue-400 mt-1">
+                <p className="text-xs text-primary/80 mt-1">
                   次回予定: {new Date(visit.nextDueOn).toLocaleDateString()}
                 </p>
               )}
@@ -65,24 +65,24 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
           {upcomingVaccines.map((visit) => (
             <div
               key={visit.id}
-              className="p-3 rounded border-2 border-gray-600 bg-gray-800"
+              className="p-3 rounded border-2 border-border bg-muted"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-gray-400">○</span>
-                  <p className="text-sm font-semibold text-white">
+                  <span className="text-muted-foreground">○</span>
+                  <p className="text-sm font-semibold text-foreground">
                     {visit.diagnosis || "ワクチン接種予定"}
                   </p>
                 </div>
-                <span className="text-xs bg-gray-400 text-white px-2 py-1 rounded">
+                <span className="text-xs bg-primary/40 text-foreground px-2 py-1 rounded">
                   予定
                 </span>
               </div>
-              <p className="text-xs text-gray-300 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 予定日: {new Date(visit.nextDueOn!).toLocaleDateString()}
               </p>
               {visit.note && (
-                <p className="text-xs text-gray-400 mt-1">{visit.note}</p>
+                <p className="text-xs text-muted-foreground mt-1">{visit.note}</p>
               )}
             </div>
           ))}

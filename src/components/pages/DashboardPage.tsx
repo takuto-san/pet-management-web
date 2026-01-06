@@ -196,7 +196,7 @@ export function DashboardPage() {
         footer={<Footer />}
         main={
           <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         }
       />
@@ -212,34 +212,35 @@ export function DashboardPage() {
       header={<Header />}
       footer={<Footer />}
       main={
-        <div className="min-h-screen bg-[#121212] p-4 space-y-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-white">
-              {currentUser.username} さんのダッシュボード
-            </h1>
-          </div>
+        <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-3xl font-bold">
+                {currentUser.username} さんのダッシュボード
+              </h1>
+            </div>
 
           {pets.length > 1 && selectedPet && (
             <div className="flex items-center justify-center space-x-4 mb-6">
               <button
                 onClick={goToPreviousPet}
                 disabled={selectedPetIndex === 0}
-                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 rounded-full bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="text-xl">◀</span>
+                <span className="text-xl text-foreground">◀</span>
               </button>
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-2">
                   <span className="text-2xl">🐾</span>
                 </div>
-                <span className="text-sm font-medium">{selectedPet.name}</span>
+                <span className="text-sm font-medium text-foreground">{selectedPet.name}</span>
               </div>
               <button
                 onClick={goToNextPet}
                 disabled={selectedPetIndex === pets.length - 1}
-                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 rounded-full bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="text-xl">▶</span>
+                <span className="text-xl text-foreground">▶</span>
               </button>
             </div>
           )}
@@ -262,9 +263,10 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500">まだペットが登録されていません。</p>
+              <p className="text-muted-foreground">まだペットが登録されていません。</p>
             </div>
           )}
+          </div>
         </div>
       }
     />
