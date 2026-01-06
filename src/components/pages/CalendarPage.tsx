@@ -715,8 +715,10 @@ export function CalendarPage() {
               '& .MuiDrawer-paper': {
                 width: isMobile ? '100%' : 400,
                 height: isMobile ? '80vh' : '100vh',
-                backgroundColor: 'hsl(var(--card))',
+                backgroundColor: '#2D2631',
                 color: 'hsl(var(--card-foreground))',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '-4px 0 8px rgba(0, 0, 0, 0.3)',
               },
             }}
           >
@@ -728,22 +730,23 @@ export function CalendarPage() {
                       <ArrowBack />
                     </IconButton>
                   )}
-                  <Typography variant="h6" sx={{ ml: isSidebarEditing ? 1 : 0 }}>
+                  <Typography variant="h6" sx={{ ml: isSidebarEditing ? 1 : 0, color: '#FFFFFF', fontWeight: 'bold' }}>
                     {isSidebarEditing ? '記録を編集' : '詳細情報'}
                   </Typography>
                 </Box>
                 <Box>
                   {!isSidebarEditing && (
                     <>
-                      <IconButton onClick={() => {
-                        // 編集モードを開始
-                        const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
-                        if (visit) {
-                          setIsEditing(true);
-                          setEditingVisitId(visit.id);
-                          // recordFormに既存データをセット
-                          const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0]; // これはUTCなのでそのまま使う
-                          setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
+                      <IconButton
+                        onClick={() => {
+                          // 編集モードを開始
+                          const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
+                          if (visit) {
+                            setIsEditing(true);
+                            setEditingVisitId(visit.id);
+                            // recordFormに既存データをセット
+                            const dateStr = new Date(visit.visitedOn).toISOString().split('T')[0]; // これはUTCなのでそのまま使う
+                            setSelectedDate(new Date(dateStr)); // 編集時にselectedDateを更新
   let formData: any = {
     petId: visit.petId,
     date: dateStr,
@@ -762,42 +765,42 @@ export function CalendarPage() {
     nextVaccinationDate: '',
   };
 
-                          // visit.reasonからカテゴリを判定し、データを復元
-                          if (visit.reason && visit.reason.includes('ワクチン接種')) {
-                            formData.subcategoryType = 'vaccine';
-                            formData.vaccineType = visit.reason?.replace('ワクチン接種 - ', '') || '';
-                            // noteからLot Noと次回接種日を抽出
-                            if (visit.note) {
-                              const noteParts = visit.note.split(', ');
-                              formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
-                              const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
-                              if (nextDatePart) {
-                                formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                            // visit.reasonからカテゴリを判定し、データを復元
+                            if (visit.reason && visit.reason.includes('ワクチン接種')) {
+                              formData.subcategoryType = 'vaccine';
+                              formData.vaccineType = visit.reason?.replace('ワクチン接種 - ', '') || '';
+                              // noteからLot Noと次回接種日を抽出
+                              if (visit.note) {
+                                const noteParts = visit.note.split(', ');
+                                formData.lotNo = noteParts.find(p => p.startsWith('Lot No: '))?.replace('Lot No: ', '') || '';
+                                const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                                if (nextDatePart) {
+                                  formData.nextVaccinationDate = nextDatePart.replace('次回: ', '');
+                                }
                               }
-                            }
-                          } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
-                            formData.subcategoryType = 'visit';
-                            formData.diagnosis = visit.reason || '';
-                            // noteから病院、体重、体調、指示を抽出
-                            if (visit.note) {
-                              const noteParts = visit.note.split(', ');
-                              formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
-                              formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
-                              formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
-                              formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
-                            }
-                          } else {
-                            formData.subcategoryType = 'medication';
-                            formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
-                            // noteから区分と次回日を抽出
-                            if (visit.note) {
-                              const noteParts = visit.note.split(', ');
-                              formData.categoryField = noteParts.find(p => p.startsWith('区分: '))?.replace('区分: ', '') || '';
-                              const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
-                              if (nextDatePart) {
-                                formData.nextDate = nextDatePart.replace('次回: ', '');
+                            } else if ((visit.reason && visit.reason.includes('診察')) || visit.visitType === VisitType.checkup) {
+                              formData.subcategoryType = 'visit';
+                              formData.diagnosis = visit.reason || '';
+                              // noteから病院、体重、体調、指示を抽出
+                              if (visit.note) {
+                                const noteParts = visit.note.split(', ');
+                                formData.clinicName = noteParts.find(p => p.startsWith('病院: '))?.replace('病院: ', '') || '';
+                                formData.weight = noteParts.find(p => p.startsWith('体重: '))?.replace('体重: ', '').replace('kg', '') || '';
+                                formData.condition = noteParts.find(p => p.startsWith('体調: '))?.replace('体調: ', '') || '';
+                                formData.doctorNote = noteParts.find(p => p.startsWith('指示: '))?.replace('指示: ', '') || '';
                               }
-                            }
+                            } else {
+                              formData.subcategoryType = 'medication';
+                              formData.medicineName = visit.reason ? (visit.reason.split(' - ')[1] || visit.reason) : '';
+                              // noteから区分と次回日を抽出
+                              if (visit.note) {
+                                const noteParts = visit.note.split(', ');
+                                formData.categoryField = noteParts.find(p => p.startsWith('区分: '))?.replace('区分: ', '') || '';
+                                const nextDatePart = noteParts.find(p => p.startsWith('次回: '));
+                                if (nextDatePart) {
+                                  formData.nextDate = nextDatePart.replace('次回: ', '');
+                                }
+                              }
   }
 
   // 'undefined' 文字列を空文字に置換
@@ -807,11 +810,16 @@ export function CalendarPage() {
 
   setRecordForm(formData);
   setIsSidebarEditing(true);
-                        }
-                      }}>
+                          }
+                        }}
+                        sx={{ color: '#B81D34', '&:hover': { color: '#C7254A' } }}
+                      >
                         <Edit />
                       </IconButton>
-                      <IconButton onClick={() => setIsDeleteDialogOpen(true)}>
+                      <IconButton
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                        sx={{ color: '#B81D34', '&:hover': { color: '#C7254A' } }}
+                      >
                         <Delete />
                       </IconButton>
                     </>
@@ -1281,23 +1289,26 @@ export function CalendarPage() {
               ) : (
                 selectedCard && (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 'bold', borderLeft: '4px solid #A21D32', paddingLeft: 2 }}>
                       {selectedCard.time} - {formatTitle(selectedCard.medicine)}
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Pets sx={{ fontSize: 20 }} />
-                      <Typography>{selectedCard.petName}</Typography>
+                      <Pets sx={{ fontSize: 20, color: '#B81D34' }} />
+                      <Typography sx={{ color: '#FFFFFF' }}>ペット名:</Typography>
+                      <Typography sx={{ color: '#FFFFFF' }}>{selectedCard.petName}</Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Info sx={{ fontSize: 20 }} />
-                      <Typography>{selectedCard.dosage}</Typography>
+                      <Info sx={{ fontSize: 20, color: '#B81D34' }} />
+                      <Typography sx={{ color: '#FFFFFF' }}>詳細:</Typography>
+                      <Typography sx={{ color: '#FFFFFF' }}>{selectedCard.dosage}</Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Check sx={{ fontSize: 20, color: selectedCard.completed ? 'green' : 'gray' }} />
-                      <Typography>完了状態: {selectedCard.completed ? '完了' : '未完了'}</Typography>
+                      <Check sx={{ fontSize: 20, color: selectedCard.completed ? 'green' : '#B81D34' }} />
+                      <Typography sx={{ color: '#FFFFFF' }}>完了状態:</Typography>
+                      <Typography sx={{ color: '#FFFFFF' }}>{selectedCard.completed ? '完了' : '未完了'}</Typography>
                     </Box>
 
                     {/* 追加の詳細情報（visitデータから取得可能） */}
@@ -1305,14 +1316,14 @@ export function CalendarPage() {
                       const visit = visitsData?.content?.find(v => v.id === selectedCard.id);
                       if (visit) {
                         return (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          <Box sx={{ mt: 2, backgroundColor: '#5A5A6A', borderRadius: 2, p: 2 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#FFFFFF' }}>
                               追加情報
                             </Typography>
-                            <Typography>訪問日時: {visit.visitedOn}</Typography>
-                            <Typography>訪問タイプ: {getVisitTypeDisplayName(visit.visitType)}</Typography>
-                            <Typography>理由: {getReasonDisplayName(visit.reason)}</Typography>
-                            {visit.note && formatNote(visit.note) && <Typography>メモ: {formatNote(visit.note)}</Typography>}
+                            <Typography sx={{ lineHeight: 1.6, color: '#FFFFFF' }}>訪問日時: {visit.visitedOn}</Typography>
+                            <Typography sx={{ lineHeight: 1.6, color: '#FFFFFF' }}>訪問タイプ: {getVisitTypeDisplayName(visit.visitType)}</Typography>
+                            <Typography sx={{ lineHeight: 1.6, color: '#FFFFFF' }}>理由: {getReasonDisplayName(visit.reason)}</Typography>
+                            {visit.note && formatNote(visit.note) && <Typography sx={{ lineHeight: 1.6, color: '#FFFFFF' }}>メモ: {formatNote(visit.note)}</Typography>}
                           </Box>
                         );
                       }
