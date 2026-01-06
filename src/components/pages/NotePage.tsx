@@ -32,12 +32,17 @@ import {
   DialogActions,
   ListItemIcon,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import { ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
 
 const BlockNoteEditor = dynamic(() => import("@/lib/editor/BlockNoteEditor").then(mod => mod.BlockNoteEditor), {
   ssr: false,
-  loading: () => <p>Loading...</p>,
+  loading: () => (
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
+      <CircularProgress />
+    </Box>
+  ),
 });
 
 interface Section {
@@ -69,11 +74,11 @@ const darkTheme = createTheme({
   palette: {
     mode: "dark",
     background: {
-      default: "#121212",
-      paper: "#1e1e1e",
+      default: "#1A161C",
+      paper: "#2D2631",
     },
     primary: {
-      main: "#90caf9",
+      main: "#D84C7A",
     },
   },
 });
@@ -117,7 +122,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
   selectedPage: { id: string; title: string; content: string } | null;
 }) {
   return (
-    <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
+    <Box sx={{ height: "100%", bgcolor: "#2D2631" }}>
       {isSidebarOpen && (
         <Box sx={{ width: 256, display: "flex", flexDirection: "column", height: "100%" }}>
           <List sx={{ flexGrow: 1, overflow: "auto" }}>
@@ -142,11 +147,15 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                         px: 1,
                         userSelect: "none",
                         "&.Mui-selected": {
-                          bgcolor: "grey.800",
+                          bgcolor: "rgba(162, 29, 50, 0.2)",
+                          borderLeft: "4px solid #A21D32",
                           borderRadius: 1,
                           "&:hover": {
-                            bgcolor: "grey.700",
+                            bgcolor: "rgba(162, 29, 50, 0.3)",
                           },
+                        },
+                        "&:hover": {
+                          color: "#D84C7A",
                         },
                       }}
                     >
@@ -158,7 +167,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                             mr: 1,
                             cursor: "pointer",
                             fontSize: "1.2rem",
-                            color: "text.secondary",
+                            color: "#D84C7A",
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -230,12 +239,16 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                   py: 0.5,
                                   userSelect: "none",
                                   "&.Mui-selected": {
-                                    bgcolor: "grey.800",
+                                    bgcolor: "rgba(162, 29, 50, 0.2)",
+                                    borderLeft: "4px solid #A21D32",
                                     borderRadius: 1,
                                     px: 1,
                                     "&:hover": {
-                                      bgcolor: "grey.700",
+                                      bgcolor: "rgba(162, 29, 50, 0.3)",
                                     },
+                                  },
+                                  "&:hover": {
+                                    color: "#D84C7A",
                                   },
                                 }}
                               >
@@ -247,7 +260,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                       mr: 1,
                                       cursor: "pointer",
                                       fontSize: "1.2rem",
-                                      color: "text.secondary",
+                                      color: "#D84C7A",
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -317,18 +330,22 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                             py: 0.25,
                                             userSelect: "none",
                                             "&.Mui-selected": {
-                                              bgcolor: "grey.800",
+                                              bgcolor: "rgba(162, 29, 50, 0.2)",
+                                              borderLeft: "4px solid #A21D32",
                                               borderRadius: 1,
                                               px: 1,
                                               "&:hover": {
-                                                bgcolor: "grey.700",
+                                                bgcolor: "rgba(162, 29, 50, 0.3)",
                                               },
+                                            },
+                                            "&:hover": {
+                                              color: "#D84C7A",
                                             },
                                           }}
                                         >
                                           <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
                                             <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
-                                              <Icon sx={{ fontSize: "0.8rem" }} />
+                                              <Icon sx={{ fontSize: "0.8rem", color: "rgba(162, 29, 50, 0.7)" }} />
                                             </ListItemIcon>
                                             {editingPageId === page.id ? (
                                               <TextField
@@ -411,19 +428,19 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
               );
             })}
           </List>
-          <Box sx={{ p: 1 }}>
+          <Box sx={{ p: 1, mt: -0.5 }}>
             <Button
-              startIcon={<CreateIcon />}
+              startIcon={<CreateIcon sx={{ color: "rgba(162, 29, 50, 0.7)" }} />}
               fullWidth
-              variant="outlined"
+              variant="text"
               onClick={onAddNote}
               sx={{
                 justifyContent: "flex-start",
                 textTransform: "none",
-                color: "text.primary",
-                borderColor: "divider",
+                color: "white",
+                paddingLeft: 2,
                 "&:hover": {
-                  borderColor: "text.secondary",
+                  backgroundColor: "rgba(162, 29, 50, 0.1)",
                 },
               }}
             >
@@ -1088,7 +1105,7 @@ export function NotePage() {
               onPageContentChange={handlePageContentChange}
             />
           ) : (
-            <Box sx={{ height: "100%", bgcolor: "background.paper" }}></Box>
+            <Box sx={{ height: "100%", bgcolor: "#2D2631" }}></Box>
           )
         }
       />
