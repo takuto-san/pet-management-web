@@ -411,7 +411,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
               );
             })}
           </List>
-          <Box sx={{ p: 1, borderTop: 1, borderColor: "divider" }}>
+          <Box sx={{ p: 1 }}>
             <Button
               startIcon={<CreateIcon />}
               fullWidth
