@@ -9,7 +9,7 @@ export function AuthTemplate({ header, main, footer, isCentered }: AuthTemplateP
   return (
     <div className="min-h-screen flex flex-col">
       {header && <header>{header}</header>}
-        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""} bg-background`}>
+        <main className={`flex-grow ${isCentered ? "flex items-center justify-center" : ""}`}>
           {main}
         </main>
       {footer && <footer>{footer}</footer>}

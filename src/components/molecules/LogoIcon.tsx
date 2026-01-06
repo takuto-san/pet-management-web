@@ -1,10 +1,13 @@
-import { IconButton } from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
+import { Box, Typography } from "@mui/material";
+import AcUnitIcon from "@mui/icons-material/AcUnit";
 
 export const LogoIcon = () => {
   return (
-    <IconButton edge="start" color="inherit" aria-label="home">
-      <PetsIcon />
-    </IconButton>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <AcUnitIcon sx={{ color: '#A21D32', fontSize: 28 }} />
+      <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
+        PetManagement
+      </Typography>
+    </Box>
   );
 };

@@ -16,7 +16,7 @@ import {
   Backdrop,
   CircularProgress,
 } from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
+import AcUnitIcon from "@mui/icons-material/AcUnit";
 import { useUpdateUser } from "@/api/generated/user/user";
 import { useAddPet } from "@/api/generated/pet/pet";
 import type { RootState } from "@/lib/stores/store";
@@ -190,7 +190,7 @@ export function OnboardingPage() {
                 boxShadow: 3,
               }}
             >
-              <PetsIcon sx={{ fontSize: 40 }} />
+              <AcUnitIcon sx={{ fontSize: 40, color: '#C71585' }} />
             </Avatar>
             <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold" }}>
               {currentStep === 1 ? "基本情報入力" : "ペット情報入力"}

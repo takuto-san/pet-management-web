@@ -113,7 +113,7 @@ export function SigninForm() {
       <Box
         sx={{
           minHeight: "calc(100vh - 64px)", // AppBarの高さを引く
-          background: "linear-gradient(135deg, #1a0033 0%, #000000 100%)", // 濃い紫から黒グレー
+          background: "#2D2631", // ダークパープル（暗い灰色）
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -180,11 +180,15 @@ export function SigninForm() {
                 fullWidth
                 variant="contained"
                 disabled={isLoading}
-                size="large"
+                size="small"
                 sx={{
-                  backgroundColor: '#d32f2f', // 赤色系アクセント
+                  backgroundColor: '#A21D32', // 深紅色（ワインレッド）
+                  color: 'white',
+                  fontSize: '1rem',
+                  padding: '8px 16px',
+                  minHeight: '36px',
                   '&:hover': {
-                    backgroundColor: '#b71c1c',
+                    backgroundColor: '#8B1726',
                   },
                 }}
               >
@@ -198,7 +202,7 @@ export function SigninForm() {
                 href="/auth/signin" // 仮のリンク（Forgot passwordページがないため）
                 variant="body2"
                 sx={{
-                  color: "rgba(255, 255, 255, 0.7)",
+                  color: "#D84C7A", // ピンク（ローズ）
                   textDecoration: "none",
                   '&:hover': {
                     textDecoration: "underline",
@@ -209,11 +213,13 @@ export function SigninForm() {
               </Link>
             </Box>
 
-            <FormFooter
-              text="アカウントをお持ちでないですか？"
-              linkText="新規登録"
-              href="/auth/signup"
-            />
+            <Box sx={{ mt: 4 }}>
+              <FormFooter
+                text="アカウントをお持ちでないですか？"
+                linkText="新規登録"
+                href="/auth/signup"
+              />
+            </Box>
           </Paper>
           <Backdrop
             sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}

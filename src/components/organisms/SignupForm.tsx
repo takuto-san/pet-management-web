@@ -87,7 +87,7 @@ export function SignupForm() {
       <Box
         sx={{
           minHeight: "calc(100vh - 64px)", // AppBarの高さを引く
-          background: "linear-gradient(135deg, #1a0033 0%, #000000 100%)", // 濃い紫から黒グレー
+          background: "#2D2631", // ダークパープル（暗い灰色）
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -161,11 +161,15 @@ export function SignupForm() {
                 fullWidth
                 variant="contained"
                 disabled={isLoading}
-                size="large"
+                size="small"
                 sx={{
-                  backgroundColor: '#d32f2f', // 赤色系アクセント
+                  backgroundColor: '#A21D32', // 深紅色（ワインレッド）
+                  color: 'white',
+                  fontSize: '1rem',
+                  padding: '8px 16px',
+                  minHeight: '36px',
                   '&:hover': {
-                    backgroundColor: '#b71c1c',
+                    backgroundColor: '#8B1726',
                   },
                 }}
               >
@@ -173,11 +177,13 @@ export function SignupForm() {
               </Button>
             </Box>
 
-            <FormFooter
-              text="既にアカウントをお持ちですか？"
-              linkText="ログイン"
-              href="/auth/signin"
-            />
+            <Box sx={{ mt: 4 }}>
+              <FormFooter
+                text="既にアカウントをお持ちですか？"
+                linkText="ログイン"
+                href="/auth/signin"
+              />
+            </Box>
           </Paper>
           <Backdrop
             sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}

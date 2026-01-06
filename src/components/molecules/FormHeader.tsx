@@ -1,5 +1,5 @@
-import { Avatar, Typography, Box } from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
+import { Typography, Box } from "@mui/material";
+import AcUnitIcon from "@mui/icons-material/AcUnit";
 
 interface FormHeaderProps {
   title: string;
@@ -9,18 +9,7 @@ interface FormHeaderProps {
 export const FormHeader = ({ title, subtitle }: FormHeaderProps) => {
   return (
     <Box sx={{ textAlign: "center", mb: 4 }}>
-      <Avatar
-        sx={{
-          width: 80,
-          height: 80,
-          bgcolor: "primary.main",
-          mx: "auto",
-          mb: 3,
-          boxShadow: 3,
-        }}
-      >
-        <PetsIcon sx={{ fontSize: 40 }} />
-      </Avatar>
+      <AcUnitIcon sx={{ fontSize: 40, color: '#A21D32', mb: 3 }} />
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold", color: "white" }}>
         {title}
       </Typography>
