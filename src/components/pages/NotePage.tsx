@@ -88,7 +88,7 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   );
 }
 
-function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, expandedSectionIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, onAddSection, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingPageId, editingNoteName, editingSectionName, editingPageName, onDoubleClickNote, onDoubleClickSection, onDoubleClickPage, onNoteNameChange, onSectionNameChange, onPageNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onEditingPageNameChange, onDeleteNote, onDeleteSection, onDeletePage }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, expandedSectionIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, onAddSection, onAddPage, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingPageId, editingNoteName, editingSectionName, editingPageName, onDoubleClickNote, onDoubleClickSection, onDoubleClickPage, onNoteNameChange, onSectionNameChange, onPageNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onEditingPageNameChange, onDeleteNote, onDeleteSection, onDeletePage }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
@@ -101,6 +101,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
   onToggleExpand: (id: string) => void;
   onToggleSection: (sectionId: string) => void;
   onAddSection: (noteId: string) => void;
+  onAddPage: (sectionId: string) => void;
   onAddNote: () => void;
   isSidebarOpen: boolean;
   editingNoteId: string | null;
@@ -246,22 +247,20 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                 }}
                               >
                                 <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-                                  {section.pages.length > 0 && (
-                                    <ChevronRightIcon
-                                      sx={{
-                                        transform: isSectionExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                                        transition: "transform 0.2s",
-                                        mr: 1,
-                                        cursor: "pointer",
-                                        fontSize: "1.2rem",
-                                        color: "text.secondary",
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onToggleSection(section.id);
-                                      }}
-                                    />
-                                  )}
+                                  <ChevronRightIcon
+                                    sx={{
+                                      transform: isSectionExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                                      transition: "transform 0.2s",
+                                      mr: 1,
+                                      cursor: "pointer",
+                                      fontSize: "1.2rem",
+                                      color: "text.secondary",
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onToggleSection(section.id);
+                                    }}
+                                  />
                                   {editingSectionId === section.id ? (
                                     <TextField
                                       autoFocus
@@ -304,7 +303,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                 )}
                               </ListItemButton>
                             </ListItem>
-                            {isSectionExpanded && section.pages.length > 0 && (
+                            {isSectionExpanded && (
                               <List sx={{ pl: 4 }}>
                                 {section.pages.map((page) => {
                                   const isPageSelected = selectedPageId === page.id;
@@ -377,6 +376,19 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                                     </ListItem>
                                   );
                                 })}
+                                <ListItem disablePadding>
+                                  <ListItemButton
+                                    onClick={() => onAddPage(section.id)}
+                                    sx={{
+                                      py: 0.5,
+                                      display: "flex",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <CreateIcon sx={{ mr: 1, fontSize: "0.8rem", color: "text.secondary" }} />
+                                    <ListItemText primary="ページを追加" sx={{ fontSize: "0.8rem", color: "text.secondary" }} />
+                                  </ListItemButton>
+                                </ListItem>
                               </List>
                             )}
                           </Box>
@@ -517,12 +529,7 @@ export function NotePage() {
   const [createSpaceName, setCreateSpaceName] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'note' | 'section' | 'page'; id: string; name: string } | null>(null);
-  const [isAddSectionDialogOpen, setIsAddSectionDialogOpen] = useState(false);
-  const [addSectionName, setAddSectionName] = useState("");
-  const [isAddPageDialogOpen, setIsAddPageDialogOpen] = useState(false);
-  const [addPageName, setAddPageName] = useState("");
-  const [addSectionNoteId, setAddSectionNoteId] = useState<string>("");
-  const [addPageSectionId, setAddPageSectionId] = useState<string>("");
+
 
   const { data: spaces } = useListSpaces();
   const spaceId = spaces?.[0]?.id;
@@ -618,9 +625,27 @@ export function NotePage() {
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAddPage = (sectionId: string) => {
-    setAddPageSectionId(sectionId);
-    setAddPageName("");
-    setIsAddPageDialogOpen(true);
+    if (!spaceId) return;
+
+    const newDoc: DocumentFields = {
+      title: "新しいページ",
+      parentDocId: sectionId,
+      body: { content: "" },
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: (newPage) => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        // 新しく作成したページを選択して編集モードにする
+        const note = notes.find(n => n.sections.some(s => s.id === sectionId));
+        if (note) {
+          setSelectedNoteId(note.id);
+          setSelectedSectionId(sectionId);
+          setSelectedPageId(newPage.id);
+          setEditingPageId(newPage.id);
+          setEditingPageName("新しいページ");
+        }
+      },
+    });
   };
 
   const selectedNote = useMemo(() => notes.find((n) => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
@@ -744,9 +769,25 @@ export function NotePage() {
   };
 
   const handleAddSection = (noteId: string) => {
-    setAddSectionNoteId(noteId);
-    setAddSectionName("");
-    setIsAddSectionDialogOpen(true);
+    if (!spaceId) return;
+
+    const newDoc: DocumentFields = {
+      title: "新しいセクション",
+      parentDocId: noteId,
+    };
+    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
+      onSuccess: (newSection) => {
+        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
+        // 新しく作成したセクションを選択して編集モードにする
+        setSelectedNoteId(noteId);
+        setSelectedSectionId(newSection.id);
+        setSelectedPageId(null);
+        setEditingSectionId(newSection.id);
+        setEditingSectionName("新しいセクション");
+        // セクションが作成されたら自動的に展開する
+        setExpandedSectionIds((prev) => [...prev, newSection.id]);
+      },
+    });
   };
 
   const handleAddNote = () => {
@@ -992,50 +1033,7 @@ export function NotePage() {
     }
   };
 
-  const handleCreateSection = () => {
-    if (!addSectionName.trim() || !spaceId) {
-      setIsAddSectionDialogOpen(false);
-      return;
-    }
-    setIsAddSectionDialogOpen(false);
-    const newDoc: DocumentFields = {
-      title: addSectionName,
-      parentDocId: addSectionNoteId,
-    };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-        setAddSectionName("");
-        setAddSectionNoteId("");
-      },
-      onError: () => {
-        setIsAddSectionDialogOpen(true); // エラー時はダイアログを再開
-      },
-    });
-  };
 
-  const handleCreatePage = () => {
-    if (!addPageName.trim() || !spaceId) {
-      setIsAddPageDialogOpen(false);
-      return;
-    }
-    setIsAddPageDialogOpen(false);
-    const newDoc: DocumentFields = {
-      title: addPageName,
-      parentDocId: addPageSectionId,
-      body: { content: "" },
-    };
-    addDocumentMutation.mutate({ spaceId, data: newDoc }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey(spaceId) });
-        setAddPageName("");
-        setAddPageSectionId("");
-      },
-      onError: () => {
-        setIsAddPageDialogOpen(true); // エラー時はダイアログを再開
-      },
-    });
-  };
 
 
 
@@ -1060,6 +1058,7 @@ export function NotePage() {
             onToggleExpand={handleToggleExpand}
             onToggleSection={handleToggleSection}
             onAddSection={handleAddSection}
+            onAddPage={handleAddPage}
             onAddNote={handleAddNote}
             isSidebarOpen={isSidebarOpen}
             editingNoteId={editingNoteId}
@@ -1322,52 +1321,7 @@ export function NotePage() {
           </Button>
         </DialogActions>
       </Dialog>
-      {/* セクション追加ダイアログ */}
-      <Dialog open={isAddSectionDialogOpen} onClose={() => setIsAddSectionDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>セクションを追加</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="セクション名"
-            value={addSectionName}
-            onChange={(e) => setAddSectionName(e.target.value)}
-            sx={{ mt: 2 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreateSection();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsAddSectionDialogOpen(false)}>キャンセル</Button>
-          <Button onClick={handleCreateSection} variant="contained">追加</Button>
-        </DialogActions>
-      </Dialog>
-      {/* ページ追加ダイアログ */}
-      <Dialog open={isAddPageDialogOpen} onClose={() => setIsAddPageDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>ページを追加</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="ページ名"
-            value={addPageName}
-            onChange={(e) => setAddPageName(e.target.value)}
-            sx={{ mt: 2 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreatePage();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsAddPageDialogOpen(false)}>キャンセル</Button>
-          <Button onClick={handleCreatePage} variant="contained">追加</Button>
-        </DialogActions>
-      </Dialog>
+
     </ThemeProvider>
   );
 }
