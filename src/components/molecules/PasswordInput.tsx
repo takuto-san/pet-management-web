@@ -6,6 +6,7 @@ import { Input } from "@/components/atoms/Input";
 
 interface PasswordInputProps {
   label: string;
+  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
@@ -17,6 +18,7 @@ interface PasswordInputProps {
 
 export const PasswordInput = ({
   label,
+  placeholder,
   value,
   onChange,
   error,
@@ -38,6 +40,7 @@ export const PasswordInput = ({
       id={id}
       fullWidth
       label={label}
+      placeholder={placeholder}
       type={showPassword ? "text" : "password"}
       value={value}
       onChange={(e) => onChange(e.target.value)}

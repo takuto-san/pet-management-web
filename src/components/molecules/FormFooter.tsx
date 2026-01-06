@@ -10,12 +10,12 @@ interface FormFooterProps {
 export const FormFooter = ({ text, linkText, href }: FormFooterProps) => {
   return (
     <Box sx={{ textAlign: "center" }}>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
         {text}{" "}
         <Link
           href={href}
           style={{
-            color: "#1976d2",
+            color: "white",
             textDecoration: "none",
             fontWeight: "medium",
           }}

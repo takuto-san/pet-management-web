@@ -21,11 +21,11 @@ export const FormHeader = ({ title, subtitle }: FormHeaderProps) => {
       >
         <PetsIcon sx={{ fontSize: 40 }} />
       </Avatar>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold" }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold", color: "white" }}>
         {title}
       </Typography>
       {subtitle && (
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
           {subtitle}
         </Typography>
       )}

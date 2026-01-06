@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import { Box, Paper, Alert, Container, Backdrop, CircularProgress } from "@mui/material";
+import { Box, Paper, Alert, Container, Backdrop, CircularProgress, ThemeProvider, createTheme, Link, Typography } from "@mui/material";
 import { useAuthenticateUser } from "@/api/generated/auth/auth";
 import { setsigninPending } from "@/stores/slices/userSlice";
 import { Input } from "@/components/atoms/Input";
@@ -13,6 +13,18 @@ import { PasswordInput } from "@/components/molecules/PasswordInput";
 import { FormHeader } from "@/components/molecules/FormHeader";
 import { FormFooter } from "@/components/molecules/FormFooter";
 import type { RootState } from "@/lib/stores/store";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#d32f2f', // 赤色系アクセント
+    },
+    background: {
+      default: '#000000', // 黒
+    },
+  },
+});
 
 export function SigninForm() {
   const [email, setEmail] = useState("");
@@ -97,92 +109,120 @@ export function SigninForm() {
 
 
   return (
-    <Box
-      sx={{
-        minHeight: "calc(100vh - 64px)", // AppBarの高さを引く
-        background: "linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: 2,
-      }}
-    >
-    <Container maxWidth="sm">
-      <Paper
-        elevation={10}
+    <ThemeProvider theme={darkTheme}>
+      <Box
         sx={{
-          p: 4,
-          borderRadius: 3,
-          background: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
+          minHeight: "calc(100vh - 64px)", // AppBarの高さを引く
+          background: "linear-gradient(135deg, #1a0033 0%, #000000 100%)", // 濃い紫から黒グレー
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 2,
         }}
       >
-        <FormHeader
-          title="ログイン"
-          subtitle="アカウントにログインして、ペットの管理を始めましょう"
-        />
-
-        {/* Success Message */}
-        {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {success}
-          </Alert>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Form */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
-          <Input
-            id="email"
-            fullWidth
-            label="メールアドレス"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={emailError}
-            required
-            disabled={isLoading}
-          />
-          <PasswordInput
-            id="password"
-            label="パスワード"
-            value={password}
-            onChange={setPassword}
-            error={passwordError}
-            required
-            disabled={isLoading}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={isLoading}
-            size="large"
+        <Container maxWidth="sm">
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              background: "rgba(255, 255, 255, 0.05)", // 背景より少し明るい
+              border: "1px solid rgba(255, 255, 255, 0.1)", // 細い枠線
+              backdropFilter: "blur(10px)",
+            }}
           >
-            {isLoading ? "ログイン中..." : "ログイン"}
-          </Button>
-        </Box>
+            <FormHeader
+              title="ログイン"
+              subtitle="アカウントにアクセスしてペットを管理しましょう。"
+            />
 
-        <FormFooter
-          text="アカウントをお持ちでないですか？"
-          linkText="新規登録"
-          href="/auth/signup"
-        />
-      </Paper>
-      <Backdrop
-        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={isLoading}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
-    </Container>
-    </Box>
+            {/* Success Message */}
+            {success && (
+              <Alert severity="success" sx={{ mb: 3 }}>
+                {success}
+              </Alert>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* Form */}
+            <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
+              <Input
+                id="email"
+                fullWidth
+                label="メールアドレス"
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={emailError}
+                required
+                disabled={isLoading}
+              />
+              <PasswordInput
+                id="password"
+                label="パスワード"
+                placeholder="パスワードを入力してください"
+                value={password}
+                onChange={setPassword}
+                error={passwordError}
+                required
+                disabled={isLoading}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                disabled={isLoading}
+                size="large"
+                sx={{
+                  backgroundColor: '#d32f2f', // 赤色系アクセント
+                  '&:hover': {
+                    backgroundColor: '#b71c1c',
+                  },
+                }}
+              >
+                {isLoading ? "ログイン中..." : "ログイン"}
+              </Button>
+            </Box>
+
+            {/* Forgot Password Link */}
+            <Box sx={{ textAlign: "center", mt: 2, mb: 2 }}>
+              <Link
+                href="/auth/signin" // 仮のリンク（Forgot passwordページがないため）
+                variant="body2"
+                sx={{
+                  color: "rgba(255, 255, 255, 0.7)",
+                  textDecoration: "none",
+                  '&:hover': {
+                    textDecoration: "underline",
+                  },
+                }}
+              >
+                パスワードをお忘れですか？
+              </Link>
+            </Box>
+
+            <FormFooter
+              text="アカウントをお持ちでないですか？"
+              linkText="新規登録"
+              href="/auth/signup"
+            />
+          </Paper>
+          <Backdrop
+            sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={isLoading}
+          >
+            <CircularProgress color="inherit" />
+          </Backdrop>
+        </Container>
+      </Box>
+    </ThemeProvider>
   );
 }
