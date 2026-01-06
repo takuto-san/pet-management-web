@@ -69,11 +69,11 @@ export function SettingsPage() {
             </Tabs>
           </Box>
           <TabPanel value={value} index={0}>
-            <p className="text-gray-600 mt-2">ここに設定を表示します。</p>
+            <p className="text-muted-foreground mt-2">ここに設定を表示します。</p>
           </TabPanel>
           <TabPanel value={value} index={1}>
             <h1 className="text-xl font-bold">プロフィール</h1>
-            <p className="text-gray-600 mt-2">ここにプロフィール設定を表示します。</p>
+            <p className="text-muted-foreground mt-2">ここにプロフィール設定を表示します。</p>
           </TabPanel>
         </div>
       }
