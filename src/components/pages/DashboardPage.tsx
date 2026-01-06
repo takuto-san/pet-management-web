@@ -15,7 +15,64 @@ import { WeightTrendsCard } from "@/components/organisms/WeightTrendsCard";
 import { ClinicVisitsCard } from "@/components/organisms/ClinicVisitsCard";
 import { VaccinationsCard } from "@/components/organisms/VaccinationsCard";
 import { useListPets } from "@/api/generated/pet/pet";
-import { useListVisits } from "@/api/generated/visit/visit";
+import { listVisits } from "@/api/generated/visit/visit";
+import { useQueries } from "@tanstack/react-query";
+
+// ユーティリティ関数：visitTypeの日本語化
+const getVisitTypeDisplayName = (visitType: string | undefined): string => {
+  switch (visitType) {
+    case "general":
+      return "定期検診";
+    case "checkup":
+      return "通院";
+    case "vaccine":
+      return "ワクチン";
+    case "heartworm":
+      return "フィラリア";
+    case "flea_tick":
+      return "ノミダニ";
+    default:
+      return visitType || "";
+  }
+};
+
+// ユーティリティ関数：理由の日本語化と整形
+const getReasonDisplayName = (reason: string | undefined): string => {
+  if (!reason) return "";
+
+  let display = reason;
+
+  // カテゴリの日本語化
+  display = display.replace(/^hospital/, "通院");
+  display = display.replace(/^supplies/, "備品");
+  display = display.replace(/^general/, "定期検診");
+
+  // undefined の除去（値が存在しない場合の区切り文字も除去）
+  display = display.replace(/ - undefined/g, "");
+  display = display.replace(/^undefined/, "");
+  display = display.replace(/undefined$/, "");
+  display = display.replace(/undefined - /g, "");
+
+  // 空の区切り文字の除去
+  display = display.replace(/^ - /, "");
+  display = display.replace(/ - $/, "");
+
+  return display.trim();
+};
+
+// ユーティリティ関数：タイトルの整形
+const formatTitle = (reason: string | undefined): string => {
+  if (!reason) return "診察";
+
+  const displayReason = getReasonDisplayName(reason);
+
+  // 日本語化された理由をタイトルとして使用
+  if (displayReason) {
+    return displayReason;
+  }
+
+  return "定期検診";
+};
 
 export function DashboardPage() {
   const router = useRouter();
@@ -47,23 +104,51 @@ export function DashboardPage() {
   }, [pets, selectedPetId]);
 
   const selectedPet = pets.find(pet => pet.id === selectedPetId);
+  const selectedPetIndex = pets.findIndex(pet => pet.id === selectedPetId);
 
-  const { data: visitsData } = useListVisits(
-    selectedPet ? { petId: selectedPet.id } : undefined,
-    {
-      query: {
-        enabled: !!selectedPet,
-      },
+  const goToPreviousPet = () => {
+    if (selectedPetIndex > 0) {
+      setSelectedPetId(pets[selectedPetIndex - 1].id);
     }
-  );
+  };
 
-  const visits = visitsData?.content || [];
+  const goToNextPet = () => {
+    if (selectedPetIndex < pets.length - 1) {
+      setSelectedPetId(pets[selectedPetIndex + 1].id);
+    }
+  };
 
-  const dummyTasks: Task[] = useMemo(() => [
-    { id: "1", name: "朝食を与える", time: "08:00", completed: false },
-    { id: "2", name: "投薬をする", time: "09:00", completed: true },
-    { id: "3", name: "散歩に行く", time: "10:00", completed: false },
-  ], []);
+  // 各ペットIDに対してvisitsを取得
+  const visitsQueries = useQueries({
+    queries: (petsData?.content?.map(pet => pet.id) || []).map(petId => ({
+      queryKey: ['/visits', { petId }],
+      queryFn: () => listVisits({ petId }),
+    })),
+  });
+
+  // 結果をマージ
+  const visits = useMemo(() => {
+    return visitsQueries.flatMap(query => query.data?.content || []);
+  }, [petsData?.content]);
+
+  const [todayTasks, setTodayTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const today = new Date();
+    const targetDateStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const todayVisits = visits.filter(visit =>
+      visit.visitedOn && visit.visitedOn.startsWith(targetDateStr)
+    );
+
+    const tasks = todayVisits.map(visit => ({
+      id: visit.id,
+      name: formatTitle(visit.reason),
+      time: visit.visitedOn ? new Date(visit.visitedOn).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '08:00',
+      completed: false, // 仮に未完了とする
+    }));
+
+    setTodayTasks(tasks);
+  }, [visits]);
 
   const monthlyEvents: MonthlyEvent[] = useMemo(() => {
     const events: MonthlyEvent[] = [];
@@ -72,12 +157,22 @@ export function DashboardPage() {
     const currentYear = today.getFullYear();
 
     visits.forEach(visit => {
+      if (visit.visitedOn) {
+        const visitDate = new Date(visit.visitedOn);
+        if (visitDate.getMonth() === currentMonth && visitDate.getFullYear() === currentYear) {
+          events.push({
+            date: visitDate.getDate(),
+            title: formatTitle(visit.reason),
+          });
+        }
+      }
+      // nextDueOn がある場合も追加
       if (visit.nextDueOn) {
         const nextDate = new Date(visit.nextDueOn);
         if (nextDate.getMonth() === currentMonth && nextDate.getFullYear() === currentYear) {
           events.push({
             date: nextDate.getDate(),
-            title: "次回診察予定",
+            title: `次回: ${formatTitle(visit.reason)}`,
           });
         }
       }
@@ -87,6 +182,11 @@ export function DashboardPage() {
   }, [visits]);
 
   const toggleTask = (id: string) => {
+    setTodayTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
   };
 
   if (isLoadingUser || (currentUser && isPetsLoading)) {
@@ -112,31 +212,35 @@ export function DashboardPage() {
       header={<Header />}
       footer={<Footer />}
       main={
-        <div className="p-4 space-y-6">
+        <div className="min-h-screen bg-[#121212] p-4 space-y-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">{currentUser.username} さんのダッシュボード</h1>
+            <h1 className="text-3xl font-bold text-white">
+              {currentUser.username} さんのダッシュボード
+            </h1>
           </div>
 
-          {pets.length > 0 && (
-            <div className="overflow-x-auto mb-6">
-              <div className="flex space-x-4 pb-2">
-                {pets.map((pet) => (
-                  <button
-                    key={pet.id}
-                    onClick={() => setSelectedPetId(pet.id)}
-                    className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${
-                      selectedPetId === pet.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                      <span className="text-2xl">🐾</span>
-                    </div>
-                    <span className="text-sm font-medium">{pet.name}</span>
-                  </button>
-                ))}
+          {pets.length > 1 && selectedPet && (
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              <button
+                onClick={goToPreviousPet}
+                disabled={selectedPetIndex === 0}
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-xl">◀</span>
+              </button>
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                  <span className="text-2xl">🐾</span>
+                </div>
+                <span className="text-sm font-medium">{selectedPet.name}</span>
               </div>
+              <button
+                onClick={goToNextPet}
+                disabled={selectedPetIndex === pets.length - 1}
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-xl">▶</span>
+              </button>
             </div>
           )}
 
@@ -144,14 +248,16 @@ export function DashboardPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PetProfileCard pet={selectedPet} />
-                <TodayScheduleCard tasks={dummyTasks} onToggleTask={toggleTask} />
+                <div className="md:col-span-1 h-32">
+                  <TodayScheduleCard tasks={todayTasks} onToggleTask={toggleTask} />
+                </div>
                 <MonthlyScheduleCard events={monthlyEvents} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <WeightTrendsCard visits={visits} />
-                <ClinicVisitsCard visits={visits} />
-                <VaccinationsCard visits={visits} />
+                <WeightTrendsCard visits={visits.filter(v => v.petId === selectedPet.id)} />
+                <ClinicVisitsCard visits={visits.filter(v => v.petId === selectedPet.id)} />
+                <VaccinationsCard visits={visits.filter(v => v.petId === selectedPet.id)} />
               </div>
             </div>
           ) : (

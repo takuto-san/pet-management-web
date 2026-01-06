@@ -19,12 +19,12 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
 
   return (
     <DashboardCard title="ワクチン接種記録">
-      <div className="mb-4 p-3 bg-green-50 rounded">
-        <p className="text-sm">
-          接種済み: <span className="font-bold text-green-700">{completedCount}</span>
+      <div className="mb-4 p-3 bg-gray-700 rounded">
+        <p className="text-sm text-white">
+          接種済み: <span className="font-bold text-green-300">{completedCount}</span>
         </p>
         {upcomingVaccines.length > 0 && (
-          <p className="text-xs text-gray-600 mt-1">
+          <p className="text-xs text-gray-300 mt-1">
             次回予定: {upcomingVaccines.length}件
           </p>
         )}
@@ -36,12 +36,12 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
           {vaccineVisits.slice(0, 5).map((visit) => (
             <div
               key={visit.id}
-              className="p-3 rounded border-2 border-green-500 bg-green-50"
+              className="p-3 rounded border-2 border-green-500 bg-gray-700"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-green-600">✓</span>
-                  <p className="text-sm font-semibold">
+                  <span className="text-green-400">✓</span>
+                  <p className="text-sm font-semibold text-white">
                     {visit.diagnosis || "ワクチン接種"}
                   </p>
                 </div>
@@ -49,14 +49,14 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
                   接種済
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-300 mt-1">
                 接種日: {new Date(visit.visitedOn).toLocaleDateString()}
               </p>
               {visit.note && (
-                <p className="text-xs text-gray-600 mt-1">{visit.note}</p>
+                <p className="text-xs text-gray-400 mt-1">{visit.note}</p>
               )}
               {visit.nextDueOn && (
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-blue-400 mt-1">
                   次回予定: {new Date(visit.nextDueOn).toLocaleDateString()}
                 </p>
               )}
@@ -65,12 +65,12 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
           {upcomingVaccines.map((visit) => (
             <div
               key={visit.id}
-              className="p-3 rounded border-2 border-gray-200 bg-white"
+              className="p-3 rounded border-2 border-gray-600 bg-gray-800"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-400">○</span>
-                  <p className="text-sm font-semibold">
+                  <p className="text-sm font-semibold text-white">
                     {visit.diagnosis || "ワクチン接種予定"}
                   </p>
                 </div>
@@ -78,11 +78,11 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
                   予定
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-300 mt-1">
                 予定日: {new Date(visit.nextDueOn!).toLocaleDateString()}
               </p>
               {visit.note && (
-                <p className="text-xs text-gray-600 mt-1">{visit.note}</p>
+                <p className="text-xs text-gray-400 mt-1">{visit.note}</p>
               )}
             </div>
           ))}
