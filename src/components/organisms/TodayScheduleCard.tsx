@@ -1,11 +1,5 @@
 import { DashboardCard } from "@/components/molecules/DashboardCard";
-
-interface Task {
-  id: string;
-  name: string;
-  time: string;
-  completed: boolean;
-}
+import type { Task } from "@/types/dashboard";
 
 interface TodayScheduleCardProps {
   tasks: Task[];

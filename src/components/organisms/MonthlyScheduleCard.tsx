@@ -1,9 +1,5 @@
 import { DashboardCard } from "@/components/molecules/DashboardCard";
-
-interface MonthlyEvent {
-  date: number;
-  title: string;
-}
+import type { MonthlyEvent } from "@/types/dashboard";
 
 interface MonthlyScheduleCardProps {
   events: MonthlyEvent[];

@@ -10,13 +10,20 @@ export function PetProfileCard({ pet }: PetProfileCardProps) {
     if (!birthDate) return "不明";
     const birth = new Date(birthDate);
     const today = new Date();
-    const years = today.getFullYear() - birth.getFullYear();
-    const months = today.getMonth() - birth.getMonth();
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
+    
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+    
+    if (years < 0) {
+      return "不明";
+    }
     
     if (years === 0) {
       return `${months}ヶ月`;
-    } else if (months < 0) {
-      return `${years - 1}歳${12 + months}ヶ月`;
     } else {
       return `${years}歳${months}ヶ月`;
     }

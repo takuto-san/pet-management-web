@@ -5,6 +5,8 @@ interface WeightTrendsCardProps {
   visits: Visit[];
 }
 
+const MIN_BAR_HEIGHT_PERCENT = 10;
+
 export function WeightTrendsCard({ visits }: WeightTrendsCardProps) {
   const weightsData = visits
     .filter(v => v.weight !== undefined && v.weight !== null)
@@ -36,7 +38,7 @@ export function WeightTrendsCard({ visits }: WeightTrendsCardProps) {
                   </div>
                   <div 
                     className="w-full bg-blue-500 rounded-t"
-                    style={{ height: `${Math.max(height, 10)}%` }}
+                    style={{ height: `${Math.max(height, MIN_BAR_HEIGHT_PERCENT)}%` }}
                   ></div>
                 </div>
               );

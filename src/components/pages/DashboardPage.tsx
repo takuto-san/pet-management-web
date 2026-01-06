@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/stores/store";
+import type { Task, MonthlyEvent } from "@/types/dashboard";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
@@ -15,18 +16,6 @@ import { ClinicVisitsCard } from "@/components/organisms/ClinicVisitsCard";
 import { VaccinationsCard } from "@/components/organisms/VaccinationsCard";
 import { useListPets } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
-
-interface Task {
-  id: string;
-  name: string;
-  time: string;
-  completed: boolean;
-}
-
-interface MonthlyEvent {
-  date: number;
-  title: string;
-}
 
 export function DashboardPage() {
   const router = useRouter();
