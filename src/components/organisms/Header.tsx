@@ -63,13 +63,8 @@ export const Header = ({ onNavigate }: HeaderProps) => {
   }
 
   return (
-    <header style={{
-      backgroundColor: "var(--background, #f0f0f0)",
-      color: "var(--foreground, #000)",
-      padding: "1rem",
-      borderBottom: "1px solid var(--border, #ccc)"
-    }}>
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <header className="bg-sidebar text-sidebar-foreground p-4 border-b border-sidebar-border">
+      <nav className="flex justify-between items-center">
         <Link href="/">
           <LogoIcon />
         </Link>

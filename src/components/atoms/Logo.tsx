@@ -1,5 +1,5 @@
 import { Typography } from "@mui/material";
-import PetsIcon from "@mui/icons-material/Pets";
+import AcUnitIcon from "@mui/icons-material/AcUnit";
 
 interface LogoProps {
   title?: string;
@@ -8,7 +8,7 @@ interface LogoProps {
 export const Logo = ({ title = "ペット管理システム" }: LogoProps) => {
   return (
     <>
-      <PetsIcon sx={{ fontSize: 40 }} />
+      <AcUnitIcon sx={{ fontSize: 40, color: '#C0392B' }} />
       <Typography variant="h6" sx={{ flexGrow: 1 }}>
         {title}
       </Typography>

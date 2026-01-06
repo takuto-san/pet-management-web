@@ -39,14 +39,14 @@ export function PetProfileCard({ pet, visits }: PetProfileCardProps) {
   return (
     <DashboardCard title="ペット情報">
       <div className="flex flex-col items-center space-y-4">
-        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
           <span className="text-4xl">🐾</span>
         </div>
         <div className="text-center">
-          <h3 className="text-xl font-bold text-white">{pet.name}</h3>
-          <p className="text-sm text-gray-300">種類: {pet.type}</p>
+          <h3 className="text-xl font-bold text-foreground">{pet.name}</h3>
+          <p className="text-sm text-muted-foreground">種類: {pet.type}</p>
         </div>
-        <div className="text-center text-sm text-gray-300">
+        <div className="text-center text-sm text-muted-foreground">
           <p>年齢: {calculateAge(pet.birthDate)}</p>
           <p>体重: {latestWeight ? `${latestWeight} kg` : "不明"}</p>
         </div>

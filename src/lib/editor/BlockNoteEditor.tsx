@@ -131,7 +131,7 @@ export function BlockNoteEditor({
     const Icon = isContentEmpty ? InsertDriveFileIcon : DescriptionIcon;
 
     return (
-      <Box sx={{ mx: "auto", maxWidth: "3xl", width: "100%", px: 12, pt: 4, bgcolor: "background.paper", minHeight: "80vh" }}>
+      <Box sx={{ mx: "auto", maxWidth: "3xl", width: "100%", px: 12, pt: 4, bgcolor: "#2D2631", minHeight: "80vh" }}>
         {editingPageTitle ? (
           <input
             type="text"
@@ -147,12 +147,12 @@ export function BlockNoteEditor({
                 onEditingPageTitleChange(false);
               }
             }}
-            className="text-5xl font-bold text-foreground mb-8 bg-transparent border-none outline-none w-full"
+            className="text-4xl font-bold text-white mb-8 bg-transparent border-none outline-none w-full"
             autoFocus
           />
         ) : (
           <h1
-            className="text-5xl font-bold text-foreground mb-8 cursor-pointer flex items-center"
+            className="text-4xl font-bold text-white mb-8 cursor-pointer flex items-center"
             onClick={onPageTitleClick}
           >
             <Icon sx={{ mr: 2, fontSize: "2.5rem" }} />

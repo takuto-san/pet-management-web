@@ -69,35 +69,35 @@ export function ClinicVisitsCard({ visits }: ClinicVisitsCardProps) {
   return (
     <DashboardCard title="診療履歴">
       {sortedVisits.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">診療履歴がありません</p>
+        <p className="text-muted-foreground text-center py-8">診療履歴がありません</p>
       ) : (
         <div className="space-y-3">
           {sortedVisits.map((visit) => {
             const date = new Date(visit.visitedOn);
             return (
-              <div key={visit.id} className="border-l-4 border-blue-400 pl-3 py-2">
+              <div key={visit.id} className="border-l-4 border-primary/80 pl-3 py-2">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-bold text-white">
+                  <p className="text-sm font-bold text-foreground">
                     {date.getFullYear()}/{date.getMonth() + 1}/{date.getDate()}
                   </p>
                   {visit.visitType && (
-                    <span className="text-xs bg-blue-800 text-blue-200 px-2 py-1 rounded">
+                    <span className="text-xs bg-primary/60 text-foreground px-2 py-1 rounded">
                       {getVisitTypeDisplayName(visit.visitType)}
                     </span>
                   )}
                 </div>
                 {visit.diagnosis && (
-                  <p className="text-sm text-gray-200 mb-1">
+                  <p className="text-sm text-muted-foreground mb-1">
                     <span className="font-semibold">診断:</span> {visit.diagnosis}
                   </p>
                 )}
                 {visit.treatment && (
-                  <p className="text-sm text-gray-300">
+                  <p className="text-sm text-muted-foreground">
                     <span className="font-semibold">処置:</span> {visit.treatment}
                   </p>
                 )}
                 {visit.reason && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     理由: {formatTitle(visit.reason)}
                   </p>
                 )}

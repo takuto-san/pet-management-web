@@ -9,7 +9,7 @@ export function SigninPage() {
     <AuthTemplate
       header={<AuthHeader />}
       main={<SigninForm />}
-      isCentered={true}
+      isCentered={false}
     />
   );
 }

@@ -34,8 +34,8 @@ export function Footer() {
               <button
                 className={`w-full flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors ${
                   isActive
-                    ? "text-primary bg-accent"
-                    : "text-muted-foreground hover:text-primary hover:bg-accent"
+                    ? "text-foreground bg-primary/20"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/20"
                 }`}
               >
                 <item.icon className="w-6 h-6 mb-1" />

@@ -59,32 +59,42 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
         }}
         sx={{
           '& .MuiPopover-paper': {
+            backgroundColor: '#2D2631',
             borderRadius: 2,
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3)',
             minWidth: 250,
+            border: 'none',
           },
         }}
       >
         <Box sx={{ p: 2 }}>
           {/* Header */}
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FFFFFF' }}>
               {currentUser.firstName} {currentUser.lastName}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#A0A0A0' }}>
               {currentUser.email}
             </Typography>
           </Box>
 
-          <Divider sx={{ mb: 1 }} />
+          <Divider sx={{ mb: 1, borderColor: '#3D3641' }} />
 
           {/* Main Action */}
           <Box sx={{ mb: 1 }}>
             <Button
               fullWidth
-              variant="outlined"
+              variant="contained"
               onClick={handleManageAccount}
-              sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+              sx={{
+                justifyContent: 'flex-start',
+                textTransform: 'none',
+                backgroundColor: '#A21D32',
+                color: '#FFFFFF',
+                '&:hover': {
+                  backgroundColor: '#8B1A2A',
+                },
+              }}
             >
               アカウントを管理
             </Button>
@@ -96,20 +106,27 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
               fullWidth
               variant="text"
               onClick={handleLogout}
-              sx={{ justifyContent: 'flex-start', textTransform: 'none', color: 'error.main' }}
+              sx={{
+                justifyContent: 'flex-start',
+                textTransform: 'none',
+                color: '#A21D32',
+                '&:hover': {
+                  backgroundColor: 'rgba(162, 29, 50, 0.1)',
+                },
+              }}
             >
               ログアウト
             </Button>
           </Box>
 
-          <Divider sx={{ mb: 1 }} />
+          <Divider sx={{ mb: 1, borderColor: '#3D3641' }} />
 
           {/* Footer */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-            <Link href="#" color="inherit" underline="hover">
+            <Link href="#" sx={{ color: '#D84C7A' }} underline="hover">
               プライバシーポリシー
             </Link>
-            <Link href="#" color="inherit" underline="hover">
+            <Link href="#" sx={{ color: '#D84C7A' }} underline="hover">
               利用規約
             </Link>
           </Box>

@@ -33,8 +33,8 @@ const userSlice = createSlice({
       state.signinPending = false;
       state.isLoadingUser = false;
     },
-    setsigninPending: (state) => {
-      state.signinPending = true;
+    setsigninPending: (state, action: PayloadAction<boolean>) => {
+      state.signinPending = action.payload;
     },
     setLoadingUser: (state, action: PayloadAction<boolean>) => {
       state.isLoadingUser = action.payload;
