@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/stores/store";
 import { Header } from "@/components/organisms/Header";
@@ -18,10 +19,17 @@ interface Task {
 }
 
 export function DashboardPage() {
+  const router = useRouter();
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
     isLoadingUser: state.user.isLoadingUser,
   }));
+
+  useEffect(() => {
+    if (!isLoadingUser && !currentUser) {
+      router.push("/auth/signin");
+    }
+  }, [isLoadingUser, currentUser, router]);
 
   const { data: petsData, isLoading, error } = useListPets(undefined, {
     query: {

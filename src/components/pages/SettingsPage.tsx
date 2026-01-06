@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { Box } from "@mui/material";
 import { Header } from "@/components/organisms/Header";
@@ -34,8 +34,7 @@ function TabPanel(props: TabPanelProps) {
 
 export function SettingsPage() {
   const router = useRouter();
-  const pathname = usePathname();
-  const [value, setValue] = useState(pathname.endsWith('/profile') ? 1 : 0);
+  const [value, setValue] = useState(0);
 
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
@@ -50,11 +49,6 @@ export function SettingsPage() {
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    if (newValue === 0) {
-      router.push(pathname.replace('/profile', ''));
-    } else {
-      router.push(`${pathname}/profile`);
-    }
   };
 
   if (isLoadingUser || !currentUser) {
@@ -78,6 +72,7 @@ export function SettingsPage() {
             <p className="text-gray-600 mt-2">ここに設定を表示します。</p>
           </TabPanel>
           <TabPanel value={value} index={1}>
+            <h1 className="text-xl font-bold">プロフィール</h1>
             <p className="text-gray-600 mt-2">ここにプロフィール設定を表示します。</p>
           </TabPanel>
         </div>

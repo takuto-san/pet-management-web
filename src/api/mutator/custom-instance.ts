@@ -21,7 +21,8 @@ AXIOS_INSTANCE.interceptors.request.use(
 AXIOS_INSTANCE.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    const shouldSkipRedirect = error.config?.url === "/auth/signin" || error.config?.url === "/auth/signup";
+    if (error.response?.status === 401 && !shouldSkipRedirect) {
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
       window.location.href = "/auth/signin";
