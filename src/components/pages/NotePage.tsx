@@ -33,7 +33,7 @@ import {
   ListItemIcon,
   InputAdornment,
 } from "@mui/material";
-import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { Menu as MenuIcon, ChevronRight as ChevronRightIcon, Note as NoteIcon, Description as DescriptionIcon, Create as CreateIcon, HealthAndSafety as HealthAndSafetyIcon, Book as BookIcon, Search as SearchIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
 
 const BlockNoteEditor = dynamic(() => import("@/lib/editor/BlockNoteEditor").then(mod => mod.BlockNoteEditor), {
   ssr: false,
@@ -88,7 +88,7 @@ function HamburgerBar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   );
 }
 
-function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, expandedSectionIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, onAddSection, onAddPage, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingPageId, editingNoteName, editingSectionName, editingPageName, onDoubleClickNote, onDoubleClickSection, onDoubleClickPage, onNoteNameChange, onSectionNameChange, onPageNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onEditingPageNameChange, onDeleteNote, onDeleteSection, onDeletePage }: {
+function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, expandedNoteIds, expandedSectionIds, onSelectNote, onSelectSection, onSelectPage, onToggleExpand, onToggleSection, onAddSection, onAddPage, onAddNote, isSidebarOpen, editingNoteId, editingSectionId, editingPageId, editingNoteName, editingSectionName, editingPageName, onDoubleClickNote, onDoubleClickSection, onDoubleClickPage, onNoteNameChange, onSectionNameChange, onPageNameChange, onEditingNoteNameChange, onEditingSectionNameChange, onEditingPageNameChange, onDeleteNote, onDeleteSection, onDeletePage, selectedPage }: {
   notes: Note[];
   selectedNoteId: string;
   selectedSectionId: string | null;
@@ -122,6 +122,7 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
   onDeleteNote: (noteId: string) => void;
   onDeleteSection: (noteId: string, sectionId: string) => void;
   onDeletePage: (noteId: string, sectionId: string, pageId: string) => void;
+  selectedPage: { id: string; title: string; content: string } | null;
 }) {
   return (
     <Box sx={{ height: "100%", bgcolor: "background.paper" }}>
@@ -307,73 +308,78 @@ function NoteList({ notes, selectedNoteId, selectedSectionId, selectedPageId, ex
                               <List sx={{ pl: 4 }}>
                                 {section.pages.map((page) => {
                                   const isPageSelected = selectedPageId === page.id;
+                                  const isContentEmpty = !page.content || page.content.trim() === '';
+                                  const Icon = isContentEmpty ? InsertDriveFileIcon : DescriptionIcon;
                                   return (
-                                    <ListItem key={page.id} disablePadding>
-                                      <ListItemButton
-                                        selected={isPageSelected}
-                                        onClick={() => onSelectPage(note.id, section.id, page.id)}
-                                        onDoubleClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          onDoubleClickPage(note.id, section.id, page.id);
-                                        }}
-                                        className="group"
-                                        sx={{
-                                          py: 0.25,
-                                          userSelect: "none",
-                                          "&.Mui-selected": {
-                                            bgcolor: "grey.800",
-                                            borderRadius: 1,
-                                            px: 1,
-                                            "&:hover": {
-                                              bgcolor: "grey.700",
+                                      <ListItem key={page.id} disablePadding>
+                                        <ListItemButton
+                                          selected={isPageSelected}
+                                          onClick={() => onSelectPage(note.id, section.id, page.id)}
+                                          onDoubleClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onDoubleClickPage(note.id, section.id, page.id);
+                                          }}
+                                          className="group"
+                                          sx={{
+                                            py: 0.25,
+                                            userSelect: "none",
+                                            "&.Mui-selected": {
+                                              bgcolor: "grey.800",
+                                              borderRadius: 1,
+                                              px: 1,
+                                              "&:hover": {
+                                                bgcolor: "grey.700",
+                                              },
                                             },
-                                          },
-                                        }}
-                                      >
-                                        <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-                                          {editingPageId === page.id ? (
-                                            <TextField
-                                              autoFocus
-                                              value={editingPageName}
-                                              onChange={(e) => onEditingPageNameChange(e.target.value)}
-                                              onBlur={() => onPageNameChange(note.id, section.id, page.id, editingPageName)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === "Enter") {
-                                                  onPageNameChange(note.id, section.id, page.id, editingPageName);
-                                                }
+                                          }}
+                                        >
+                                          <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                                            <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
+                                              <Icon sx={{ fontSize: "0.8rem" }} />
+                                            </ListItemIcon>
+                                            {editingPageId === page.id ? (
+                                              <TextField
+                                                autoFocus
+                                                value={editingPageName}
+                                                onChange={(e) => onEditingPageNameChange(e.target.value)}
+                                                onBlur={() => onPageNameChange(note.id, section.id, page.id, editingPageName)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter") {
+                                                    onPageNameChange(note.id, section.id, page.id, editingPageName);
+                                                  }
+                                                }}
+                                                onFocus={(e) => e.target.select()}
+                                                fullWidth
+                                                variant="standard"
+                                                InputProps={{
+                                                  disableUnderline: true,
+                                                }}
+                                                sx={{
+                                                  "& .MuiInputBase-input": {
+                                                    color: "text.primary",
+                                                    fontSize: "0.8rem",
+                                                  },
+                                                }}
+                                              />
+                                            ) : (
+                                              <ListItemText primary={page.title} sx={{ fontSize: "0.8rem" }} />
+                                            )}
+                                          </Box>
+                                          {isPageSelected && (
+                                            <IconButton
+                                              size="small"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeletePage(note.id, section.id, page.id);
                                               }}
-                                              onFocus={(e) => e.target.select()}
-                                              fullWidth
-                                              variant="standard"
-                                              InputProps={{
-                                                disableUnderline: true,
-                                              }}
-                                              sx={{
-                                                "& .MuiInputBase-input": {
-                                                  color: "text.primary",
-                                                  fontSize: "0.8rem",
-                                                },
-                                              }}
-                                            />
-                                          ) : (
-                                            <ListItemText primary={page.title} sx={{ fontSize: "0.8rem" }} />
+                                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
                                           )}
-                                        </Box>
-                                        {isPageSelected && (
-                                          <IconButton
-                                            size="small"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              onDeletePage(note.id, section.id, page.id);
-                                            }}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                          >
-                                            <DeleteIcon fontSize="small" />
-                                          </IconButton>
-                                        )}
-                                      </ListItemButton>
-                                    </ListItem>
+                                        </ListItemButton>
+                                      </ListItem>
                                   );
                                 })}
                                 <ListItem disablePadding>
@@ -1079,134 +1085,27 @@ export function NotePage() {
             onDeleteNote={handleDeleteNote}
             onDeleteSection={handleDeleteSection}
             onDeletePage={handleDeletePage}
+            selectedPage={selectedPage}
           />
         }
         pageList={null}
         main={
-          selectedSection ? (
-            selectedPage ? (
-              <BlockNoteEditor
-                key={selectedPage?.id}
-                selectedPage={selectedPage}
-                editingPageTitle={editingPageTitle}
-                editingPageTitleValue={editingPageTitleValue}
-                onEditingPageTitleChange={setEditingPageTitle}
-                onEditingPageTitleValueChange={setEditingPageTitleValue}
-                onPageTitleClick={handlePageTitleClick}
-                onPageTitleChange={handlePageTitleChange}
-                editingPageContent={editingPageContent}
-                onEditingPageContentChange={handleEditingPageContentChange}
-                onPageContentChange={handlePageContentChange}
-              />
-            ) : (
-              <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", flexDirection: "column" }}>
-                <Box sx={{ p: 2 }}>
-                  <Typography variant="h5" sx={{ mb: 2 }}>{selectedSection.title}</Typography>
-                </Box>
-                <List sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
-                  {selectedSection.pages.map((page) => {
-                    const isPageSelected = selectedPageId === page.id;
-                    return (
-                      <ListItem key={page.id} disablePadding>
-                        <ListItemButton
-                          selected={isPageSelected}
-                          onClick={() => handleSelectPage(selectedNoteId, selectedSection.id, page.id)}
-                          onDoubleClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDoubleClickPage(selectedNoteId, selectedSection.id, page.id);
-                          }}
-                          className="group"
-                          sx={{
-                            py: 0.5,
-                            userSelect: "none",
-                            "&.Mui-selected": {
-                              bgcolor: "grey.800",
-                              borderRadius: 1,
-                              px: 1,
-                              "&:hover": {
-                                bgcolor: "grey.700",
-                              },
-                            },
-                          }}
-                        >
-                          <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-                            <ListItemIcon sx={{ minWidth: "auto", mr: 1 }}>
-                              <NoteIcon sx={{ fontSize: "1rem" }} />
-                            </ListItemIcon>
-                            {editingPageId === page.id ? (
-                              <TextField
-                                autoFocus
-                                value={editingPageName}
-                                onChange={(e) => setEditingPageName(e.target.value)}
-                                onBlur={() => handlePageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    handlePageNameChange(selectedNoteId, selectedSection.id, page.id, editingPageName);
-                                  }
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                fullWidth
-                                variant="standard"
-                                InputProps={{
-                                  disableUnderline: true,
-                                }}
-                                sx={{
-                                  "& .MuiInputBase-input": {
-                                    color: "text.primary",
-                                    fontSize: "0.9rem",
-                                  },
-                                }}
-                              />
-                            ) : (
-                              <ListItemText primary={page.title} sx={{ fontSize: "0.9rem" }} />
-                            )}
-                          </Box>
-                          {isPageSelected && (
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeletePage(selectedNoteId, selectedSection.id, page.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                        </ListItemButton>
-                      </ListItem>
-                    );
-                  })}
-                </List>
-                <Box sx={{ p: 1, borderTop: 1, borderColor: "divider" }}>
-                  <Button
-                    startIcon={<CreateIcon />}
-                    variant="outlined"
-                    onClick={() => handleAddPage(selectedSection.id)}
-                    sx={{
-                      justifyContent: "flex-start",
-                      textTransform: "none",
-                      color: "text.primary",
-                      borderColor: "divider",
-                      "&:hover": {
-                        borderColor: "text.secondary",
-                      },
-                      width: "200px", // 適切なサイズに調整
-                    }}
-                  >
-                    ページを追加
-                  </Button>
-                </Box>
-              </Box>
-            )
+          selectedPage ? (
+            <BlockNoteEditor
+              key={selectedPage?.id}
+              selectedPage={selectedPage}
+              editingPageTitle={editingPageTitle}
+              editingPageTitleValue={editingPageTitleValue}
+              onEditingPageTitleChange={setEditingPageTitle}
+              onEditingPageTitleValueChange={setEditingPageTitleValue}
+              onPageTitleClick={handlePageTitleClick}
+              onPageTitleChange={handlePageTitleChange}
+              editingPageContent={editingPageContent}
+              onEditingPageContentChange={handleEditingPageContentChange}
+              onPageContentChange={handlePageContentChange}
+            />
           ) : (
-            <div className="h-full bg-background flex items-center justify-center">
-              <div className="text-foreground text-center">
-                <h2 className="text-2xl font-bold mb-4">ノートを選択してください</h2>
-                <p className="text-lg mb-2">左サイドバーからノートまたはセクションを選択すると、ページが表示されます</p>
-              </div>
-            </div>
+            <Box sx={{ height: "100%", bgcolor: "background.paper" }}></Box>
           )
         }
       />
