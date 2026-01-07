@@ -32,25 +32,43 @@ export function SigninForm() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const signinPending = useSelector((state: RootState) => state.user.signinPending);
 
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
+
+  useEffect(() => {
+    if (!currentUser) {
+      setError("");
+      setIsRedirecting(false);
+    }
+  }, [currentUser]);
 
   const { mutate: signin, isPending } = useAuthenticateUser({
     mutation: {
-      onSuccess: (data) => {
-        setSuccess("ログインに成功しました！");
-        localStorage.setItem("token", data.accessToken);
-        if (data.refreshToken) {
-          localStorage.setItem("refreshToken", data.refreshToken);
+      onSuccess: async (data) => {
+        try {
+          console.log("SigninForm onSuccess start");
+          localStorage.setItem("token", data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem("refreshToken", data.refreshToken);
+          }
+          console.log("Before refetch");
+          await queryClient.refetchQueries({ queryKey: ["/auth/me"] });
+          console.log("After refetch");
+          dispatch(setsigninPending(false));
+          console.log("SigninForm onSuccess end");
+        } catch (err) {
+          console.log("SigninForm onSuccess error", err);
+          setError("ユーザーデータの取得に失敗しました。");
+          dispatch(setsigninPending(false));
         }
-        // Invalidate the current user query to trigger re-fetch
-        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
-        // 成功メッセージを表示してから遷移（useEffectで処理）
       },
       onError: (err: any) => {
         const status = err?.response?.status;
@@ -68,29 +86,32 @@ export function SigninForm() {
     },
   });
 
-  const isLoading = isPending || signinPending;
+  const isLoading = isPending || signinPending || isRedirecting;
 
   useEffect(() => {
-    if (success && currentUser) {
+    console.log("SigninForm useEffect", { currentUser, isLoading, isLoadingUser });
+    if (currentUser && !isLoadingUser) {
+      console.log("useEffect transition start");
+      setIsRedirecting(true);
       if (currentUser.username && currentUser.firstName && currentUser.lastName) {
-        // ログイン成功メッセージを表示してからリダイレクト
         setTimeout(() => {
+          console.log("router.push to dashboard");
           router.push(`/${currentUser.username}`);
-        }, 2000); // 2秒待ってから遷移
+        }, 1000);
       } else {
         setTimeout(() => {
+          console.log("router.push to onboarding");
           router.push("/onboarding");
-        }, 2000);
+        }, 1000);
       }
     }
-  }, [success, currentUser, router]);
+  }, [currentUser, isLoadingUser, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError("");
     setPasswordError("");
     setError("");
-    setSuccess("");
     dispatch(setsigninPending(true));
 
     if (!email) {
@@ -144,13 +165,6 @@ export function SigninForm() {
               title="ログイン"
               subtitle="アカウントにアクセスしてペットを管理しましょう。"
             />
-
-            {/* Success Message */}
-            {success && (
-              <Alert severity="success" sx={{ mb: 3 }}>
-                {success}
-              </Alert>
-            )}
 
             {/* Error Message */}
             {error && (

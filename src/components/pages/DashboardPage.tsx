@@ -81,11 +81,7 @@ export function DashboardPage() {
     isLoadingUser: state.user.isLoadingUser,
   }));
 
-  useEffect(() => {
-    if (!isLoadingUser && !currentUser) {
-      router.push("/auth/signin");
-    }
-  }, [isLoadingUser, currentUser, router]);
+
 
   const { data: petsData, isLoading: isPetsLoading } = useListPets(undefined, {
     query: {
@@ -197,6 +193,23 @@ export function DashboardPage() {
         main={
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }
+      />
+    );
+  }
+
+  if (!currentUser && !isLoadingUser) {
+    console.log("DashboardPage no currentUser");
+    return (
+      <LayoutTemplate
+        header={<Header />}
+        footer={<Footer />}
+        main={
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-red-500">認証に失敗しました。再度ログインしてください。</p>
+            </div>
           </div>
         }
       />
