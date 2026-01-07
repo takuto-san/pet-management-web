@@ -32,6 +32,7 @@ export function SigninForm() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch();
@@ -46,6 +47,7 @@ export function SigninForm() {
   useEffect(() => {
     if (!currentUser) {
       setError("");
+      setSuccess("");
       setIsRedirecting(false);
     }
   }, [currentUser]);
@@ -55,6 +57,8 @@ export function SigninForm() {
       onSuccess: async (data) => {
         try {
           console.log("SigninForm onSuccess start");
+          console.log("setSuccess called", "ログインに成功しました！");
+          setSuccess("ログインに成功しました！");
           localStorage.setItem("token", data.accessToken);
           if (data.refreshToken) {
             localStorage.setItem("refreshToken", data.refreshToken);
@@ -67,6 +71,7 @@ export function SigninForm() {
         } catch (err) {
           console.log("SigninForm onSuccess error", err);
           setError("ユーザーデータの取得に失敗しました。");
+          setSuccess("");
           dispatch(setsigninPending(false));
         }
       },
@@ -93,25 +98,26 @@ export function SigninForm() {
     if (currentUser && !isLoadingUser) {
       console.log("useEffect transition start");
       setIsRedirecting(true);
-      if (currentUser.username && currentUser.firstName && currentUser.lastName) {
+      if (currentUser.username) {
         setTimeout(() => {
           console.log("router.push to dashboard");
           router.push(`/${currentUser.username}`);
-        }, 1000);
+        }, 3000);
       } else {
         setTimeout(() => {
           console.log("router.push to onboarding");
           router.push("/onboarding");
-        }, 1000);
+        }, 3000);
       }
     }
-  }, [currentUser, isLoadingUser, router]);
+  }, [currentUser, isLoading, isLoadingUser, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError("");
     setPasswordError("");
     setError("");
+    setSuccess("");
     dispatch(setsigninPending(true));
 
     if (!email) {
@@ -165,6 +171,16 @@ export function SigninForm() {
               title="ログイン"
               subtitle="アカウントにアクセスしてペットを管理しましょう。"
             />
+
+            {/* Success Message */}
+            {(() => {
+              console.log("render success", success);
+              return success && (
+                <div style={{ color: 'green', marginBottom: '12px', padding: '8px', backgroundColor: 'lightgreen', borderRadius: '4px' }}>
+                  {success}
+                </div>
+              );
+            })()}
 
             {/* Error Message */}
             {error && (

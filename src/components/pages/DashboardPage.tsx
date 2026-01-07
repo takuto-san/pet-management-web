@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { CircularProgress } from "@mui/material";
 import type { RootState } from "@/lib/stores/store";
 import type { Task, MonthlyEvent } from "@/types/dashboard";
 import { Header } from "@/components/organisms/Header";
@@ -207,9 +208,7 @@ export function DashboardPage() {
         footer={<Footer />}
         main={
           <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-red-500">認証に失敗しました。再度ログインしてください。</p>
-            </div>
+            <CircularProgress sx={{ color: 'white' }} />
           </div>
         }
       />
