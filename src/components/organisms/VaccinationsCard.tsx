@@ -19,7 +19,7 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
 
   return (
     <DashboardCard title="ワクチン接種記録">
-      <div className="mb-4 p-3 bg-card rounded">
+      <div className="mb-4 p-3 bg-[rgba(255,255,255,0.03)] rounded border border-[rgba(255,255,255,0.05)]">
         <p className="text-sm text-foreground">
           接種済み: <span className="font-bold text-primary">{completedCount}</span>
         </p>
@@ -36,11 +36,11 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
           {vaccineVisits.slice(0, 5).map((visit) => (
             <div
               key={visit.id}
-              className="p-3 rounded border-2 border-primary/80 bg-card"
+              className="p-3 rounded border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-primary">✓</span>
+                  <span className="text-red-800">✓</span>
                   <p className="text-sm font-semibold text-foreground">
                     {visit.diagnosis || "ワクチン接種"}
                   </p>
@@ -65,11 +65,11 @@ export function VaccinationsCard({ visits }: VaccinationsCardProps) {
           {upcomingVaccines.map((visit) => (
             <div
               key={visit.id}
-              className="p-3 rounded border-2 border-border bg-muted"
+              className="p-3 rounded border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-muted-foreground">○</span>
+                  <span className="text-red-800">○</span>
                   <p className="text-sm font-semibold text-foreground">
                     {visit.diagnosis || "ワクチン接種予定"}
                   </p>

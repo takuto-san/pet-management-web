@@ -75,13 +75,13 @@ export function ClinicVisitsCard({ visits }: ClinicVisitsCardProps) {
           {sortedVisits.map((visit) => {
             const date = new Date(visit.visitedOn);
             return (
-              <div key={visit.id} className="border-l-4 border-primary/80 pl-3 py-2">
+              <div key={visit.id} className="border-l-4 border-red-800 pl-3 py-2">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-bold text-foreground">
                     {date.getFullYear()}/{date.getMonth() + 1}/{date.getDate()}
                   </p>
                   {visit.visitType && (
-                    <span className="text-xs bg-primary/60 text-foreground px-2 py-1 rounded">
+                    <span className="text-xs bg-red-800 text-white px-2 py-1 rounded">
                       {getVisitTypeDisplayName(visit.visitType)}
                     </span>
                   )}

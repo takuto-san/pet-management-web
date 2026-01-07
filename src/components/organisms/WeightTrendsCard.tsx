@@ -55,7 +55,7 @@ export function WeightTrendsCard({ visits }: WeightTrendsCardProps) {
             })}
           </div>
           {weightsData.length > 0 && (
-            <div className="mt-4 p-3 bg-gray-700 rounded text-sm">
+            <div className="mt-4 p-3 bg-[rgba(255,255,255,0.03)] rounded border border-[rgba(255,255,255,0.05)] text-sm">
               <p className="font-bold text-white">最新: {weightsData[weightsData.length - 1].weight}kg</p>
               <p className="text-gray-300 text-xs mt-1">
                 記録日: {new Date(weightsData[weightsData.length - 1].visitedOn).toLocaleDateString()}

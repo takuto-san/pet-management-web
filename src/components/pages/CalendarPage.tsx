@@ -513,11 +513,11 @@ export function CalendarPage() {
       header={<Header />}
       footer={<Footer />}
       main={
-      <div className="p-4 relative">
+      <div className="p-4 relative bg-[#2D2631]">
         <h1 className="text-xl font-bold mb-4 text-foreground">カレンダー</h1>
 
         {/* カレンダー部分 */}
-        <div className="bg-card rounded-lg shadow p-4 mb-6 border">
+        <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-4 mb-6 border border-[rgba(255,255,255,0.1)]" style={{ backdropFilter: 'blur(10px)' }}>
 
             {/* ナビゲーション */}
             <div className="grid grid-cols-3 items-center gap-4 mb-4">
@@ -612,7 +612,7 @@ export function CalendarPage() {
                   <div
                     key={index}
                     className={`relative text-center py-3 px-2 text-sm rounded cursor-pointer ${
-                      isSelectedDate(date) ? 'bg-primary/40' : ''
+                      isSelectedDate(date) ? 'bg-[#8B1726] text-white' : ''
                     } ${
                       isCurrentPeriod(date) ? 'text-white' : 'text-gray-500'
                     }`}
@@ -646,17 +646,17 @@ export function CalendarPage() {
           </div>
 
           {/* タスクを追加ボタン */}
-          <div className="mb-6">
+          <div className="mb-6 mx-4">
             <button
               onClick={handleFabClick}
-              className="w-full bg-primary/60 hover:bg-primary/80 text-primary-foreground font-medium py-3 px-4 rounded-lg border border-border transition-colors duration-200"
+              className="w-full bg-[#8B1726] hover:bg-[#7A1524] text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
             >
               タスクを追加
             </button>
           </div>
 
           {/* カードリスト部分 */}
-          <div className="bg-card rounded-lg shadow p-4 border">
+          <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]" style={{ backdropFilter: 'blur(10px)' }}>
             {/* 日付ヘッダー */}
             <h3 className="text-lg font-semibold mb-4 text-foreground">
               {selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
@@ -671,7 +671,7 @@ export function CalendarPage() {
                     setSelectedCard(card);
                     setIsSidebarOpen(true);
                   }}
-                  className="bg-card border border-border rounded-lg p-4 flex justify-between items-start cursor-pointer hover:bg-primary/60"
+                  className="bg-primary/10 border border-border rounded-lg p-4 flex justify-between items-start cursor-pointer hover:bg-primary/30 border-l-4 border-l-[#A21D32]"
                 >
                   <div className="flex flex-col gap-2">
                     <div className="font-bold text-foreground">{card.time} - {card.medicine}</div>

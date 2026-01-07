@@ -28,18 +28,12 @@ export function MonthlyScheduleCard({ events }: MonthlyScheduleCardProps) {
       ) : (
         <div className="space-y-3">
           {upcomingEvents.slice(0, 5).map((event, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
+            <div key={index} className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.03)] rounded-lg border border-[rgba(255,255,255,0.05)]">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary/80" />
+                <Calendar className="w-4 h-4 text-red-800" />
                 <span className="text-sm font-medium text-foreground">{event.title}</span>
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                event.daysUntil === 0
-                  ? 'bg-primary/60 text-foreground'
-                  : event.daysUntil <= 3
-                  ? 'bg-accent/60 text-foreground'
-                  : 'bg-primary/40 text-foreground'
-              }`}>
+              <div className={`px-2 py-1 rounded-full text-xs font-bold bg-red-800 text-white`}>
                 {event.daysUntil === 0 ? '今日' : `あと ${event.daysUntil}日`}
               </div>
             </div>
