@@ -16,14 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // Set initial loading state based on token
-  useEffect(() => {
-    if (!token) {
-      dispatch(setLoadingUser(false));
-    }
-  }, [token, dispatch]);
-
-  const { data: userData, isLoading, error } = useGetCurrentUser({
+  const { data: userData, isLoading, error, refetch } = useGetCurrentUser({
     query: {
       enabled: !!token,
     },
@@ -34,12 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isLoading, dispatch]);
 
   useEffect(() => {
-    if (userData) {
+    console.log("AuthProvider useEffect", { userData, error });
+    if (userData && userData.id) {
+      console.log("setUser");
       dispatch(setUser(userData));
-    } else if (error) {
+    } else if (error || userData === null || (userData && !userData.id)) {
+      console.log("clearUser");
       dispatch(clearUser());
     }
-  }, [userData, error, dispatch]);
+  }, [userData, error, token, dispatch]);
 
   return (
     <div suppressHydrationWarning>

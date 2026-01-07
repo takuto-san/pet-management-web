@@ -34,8 +34,8 @@ export const Header = ({ onNavigate }: HeaderProps) => {
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         dispatch(clearUser());
-        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
-        router.push("/");
+        queryClient.clear();
+        router.push("/auth/signin");
       },
     },
   });
