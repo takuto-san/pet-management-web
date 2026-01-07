@@ -98,7 +98,7 @@ export function SigninForm() {
     if (currentUser && !isLoadingUser) {
       console.log("useEffect transition start");
       setIsRedirecting(true);
-      if (currentUser.username) {
+      if (currentUser.firstName && currentUser.lastName) {
         setTimeout(() => {
           console.log("router.push to dashboard");
           router.push(`/${currentUser.username}`);
@@ -106,7 +106,7 @@ export function SigninForm() {
       } else {
         setTimeout(() => {
           console.log("router.push to onboarding");
-          router.push("/onboarding");
+          router.push(`/${currentUser.username}/onboarding`);
         }, 3000);
       }
     }

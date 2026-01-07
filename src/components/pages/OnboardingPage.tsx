@@ -20,12 +20,48 @@ import AcUnitIcon from "@mui/icons-material/AcUnit";
 import { useUpdateUser } from "@/api/generated/user/user";
 import { useAddPet } from "@/api/generated/pet/pet";
 import type { RootState } from "@/lib/stores/store";
-import { Header } from "@/components/organisms/Header";
+import AuthHeader from "@/components/organisms/AuthHeader";
 import type { UserBase, PetFields } from "@/types/api";
 import { PetType, PetSex } from "@/types/api";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 
 export function OnboardingPage() {
+  const textFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      '& fieldset': {
+        borderColor: 'white',
+      },
+      '&:hover fieldset': {
+        borderColor: 'white',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: 'white',
+      },
+      '&.Mui-disabled fieldset': {
+        borderColor: 'white',
+      },
+      '& .MuiInputBase-input': {
+        color: 'white',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: 'white',
+      '&.Mui-required .MuiInputLabel-asterisk': {
+        color: '#8B0000',
+      },
+      '&.Mui-disabled': {
+        color: 'white',
+      },
+    },
+    '& .MuiInputLabel-asterisk': {
+      color: '#8B0000',
+    },
+    '& .MuiInputBase-input.Mui-disabled': {
+      color: 'rgba(255, 255, 255, 0.6)',
+      WebkitTextFillColor: 'rgba(255, 255, 255, 0.6)',
+    },
+  };
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<UserBase>({
     username: "",
@@ -161,8 +197,8 @@ export function OnboardingPage() {
   const mainContent = (
     <Box
       sx={{
-        minHeight: "calc(100vh - 64px)",
-        background: "linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)",
+        minHeight: "calc(100vh - 64px)", // AppBarの高さを引く
+        background: "#2D2631", // ダークパープル（暗い灰色）
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -171,37 +207,27 @@ export function OnboardingPage() {
     >
       <Container maxWidth="md">
         <Paper
-          elevation={10}
+          elevation={0}
           sx={{
             p: 4,
             borderRadius: 3,
-            background: "rgba(255, 255, 255, 0.95)",
+            background: "rgba(255, 255, 255, 0.05)", // 背景より少し明るい
+            border: "1px solid rgba(255, 255, 255, 0.1)", // 細い枠線
             backdropFilter: "blur(10px)",
           }}
         >
           <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: "primary.main",
-                mx: "auto",
-                mb: 3,
-                boxShadow: 3,
-              }}
-            >
-              <AcUnitIcon sx={{ fontSize: 40, color: '#C71585' }} />
-            </Avatar>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold" }}>
+            <AcUnitIcon sx={{ fontSize: 60, color: '#8B0000', mb: 3 }} />
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: "bold", color: 'white' }}>
               {currentStep === 1 ? "基本情報入力" : "ペット情報入力"}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" sx={{ color: 'white' }}>
               {currentStep === 1
                 ? "ペットの管理を始める前に、基本情報を入力してください"
                 : "ペットの情報を入力してください"
               }
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <Typography variant="body2" sx={{ mt: 1, color: 'white' }}>
               ステップ {currentStep} / 2
             </Typography>
           </Box>
@@ -229,7 +255,7 @@ export function OnboardingPage() {
                     onChange={handleChange("username")}
                     required
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                   <TextField
                     fullWidth
@@ -237,7 +263,7 @@ export function OnboardingPage() {
                     value={formData.email}
                     disabled
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                 </Box>
                 <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
@@ -248,7 +274,7 @@ export function OnboardingPage() {
                     onChange={handleChange("lastName")}
                     required
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                   <TextField
                     fullWidth
@@ -257,7 +283,7 @@ export function OnboardingPage() {
                     onChange={handleChange("firstName")}
                     required
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                 </Box>
                 <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
@@ -267,7 +293,7 @@ export function OnboardingPage() {
                     value={formData.lastNameKana}
                     onChange={handleChange("lastNameKana")}
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                   <TextField
                     fullWidth
@@ -275,7 +301,7 @@ export function OnboardingPage() {
                     value={formData.firstNameKana}
                     onChange={handleChange("firstNameKana")}
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                 </Box>
                 <TextField
@@ -284,6 +310,7 @@ export function OnboardingPage() {
                   value={formData.telephone}
                   onChange={handleChange("telephone")}
                   variant="outlined"
+                  sx={textFieldSx}
                 />
                 <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
                   <TextField
@@ -292,7 +319,7 @@ export function OnboardingPage() {
                     value={formData.postalCode}
                     onChange={handleChange("postalCode")}
                     variant="outlined"
-                    sx={{ flex: "1 1 200px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 200px" }}
                   />
                   <TextField
                     fullWidth
@@ -300,7 +327,7 @@ export function OnboardingPage() {
                     value={formData.prefecture}
                     onChange={handleChange("prefecture")}
                     variant="outlined"
-                    sx={{ flex: "2 1 400px" }}
+                    sx={{ ...textFieldSx, flex: "2 1 400px" }}
                   />
                 </Box>
                 <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
@@ -310,7 +337,7 @@ export function OnboardingPage() {
                     value={formData.city}
                     onChange={handleChange("city")}
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                   <TextField
                     fullWidth
@@ -318,7 +345,7 @@ export function OnboardingPage() {
                     value={formData.address}
                     onChange={handleChange("address")}
                     variant="outlined"
-                    sx={{ flex: "1 1 300px" }}
+                    sx={{ ...textFieldSx, flex: "1 1 300px" }}
                   />
                 </Box>
               </Box>
@@ -334,8 +361,12 @@ export function OnboardingPage() {
                   borderRadius: 2,
                   fontSize: "1.1rem",
                   boxShadow: 3,
-                  "&:hover": { boxShadow: 6 },
                   mt: 4,
+                  backgroundColor: '#8B0000',
+                  '&:hover': {
+                    backgroundColor: '#A52A2A',
+                    boxShadow: 6,
+                  },
                 }}
               >
                 {isUserPending ? "更新中..." : "次へ"}
@@ -352,6 +383,7 @@ export function OnboardingPage() {
                   required
                   variant="outlined"
                   disabled={isPetLoading}
+                  sx={textFieldSx}
                 />
                 <TextField
                   fullWidth
@@ -364,6 +396,7 @@ export function OnboardingPage() {
                     shrink: true,
                   }}
                   disabled={isPetLoading}
+                  sx={textFieldSx}
                 />
                 <TextField
                   fullWidth
@@ -373,6 +406,7 @@ export function OnboardingPage() {
                   onChange={handlePetChange("sex")}
                   variant="outlined"
                   disabled={isPetLoading}
+                  sx={textFieldSx}
                 >
                   <MenuItem value={PetSex.male}>オス</MenuItem>
                   <MenuItem value={PetSex.female}>メス</MenuItem>
@@ -387,6 +421,7 @@ export function OnboardingPage() {
                   variant="outlined"
                   required
                   disabled={isPetLoading}
+                  sx={textFieldSx}
                 >
                   <MenuItem value={PetType.dog}>犬</MenuItem>
                   <MenuItem value={PetType.cat}>猫</MenuItem>
@@ -410,6 +445,13 @@ export function OnboardingPage() {
                     borderRadius: 2,
                     fontSize: "1.1rem",
                     flex: 1,
+                    borderColor: '#B22222',
+                    color: 'white',
+                    '&:hover': {
+                      borderColor: '#A52A2A',
+                      backgroundColor: 'rgba(139, 0, 0, 0.04)',
+                      color: 'white',
+                    },
                   }}
                 >
                   戻る
@@ -424,8 +466,12 @@ export function OnboardingPage() {
                     borderRadius: 2,
                     fontSize: "1.1rem",
                     boxShadow: 3,
-                    "&:hover": { boxShadow: 6 },
                     flex: 1,
+                    backgroundColor: '#8B0000',
+                    '&:hover': {
+                      backgroundColor: '#A52A2A',
+                      boxShadow: 6,
+                    },
                   }}
                 >
                   {isPetLoading ? "登録中..." : "完了"}
@@ -441,7 +487,7 @@ export function OnboardingPage() {
   return (
     <>
       <LayoutTemplate
-        header={<Header />}
+        header={<AuthHeader />}
         main={mainContent}
         isCentered={true}
       />
