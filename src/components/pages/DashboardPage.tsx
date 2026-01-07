@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { CircularProgress } from "@mui/material";
 import type { RootState } from "@/lib/stores/store";
 import type { Task, MonthlyEvent } from "@/types/dashboard";
 import { Header } from "@/components/organisms/Header";
@@ -14,9 +15,8 @@ import { MonthlyScheduleCard } from "@/components/organisms/MonthlyScheduleCard"
 import { WeightTrendsCard } from "@/components/organisms/WeightTrendsCard";
 import { ClinicVisitsCard } from "@/components/organisms/ClinicVisitsCard";
 import { VaccinationsCard } from "@/components/organisms/VaccinationsCard";
-import { useListPets } from "@/api/generated/pet/pet";
-import { listVisits } from "@/api/generated/visit/visit";
-import { useQueries } from "@tanstack/react-query";
+import { useListPetsByUser } from "@/api/generated/pet/pet";
+import { useListVisits } from "@/api/generated/visit/visit";
 
 // ユーティリティ関数：visitTypeの日本語化
 const getVisitTypeDisplayName = (visitType: string | undefined): string => {
@@ -81,20 +81,15 @@ export function DashboardPage() {
     isLoadingUser: state.user.isLoadingUser,
   }));
 
-  useEffect(() => {
-    if (!isLoadingUser && !currentUser) {
-      router.push("/auth/signin");
-    }
-  }, [isLoadingUser, currentUser, router]);
 
-  const { data: petsData, isLoading: isPetsLoading } = useListPets(undefined, {
+
+  const { data: petsData, isLoading: isPetsLoading } = useListPetsByUser(currentUser?.id || "", undefined, {
     query: {
       enabled: !!currentUser && !isLoadingUser,
     },
   });
 
-  const allPets = petsData?.content || [];
-  const pets = currentUser ? allPets.filter(pet => pet.userId === currentUser.id) : [];
+  const pets = petsData?.content || [];
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets.length > 0 ? pets[0].id : null);
 
   useEffect(() => {
@@ -118,18 +113,14 @@ export function DashboardPage() {
     }
   };
 
-  // 各ペットIDに対してvisitsを取得
-  const visitsQueries = useQueries({
-    queries: (petsData?.content?.map(pet => pet.id) || []).map(petId => ({
-      queryKey: ['/visits', { petId }],
-      queryFn: () => listVisits({ petId }),
-    })),
+  // 選択されたペットのvisitsを取得
+  const { data: visitsData } = useListVisits({ petId: selectedPet?.id }, {
+    query: {
+      enabled: !!selectedPet,
+    },
   });
 
-  // 結果をマージ
-  const visits = useMemo(() => {
-    return visitsQueries.flatMap(query => query.data?.content || []);
-  }, [petsData?.content]);
+  const visits = useMemo(() => visitsData?.content || [], [visitsData]);
 
   const [todayTasks, setTodayTasks] = useState<Task[]>([]);
 
@@ -203,6 +194,21 @@ export function DashboardPage() {
     );
   }
 
+  if (!currentUser && !isLoadingUser) {
+    console.log("DashboardPage no currentUser");
+    return (
+      <LayoutTemplate
+        header={<Header />}
+        footer={<Footer />}
+        main={
+          <div className="flex items-center justify-center h-full">
+            <CircularProgress sx={{ color: 'white' }} />
+          </div>
+        }
+      />
+    );
+  }
+
   if (!currentUser) {
     return null;
   }
@@ -256,9 +262,9 @@ export function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <WeightTrendsCard visits={visits.filter(v => v.petId === selectedPet.id)} />
-                <ClinicVisitsCard visits={visits.filter(v => v.petId === selectedPet.id)} />
-                <VaccinationsCard visits={visits.filter(v => v.petId === selectedPet.id)} />
+                <WeightTrendsCard visits={visits} />
+                <ClinicVisitsCard visits={visits} />
+                <VaccinationsCard visits={visits} />
               </div>
             </div>
           ) : (

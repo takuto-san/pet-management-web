@@ -33,24 +33,47 @@ export function SigninForm() {
   const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const signinPending = useSelector((state: RootState) => state.user.signinPending);
 
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
+    currentUser: state.user.currentUser,
+    isLoadingUser: state.user.isLoadingUser,
+  }));
+
+  useEffect(() => {
+    if (!currentUser) {
+      setError("");
+      setSuccess("");
+      setIsRedirecting(false);
+    }
+  }, [currentUser]);
 
   const { mutate: signin, isPending } = useAuthenticateUser({
     mutation: {
-      onSuccess: (data) => {
-        setSuccess("ログインに成功しました！");
-        localStorage.setItem("token", data.accessToken);
-        if (data.refreshToken) {
-          localStorage.setItem("refreshToken", data.refreshToken);
+      onSuccess: async (data) => {
+        try {
+          console.log("SigninForm onSuccess start");
+          console.log("setSuccess called", "ログインに成功しました！");
+          setSuccess("ログインに成功しました！");
+          localStorage.setItem("token", data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem("refreshToken", data.refreshToken);
+          }
+          console.log("Before refetch");
+          await queryClient.refetchQueries({ queryKey: ["/auth/me"] });
+          console.log("After refetch");
+          dispatch(setsigninPending(false));
+          console.log("SigninForm onSuccess end");
+        } catch (err) {
+          console.log("SigninForm onSuccess error", err);
+          setError("ユーザーデータの取得に失敗しました。");
+          setSuccess("");
+          dispatch(setsigninPending(false));
         }
-        // Invalidate the current user query to trigger re-fetch
-        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
-        // 成功メッセージを表示してから遷移（useEffectで処理）
       },
       onError: (err: any) => {
         const status = err?.response?.status;
@@ -68,22 +91,26 @@ export function SigninForm() {
     },
   });
 
-  const isLoading = isPending || signinPending;
+  const isLoading = isPending || signinPending || isRedirecting;
 
   useEffect(() => {
-    if (success && currentUser) {
-      if (currentUser.username && currentUser.firstName && currentUser.lastName) {
-        // ログイン成功メッセージを表示してからリダイレクト
+    console.log("SigninForm useEffect", { currentUser, isLoading, isLoadingUser });
+    if (currentUser && !isLoadingUser) {
+      console.log("useEffect transition start");
+      setIsRedirecting(true);
+      if (currentUser.username) {
         setTimeout(() => {
+          console.log("router.push to dashboard");
           router.push(`/${currentUser.username}`);
-        }, 2000); // 2秒待ってから遷移
+        }, 3000);
       } else {
         setTimeout(() => {
+          console.log("router.push to onboarding");
           router.push("/onboarding");
-        }, 2000);
+        }, 3000);
       }
     }
-  }, [success, currentUser, router]);
+  }, [currentUser, isLoading, isLoadingUser, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,11 +173,14 @@ export function SigninForm() {
             />
 
             {/* Success Message */}
-            {success && (
-              <Alert severity="success" sx={{ mb: 3 }}>
-                {success}
-              </Alert>
-            )}
+            {(() => {
+              console.log("render success", success);
+              return success && (
+                <div style={{ color: 'green', marginBottom: '12px', padding: '8px', backgroundColor: 'lightgreen', borderRadius: '4px' }}>
+                  {success}
+                </div>
+              );
+            })()}
 
             {/* Error Message */}
             {error && (
