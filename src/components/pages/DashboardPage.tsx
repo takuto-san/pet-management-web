@@ -218,10 +218,10 @@ export function DashboardPage() {
       header={<Header />}
       footer={<Footer />}
       main={
-        <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <div className="min-h-screen bg-[#2D2631] text-foreground flex items-center justify-center p-4">
           <div className="w-full max-w-6xl space-y-6">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-4xl font-bold">
                 {currentUser.username} さんのダッシュボード
               </h1>
             </div>

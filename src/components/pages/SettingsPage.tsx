@@ -64,7 +64,7 @@ export function SettingsPage() {
             <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'white' }}>
               プロフィール
             </Typography>
-            <Paper sx={{ p: 3, mt: 3, bgcolor: '#2D2631', borderRadius: 2 }}>
+            <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-6 mt-6 border border-[rgba(255,255,255,0.1)]" style={{ backdropFilter: 'blur(10px)' }}>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, alignItems: 'center' }}>
                 <Box sx={{ flex: { xs: 1, sm: '0 0 33%' }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Avatar
@@ -107,7 +107,7 @@ export function SettingsPage() {
                   </Box>
                 </Box>
               </Box>
-            </Paper>
+            </div>
           </Box>
         );
       case 'billing':
@@ -177,7 +177,11 @@ export function SettingsPage() {
           </List>
         </Box>
       }
-      main={renderContent()}
+      main={
+        <div className="bg-[#2D2631] min-h-full">
+          {renderContent()}
+        </div>
+      }
     />
   );
 }

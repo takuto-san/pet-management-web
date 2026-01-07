@@ -40,7 +40,7 @@ export function PetProfileCard({ pet, visits }: PetProfileCardProps) {
     <DashboardCard title="ペット情報">
       <div className="flex flex-col items-center space-y-4">
         <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
-          <span className="text-4xl">🐾</span>
+          <span className="text-4xl text-red-800">🐾</span>
         </div>
         <div className="text-center">
           <h3 className="text-xl font-bold text-foreground">{pet.name}</h3>

@@ -20,7 +20,7 @@ export function TodayScheduleCard({ tasks, onToggleTask }: TodayScheduleCardProp
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="flex items-center space-x-3 p-3 hover:bg-muted rounded-lg border border-border transition-colors duration-200"
+              className="flex items-center space-x-3 p-3 hover:bg-[rgba(255,255,255,0.03)] rounded-lg border border-[rgba(255,255,255,0.05)] transition-colors duration-200"
             >
               <input
                 type="checkbox"
@@ -33,7 +33,7 @@ export function TodayScheduleCard({ tasks, onToggleTask }: TodayScheduleCardProp
                   {task.name}
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3 h-3 text-red-800" />
                   {task.time}
                 </p>
               </div>
