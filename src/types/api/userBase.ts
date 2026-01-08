@@ -44,4 +44,6 @@ export interface UserBase {
    * @pattern ^$|^[0-9-]*$
    */
   telephone?: string;
+  /** URL of profile icon image */
+  icon?: string;
 }

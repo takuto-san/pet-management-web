@@ -16,4 +16,6 @@ export interface PetFields {
   type: PetType;
   /** The owner ID */
   userId: string;
+  /** URL of pet icon image */
+  icon?: string;
 }

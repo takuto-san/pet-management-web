@@ -8,6 +8,8 @@
 
 export type PetAllOf = {
   readonly id: string;
+  /** URL of pet icon image */
+  icon?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
 };
