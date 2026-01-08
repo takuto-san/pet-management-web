@@ -15,7 +15,7 @@ export interface PetFields {
   sex?: PetSex;
   type: PetType;
   /** The owner ID */
-  userId: string;
+  userId?: string;
   /** URL of pet icon image */
   icon?: string;
 }

@@ -7,6 +7,8 @@
  */
 
 export type PetAllOf = {
+  /** The owner ID */
+  readonly userId?: string;
   readonly id: string;
   /** URL of pet icon image */
   icon?: string;
