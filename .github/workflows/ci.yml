@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
     branches:
-      - develop/v1.0
+      - develop/v1.1
     paths-ignore:
       - '**.md'
       - 'docker-compose.yml'
