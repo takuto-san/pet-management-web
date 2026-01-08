@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Box, Typography, Avatar, Paper, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { Box, Typography, Avatar, Paper, List, ListItem, ListItemButton, ListItemText, Button, Alert } from "@mui/material";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { LogoIcon } from "@/components/molecules/LogoIcon";
+import { ImageUpload } from "@/components/molecules/ImageUpload";
+import { useUpdateUser } from "@/api/generated/user/user";
 import type { RootState } from "@/lib/stores/store";
 
 interface TabPanelProps {
@@ -35,6 +37,9 @@ function TabPanel(props: TabPanelProps) {
 export function SettingsPage() {
   const router = useRouter();
   const [selectedSetting, setSelectedSetting] = useState('profile');
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
     isLoadingUser: state.user.isLoadingUser,
@@ -68,6 +73,7 @@ export function SettingsPage() {
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, alignItems: 'center' }}>
                 <Box sx={{ flex: { xs: 1, sm: '0 0 33%' }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Avatar
+                    src={currentUser.icon}
                     sx={{ width: 100, height: 100, bgcolor: '#333333', fontSize: '2rem' }}
                   >
                     {currentUser.firstName?.[0] || currentUser.username?.[0] || 'U'}

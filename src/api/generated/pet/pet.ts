@@ -35,6 +35,95 @@ import { customInstance } from "../../mutator/custom-instance";
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
+ * @summary Add a new pet for a specific user
+ */
+export const createPet = (
+  userId: string,
+  petFields: PetFields,
+  options?: SecondParameter<typeof customInstance>,
+  signal?: AbortSignal,
+) => {
+  return customInstance<Pet>(
+    {
+      url: `/users/${userId}/pets`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: petFields,
+      signal,
+    },
+    options,
+  );
+};
+
+export const getCreatePetMutationOptions = <
+  TError = ProblemDetail,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPet>>,
+    TError,
+    { userId: string; data: PetFields },
+    TContext
+  >;
+  request?: SecondParameter<typeof customInstance>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPet>>,
+  TError,
+  { userId: string; data: PetFields },
+  TContext
+> => {
+  const mutationKey = ["createPet"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPet>>,
+    { userId: string; data: PetFields }
+  > = (props) => {
+    const { userId, data } = props ?? {};
+
+    return createPet(userId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPet>>
+>;
+export type CreatePetMutationBody = PetFields;
+export type CreatePetMutationError = ProblemDetail;
+
+/**
+ * @summary Add a new pet for a specific user
+ */
+export const useCreatePet = <TError = ProblemDetail, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createPet>>,
+      TError,
+      { userId: string; data: PetFields },
+      TContext
+    >;
+    request?: SecondParameter<typeof customInstance>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createPet>>,
+  TError,
+  { userId: string; data: PetFields },
+  TContext
+> => {
+  const mutationOptions = getCreatePetMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
  * @summary Lists pets for a specific user with pagination
  */
 export const listPetsByUser = (
