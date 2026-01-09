@@ -27,12 +27,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isLoading, dispatch]);
 
   useEffect(() => {
-    "AuthProvider useEffect", { userData, error });
     if (userData && userData.id) {
-      "setUser");
       dispatch(setUser(userData));
     } else if (error || userData === null || (userData && !userData.id)) {
-      "clearUser");
       dispatch(clearUser());
     }
   }, [userData, error, token, dispatch]);

@@ -56,20 +56,14 @@ export function SigninForm() {
     mutation: {
       onSuccess: async (data) => {
         try {
-          "SigninForm onSuccess start");
-          "setSuccess called", "ログインに成功しました！");
           setSuccess("ログインに成功しました！");
           localStorage.setItem("token", data.accessToken);
           if (data.refreshToken) {
             localStorage.setItem("refreshToken", data.refreshToken);
           }
-          "Before refetch");
           await queryClient.refetchQueries({ queryKey: ["/auth/me"] });
-          "After refetch");
           dispatch(setsigninPending(false));
-          "SigninForm onSuccess end");
         } catch (err) {
-          "SigninForm onSuccess error", err);
           setError("ユーザーデータの取得に失敗しました。");
           setSuccess("");
           dispatch(setsigninPending(false));
@@ -94,18 +88,14 @@ export function SigninForm() {
   const isLoading = isPending || signinPending || isRedirecting;
 
   useEffect(() => {
-    "SigninForm useEffect", { currentUser, isLoading, isLoadingUser });
     if (currentUser && !isLoadingUser) {
-      "useEffect transition start");
       setIsRedirecting(true);
       if (currentUser.firstName && currentUser.lastName) {
         setTimeout(() => {
-          "router.push to dashboard");
           router.push(`/${currentUser.username}`);
         }, 3000);
       } else {
         setTimeout(() => {
-          "router.push to onboarding");
           router.push(`/${currentUser.username}/onboarding`);
         }, 3000);
       }
@@ -173,14 +163,11 @@ export function SigninForm() {
             />
 
             {/* Success Message */}
-            {(() => {
-              "render success", success);
-              return success && (
-                <div style={{ color: 'green', marginBottom: '12px', padding: '8px', backgroundColor: 'lightgreen', borderRadius: '4px' }}>
-                  {success}
-                </div>
-              );
-            })()}
+            {success && (
+              <div style={{ color: 'green', marginBottom: '12px', padding: '8px', backgroundColor: 'lightgreen', borderRadius: '4px' }}>
+                {success}
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (

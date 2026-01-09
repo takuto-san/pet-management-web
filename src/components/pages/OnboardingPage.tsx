@@ -29,7 +29,6 @@ import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { ImageUpload } from "@/components/molecules/ImageUpload";
 
 export function OnboardingPage() {
-  "OnboardingPage component rendered");
 
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
@@ -102,7 +101,6 @@ export function OnboardingPage() {
   const { mutate: updateUser, isPending: isUserPending } = useUpdateUser({
     mutation: {
       onSuccess: (data) => {
-        "User update successful, setting step to 2");
         setSuccess("プロフィールが更新されました！");
         setCurrentStep(2);
         setSuccess("");
@@ -123,7 +121,6 @@ export function OnboardingPage() {
   const { mutate: createPet, isPending: isPetPending } = useCreatePet({
     mutation: {
       onSuccess: (data) => {
-        "Pet created successfully:", data);
         setSuccess("ペットが登録されました！");
         setTimeout(() => {
           if (currentUser?.username) {
@@ -132,7 +129,6 @@ export function OnboardingPage() {
         }, 1500);
       },
       onError: (err: any) => {
-        console.error("Pet creation failed:", err);
         const status = err?.response?.status;
         let errorMessage = "ペットの登録に失敗しました。";
         if (status === 400) {
@@ -148,7 +144,6 @@ export function OnboardingPage() {
   const isPetLoading = isPetPending || !!success;
 
   useEffect(() => {
-    "OnboardingPage useEffect - currentUser:", currentUser);
     if (currentUser) {
       setFormData({
         username: currentUser.username || "",
@@ -207,24 +202,19 @@ export function OnboardingPage() {
 
   const handlePetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    "handlePetSubmit called");
-    "petData:", petData);
     setError("");
     setSuccess("");
 
     if (!petData.name) {
-      "Pet name is required");
       setError("ペットの名前は必須です。");
       return;
     }
 
     if (!petData.userId) {
-      "User ID is missing");
       setError("ユーザー情報が取得できませんでした。");
       return;
     }
 
-    "Calling createPet with:", { userId: petData.userId, data: petData });
     createPet({ userId: petData.userId, data: petData });
   };
 
