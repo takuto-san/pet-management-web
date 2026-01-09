@@ -195,7 +195,7 @@ export function DashboardPage() {
   }
 
   if (!currentUser && !isLoadingUser) {
-    console.log("DashboardPage no currentUser");
+    "DashboardPage no currentUser");
     return (
       <LayoutTemplate
         header={<Header />}

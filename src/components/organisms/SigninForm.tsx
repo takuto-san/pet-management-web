@@ -56,20 +56,20 @@ export function SigninForm() {
     mutation: {
       onSuccess: async (data) => {
         try {
-          console.log("SigninForm onSuccess start");
-          console.log("setSuccess called", "ログインに成功しました！");
+          "SigninForm onSuccess start");
+          "setSuccess called", "ログインに成功しました！");
           setSuccess("ログインに成功しました！");
           localStorage.setItem("token", data.accessToken);
           if (data.refreshToken) {
             localStorage.setItem("refreshToken", data.refreshToken);
           }
-          console.log("Before refetch");
+          "Before refetch");
           await queryClient.refetchQueries({ queryKey: ["/auth/me"] });
-          console.log("After refetch");
+          "After refetch");
           dispatch(setsigninPending(false));
-          console.log("SigninForm onSuccess end");
+          "SigninForm onSuccess end");
         } catch (err) {
-          console.log("SigninForm onSuccess error", err);
+          "SigninForm onSuccess error", err);
           setError("ユーザーデータの取得に失敗しました。");
           setSuccess("");
           dispatch(setsigninPending(false));
@@ -94,18 +94,18 @@ export function SigninForm() {
   const isLoading = isPending || signinPending || isRedirecting;
 
   useEffect(() => {
-    console.log("SigninForm useEffect", { currentUser, isLoading, isLoadingUser });
+    "SigninForm useEffect", { currentUser, isLoading, isLoadingUser });
     if (currentUser && !isLoadingUser) {
-      console.log("useEffect transition start");
+      "useEffect transition start");
       setIsRedirecting(true);
       if (currentUser.firstName && currentUser.lastName) {
         setTimeout(() => {
-          console.log("router.push to dashboard");
+          "router.push to dashboard");
           router.push(`/${currentUser.username}`);
         }, 3000);
       } else {
         setTimeout(() => {
-          console.log("router.push to onboarding");
+          "router.push to onboarding");
           router.push(`/${currentUser.username}/onboarding`);
         }, 3000);
       }
@@ -174,7 +174,7 @@ export function SigninForm() {
 
             {/* Success Message */}
             {(() => {
-              console.log("render success", success);
+              "render success", success);
               return success && (
                 <div style={{ color: 'green', marginBottom: '12px', padding: '8px', backgroundColor: 'lightgreen', borderRadius: '4px' }}>
                   {success}

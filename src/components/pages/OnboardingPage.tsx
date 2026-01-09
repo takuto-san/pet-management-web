@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   TextField,
@@ -18,6 +19,7 @@ import {
 } from "@mui/material";
 import AcUnitIcon from "@mui/icons-material/AcUnit";
 import { useUpdateUser } from "@/api/generated/user/user";
+import { useCreatePet } from "@/api/generated/pet/pet";
 
 import type { RootState } from "@/lib/stores/store";
 import AuthHeader from "@/components/organisms/AuthHeader";
@@ -27,6 +29,8 @@ import { LayoutTemplate } from "@/components/templates/LayoutTemplate";
 import { ImageUpload } from "@/components/molecules/ImageUpload";
 
 export function OnboardingPage() {
+  "OnboardingPage component rendered");
+
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
       '& fieldset': {
@@ -92,11 +96,13 @@ export function OnboardingPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
   const { mutate: updateUser, isPending: isUserPending } = useUpdateUser({
     mutation: {
       onSuccess: (data) => {
+        "User update successful, setting step to 2");
         setSuccess("プロフィールが更新されました！");
         setCurrentStep(2);
         setSuccess("");
@@ -114,12 +120,35 @@ export function OnboardingPage() {
     },
   });
 
-  // Note: useAddPetは存在しないので、仮定して実装
-  const [isPetPending, setIsPetPending] = useState(false);
+  const { mutate: createPet, isPending: isPetPending } = useCreatePet({
+    mutation: {
+      onSuccess: (data) => {
+        "Pet created successfully:", data);
+        setSuccess("ペットが登録されました！");
+        setTimeout(() => {
+          if (currentUser?.username) {
+            router.push(`/${currentUser.username}`);
+          }
+        }, 1500);
+      },
+      onError: (err: any) => {
+        console.error("Pet creation failed:", err);
+        const status = err?.response?.status;
+        let errorMessage = "ペットの登録に失敗しました。";
+        if (status === 400) {
+          errorMessage = "入力内容を確認してください。";
+        } else if (err?.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        }
+        setError(errorMessage);
+      },
+    },
+  }, queryClient);
 
   const isPetLoading = isPetPending || !!success;
 
   useEffect(() => {
+    "OnboardingPage useEffect - currentUser:", currentUser);
     if (currentUser) {
       setFormData({
         username: currentUser.username || "",
@@ -178,29 +207,25 @@ export function OnboardingPage() {
 
   const handlePetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    "handlePetSubmit called");
+    "petData:", petData);
     setError("");
     setSuccess("");
 
     if (!petData.name) {
+      "Pet name is required");
       setError("ペットの名前は必須です。");
       return;
     }
 
     if (!petData.userId) {
+      "User ID is missing");
       setError("ユーザー情報が取得できませんでした。");
       return;
     }
 
-    // Note: ペット作成APIは存在しないので、仮定して成功扱い
-    setIsPetPending(true);
-    setTimeout(() => {
-      setSuccess("ペットが登録されました！");
-      setTimeout(() => {
-        if (currentUser?.username) {
-          router.push(`/${currentUser.username}`);
-        }
-      }, 1500);
-    }, 1000);
+    "Calling createPet with:", { userId: petData.userId, data: petData });
+    createPet({ userId: petData.userId, data: petData });
   };
 
   if (!currentUser) {
