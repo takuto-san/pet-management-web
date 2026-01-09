@@ -18,6 +18,9 @@ import {
   CircularProgress,
 } from "@mui/material";
 import AcUnitIcon from "@mui/icons-material/AcUnit";
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import PetsIcon from '@mui/icons-material/Pets';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { useUpdateUser } from "@/api/generated/user/user";
 import { useCreatePet } from "@/api/generated/pet/pet";
 
@@ -377,14 +380,27 @@ export function OnboardingPage() {
                   />
                 </Box>
 
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                  <ImageUpload
-                    label="プロフィール画像を選択"
-                    size={120}
-                    value={userImagePreview}
-                    onChange={handleUserImageChange}
-                    disabled={isUserPending}
-                  />
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
+                  <AccountCircleIcon sx={{ fontSize: 60, color: 'white', mb: 1 }} />
+                  <Box sx={{ position: 'relative' }}>
+                    <ImageUpload
+                      label="プロフィール画像を選択"
+                      size={120}
+                      value={userImagePreview}
+                      onChange={handleUserImageChange}
+                      disabled={isUserPending}
+                    />
+                    <PhotoCamera sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      fontSize: 24,
+                      color: '#8B0000',
+                      bgcolor: 'white',
+                      borderRadius: '50%',
+                      p: 0.5,
+                    }} />
+                  </Box>
                 </Box>
               </Box>
 
@@ -470,14 +486,35 @@ export function OnboardingPage() {
                   <MenuItem value={PetType.fish}>魚</MenuItem>
                 </TextField>
 
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                  <ImageUpload
-                    label="ペットの画像を選択"
-                    size={120}
-                    value={petImagePreview}
-                    onChange={handlePetImageChange}
-                    disabled={isPetLoading}
-                  />
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
+                  <Box sx={{
+                    bgcolor: 'white',
+                    borderRadius: '50%',
+                    p: 1,
+                    display: 'inline-flex',
+                    mb: 1,
+                  }}>
+                    <PetsIcon sx={{ fontSize: 60, color: '#8B0000' }} />
+                  </Box>
+                  <Box sx={{ position: 'relative' }}>
+                    <ImageUpload
+                      label="ペットの画像を選択"
+                      size={120}
+                      value={petImagePreview}
+                      onChange={handlePetImageChange}
+                      disabled={isPetLoading}
+                    />
+                    <PhotoCamera sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      fontSize: 24,
+                      color: '#8B0000',
+                      bgcolor: 'white',
+                      borderRadius: '50%',
+                      p: 0.5,
+                    }} />
+                  </Box>
                 </Box>
               </Box>
 

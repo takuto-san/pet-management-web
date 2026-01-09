@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem } from "@mui/material";
 import type { RootState } from "@/lib/stores/store";
 import type { Task, MonthlyEvent } from "@/types/dashboard";
 import { Header } from "@/components/organisms/Header";
@@ -15,8 +15,11 @@ import { MonthlyScheduleCard } from "@/components/organisms/MonthlyScheduleCard"
 import { WeightTrendsCard } from "@/components/organisms/WeightTrendsCard";
 import { ClinicVisitsCard } from "@/components/organisms/ClinicVisitsCard";
 import { VaccinationsCard } from "@/components/organisms/VaccinationsCard";
-import { useListPetsByUser } from "@/api/generated/pet/pet";
+import { useListPetsByUser, useUpdatePet } from "@/api/generated/pet/pet";
 import { useListVisits } from "@/api/generated/visit/visit";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Pet, PetFields } from "@/types/api";
+import { PetType, PetSex } from "@/types/api";
 
 // ユーティリティ関数：visitTypeの日本語化
 const getVisitTypeDisplayName = (visitType: string | undefined): string => {
@@ -76,12 +79,19 @@ const formatTitle = (reason: string | undefined): string => {
 
 export function DashboardPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentUser, isLoadingUser } = useSelector((state: RootState) => ({
     currentUser: state.user.currentUser,
     isLoadingUser: state.user.isLoadingUser,
   }));
 
-
+  const { mutate: updatePet } = useUpdatePet({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['pets'] });
+      },
+    },
+  });
 
   const { data: petsData, isLoading: isPetsLoading } = useListPetsByUser(currentUser?.id || "", undefined, {
     query: {
@@ -91,6 +101,18 @@ export function DashboardPage() {
 
   const pets = petsData?.content || [];
   const [selectedPetId, setSelectedPetId] = useState<string | null>(pets.length > 0 ? pets[0].id : null);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [editedPetData, setEditedPetData] = useState<{
+    name: string;
+    type: string;
+    sex: string;
+    birthDate: string;
+  }>({
+    name: '',
+    type: PetType.dog,
+    sex: PetSex.unknown,
+    birthDate: '',
+  });
 
   useEffect(() => {
     if (pets.length > 0 && !selectedPetId) {
@@ -180,6 +202,27 @@ export function DashboardPage() {
     );
   };
 
+  const handlePetEdit = (pet: Pet) => {
+    setEditingPet(pet);
+    setEditedPetData({
+      name: pet.name,
+      type: pet.type as string,
+      sex: (pet.sex || PetSex.unknown) as string,
+      birthDate: pet.birthDate || '',
+    });
+  };
+
+  const handleSavePet = () => {
+    if (editingPet) {
+      updatePet({ petId: editingPet.id, data: editedPetData as PetFields });
+      setEditingPet(null);
+    }
+  };
+
+  const handleClosePetModal = () => {
+    setEditingPet(null);
+  };
+
   if (isLoadingUser || (currentUser && isPetsLoading)) {
     return (
       <LayoutTemplate
@@ -253,7 +296,7 @@ export function DashboardPage() {
           {selectedPet ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <PetProfileCard pet={selectedPet} />
+                <PetProfileCard pet={selectedPet} onEdit={handlePetEdit} />
                 <div className="md:col-span-1 h-32">
                   <TodayScheduleCard tasks={todayTasks} onToggleTask={toggleTask} />
                 </div>
@@ -271,6 +314,166 @@ export function DashboardPage() {
               <p className="text-muted-foreground">まだペットが登録されていません。</p>
             </div>
           )}
+
+          <Dialog
+            open={!!editingPet}
+            onClose={handleClosePetModal}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+              sx: {
+                background: '#2D2631',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 3,
+                color: 'white',
+              },
+            }}
+          >
+            <DialogTitle sx={{ color: 'white' }}>ペット情報を編集</DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              <TextField
+                autoFocus
+                margin="normal"
+                label="ペットの名前"
+                fullWidth
+                variant="outlined"
+                value={editedPetData.name}
+                onChange={(e) => setEditedPetData(prev => ({ ...prev, name: e.target.value }))}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'white',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'white',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: 'white',
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                label="種類"
+                select
+                fullWidth
+                variant="outlined"
+                value={editedPetData.type}
+                onChange={(e) => setEditedPetData(prev => ({ ...prev, type: e.target.value }))}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'white',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'white',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: 'white',
+                  },
+                  '& .MuiSelect-icon': {
+                    color: 'white',
+                  },
+                }}
+              >
+                <MenuItem value={PetType.dog}>犬</MenuItem>
+                <MenuItem value={PetType.cat}>猫</MenuItem>
+                <MenuItem value={PetType.rabbit}>ウサギ</MenuItem>
+                <MenuItem value={PetType.hamster}>ハムスター</MenuItem>
+                <MenuItem value={PetType.bird}>鳥</MenuItem>
+                <MenuItem value={PetType.turtle}>カメ</MenuItem>
+                <MenuItem value={PetType.fish}>魚</MenuItem>
+              </TextField>
+              <TextField
+                margin="normal"
+                label="性別"
+                select
+                fullWidth
+                variant="outlined"
+                value={editedPetData.sex}
+                onChange={(e) => setEditedPetData(prev => ({ ...prev, sex: e.target.value }))}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'white',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'white',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: 'white',
+                  },
+                  '& .MuiSelect-icon': {
+                    color: 'white',
+                  },
+                }}
+              >
+                <MenuItem value={PetSex.male}>オス</MenuItem>
+                <MenuItem value={PetSex.female}>メス</MenuItem>
+                <MenuItem value={PetSex.unknown}>不明</MenuItem>
+              </TextField>
+              <TextField
+                margin="normal"
+                label="生年月日"
+                type="date"
+                fullWidth
+                variant="outlined"
+                value={editedPetData.birthDate}
+                onChange={(e) => setEditedPetData(prev => ({ ...prev, birthDate: e.target.value }))}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'white',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'white',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'white',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: 'white',
+                  },
+                }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClosePetModal} sx={{ color: '#8B0000' }}>
+                キャンセル
+              </Button>
+              <Button onClick={handleSavePet} sx={{ color: '#8B0000' }}>
+                保存
+              </Button>
+            </DialogActions>
+          </Dialog>
           </div>
         </div>
       }
