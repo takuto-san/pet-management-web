@@ -560,7 +560,7 @@ export function CalendarPage() {
               <div className="justify-self-end flex items-center space-x-2">
                 <button
                   onClick={() => setViewMode('monthly')}
-                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'monthly' ? 'text-accent' : 'text-muted-foreground'}`}
+                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'monthly' ? 'text-red-800' : 'text-muted-foreground'}`}
                   title="月間表示"
                 >
                   <div className="relative w-4 h-4 border border-current rounded">
@@ -571,7 +571,7 @@ export function CalendarPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('weekly')}
-                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'weekly' ? 'text-accent' : 'text-muted-foreground'}`}
+                  className={`w-6 h-6 flex items-center justify-center ${viewMode === 'weekly' ? 'text-red-800' : 'text-muted-foreground'}`}
                   title="週間表示"
                 >
                   <div className="flex flex-col gap-px">
@@ -582,9 +582,9 @@ export function CalendarPage() {
                 </button>
                 <button
                   onClick={goToToday}
-                  className="w-6 h-6 flex items-center justify-center p-2 text-accent hover:bg-primary/20 rounded"
+                  className="w-6 h-6 flex items-center justify-center p-1 text-red-800 hover:bg-primary/20 rounded"
                 >
-                  <CalendarToday className="w-4 h-4" />
+                  <CalendarToday className="w-2 h-2" />
                 </button>
               </div>
             </div>
